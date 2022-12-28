@@ -1,5 +1,8 @@
+#ifndef _PILOT_H_
+#define _PILOT_H_
 #include"peripherals.h"
-
+#include "SD.h"
+//ADC Macros
 #define ADC_I2C_ADDR 0x21
 #define DATAHIGH_MAX_H 0x0F
 #define DATAHIGH_MAX_L 0xFC
@@ -14,6 +17,13 @@
 #define DATA_HIGH_REG(x) ((x) * 3 + 0x5)
 #define HYST_REG(x) ((x) * 3 + 0x6)
 #define ADC_CHX(x) (((x) + 0x8)<<4)
+
+//GPIO MACROS
+#define GMC_EN_PIN MSS_GPIO_24
+#define EPS_PIN1 GPIO_14
+#define EPS_PIN2 GPIO_15
+#define EPS_PIN3 GPIO_16
+#define EPS_PIN4 GPIO_3
 
 /** Function to initialise ADC
  * @brief Initialises the ADC corresponding to the given address
@@ -33,3 +43,29 @@ uint8_t ADC_Init(i2c_instance_t i2c_chx,uint8_t address);
  * @return double   : returns the value given by the ADC
  */
 double get_ADC_value(i2c_instance_t i2c_chx,uint8_t address,uint8_t chx);
+
+/**
+ * @brief Initialises the I2Cs in Pilot
+ *
+ */
+void I2C_Init();
+
+/**
+ * @brief Initialises the GPIOs in Pilot
+ *
+ */
+void GPIO_Init();
+
+/**
+ * @brief Initialises the Uarts in Pilot
+ *
+ */
+void Uart_Init();
+
+/**
+ * @brief Initialisation of Pilot CDH board
+ *
+ */
+void Pilot_Init();
+
+#endif

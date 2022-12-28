@@ -6,6 +6,9 @@
 #include<drivers/mss_rtc/mss_rtc.h>
 #include<drivers/mss_spi/mss_spi.h>
 #include<drivers/mss_timer/mss_timer.h>
+#include <AHAN_hw_platform.h>
+#include <drivers/mss_gpio/mss_gpio.h>
+#include <drivers/mss_i2c/mss_i2c.h>
 //UART
 //UART instances
  UART_instance_t uart0;
@@ -40,5 +43,5 @@
  //RTC and timer
 #define TIMER_COUNT_PER_MS 50000
 #define FULL_SCALE_TIME_MS 85899
- mss_rtc_calendar_t now;
+ //mss_rtc_calendar_t now;
 #endif
