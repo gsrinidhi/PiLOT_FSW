@@ -1,4 +1,7 @@
 #include"pilot.h"
+#include "memory.h"
+
+struct HK_PKT p1;
 
 uint8_t ADC_Init(i2c_instance_t i2c_chx,uint8_t address){
 	uint8_t status;
@@ -36,9 +39,63 @@ double get_ADC_value(i2c_instance_t i2c_chx,uint8_t address,uint8_t chx) {
 		conv_res = (adc_read_value[0] << 8 ) | adc_read_value[1];
 		value = conv_res & 0x0FFF;
 		value = value >> 2;
-		voltage = value * 3.3/1024;
+		voltage = value * 5.0/1024;
 	}
 	return voltage;
+}
+
+// Function below would generate the payload packet containing 40 items : -
+
+uint8_t get_thermistor_vals(){
+
+   struct thermistor A,B,C,D;
+   for(int i=0;i<8;i++){
+       A.E[i] = get_ADC_value(i2c_2, ADC_I2CU1_ADDR, i);
+       B.E[i] = get_ADC_value(i2c_2, ADC_I2CU2_ADDR, i);
+       C.E[i] = get_ADC_value(i2c_3, ADC_I2CU3_ADDR, i);
+       D.E[i] = get_ADC_value(i2c_3, ADC_I2CU4_ADDR, i);
+   }
+
+   uint8_t thermistor_pkt[40];
+
+   struct CCSDS C0;
+   thermistor_pkt[0] = C0;
+    for(int i=6;i<14:i++){
+        thermistor_pkt[i] = A.E[i];
+    }
+    for(int i=14;i<22:i++){
+            thermistor_pkt[i] = B.E[i];
+        }
+    for(int i=22;i<30:i++){
+            thermistor_pkt[i] = C.E[i];
+        }
+    for(int i=30;i<38:i++){
+            thermistor_pkt[i] = D.E[i];
+        }
+    struct Flet_Code F0;
+    thermistor_pkt[38] = F0;
+
+return thermistor_pkt;
+}
+
+void set_pkt2sd(){
+
+    // Store the packet values by defining the pointer(by timestamping the data)
+    //in the SD_CARD.
+
+}
+
+void test_sd(){
+
+   //As the above function would write the data into the sd-card, so for testing the sd_card
+   //we can downlink at a certain interval from the same pointer values as define above.
+
+   // NOTE: - We can downlink the following 3 pkts of data : -
+   // 1) thermistor_pkt
+   // 2) HK_pkt
+   // 3) SD_pkt (Will contain the same data as sent by thermistor OR HK but it will be read
+   //            from SD_CARD.)
+
 }
 
 void I2C_Init() {
@@ -88,6 +145,8 @@ void Pilot_Init() {
 //void get_CDH_HK() {
 //
 //}
+
+
 
 void FabricIrq0_IRQHandler(void)
 {

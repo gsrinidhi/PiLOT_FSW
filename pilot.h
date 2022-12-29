@@ -2,8 +2,35 @@
 #define _PILOT_H_
 #include"peripherals.h"
 #include "SD.h"
+
+//CCSDS Sub-Packet
+struct CCSDS
+    {
+       uint8_t Version_ID;
+        uint8_t APID;
+        uint16_t Seq_no;
+        uint16_t PL;
+    };
+//Fletcher Code
+struct Flet_Code
+    {
+        uint16_t Fletcher_Code;
+    };
+
+//For a single thermistor which contains 8 parameters.
+struct thermistor{
+
+    uint8_t E[8];
+
+};
+
 //ADC Macros
 #define ADC_I2C_ADDR 0x21
+#define ADC_I2CU1_ADDR 0x24
+#define ADC_I2CU2_ADDR 0x23
+#define ADC_I2CU3_ADDR 0x24
+#define ADC_I2CU4_ADDR 0x23
+
 #define DATAHIGH_MAX_H 0x0F
 #define DATAHIGH_MAX_L 0xFC
 #define DATA_LOW_MIN_H 0x00
