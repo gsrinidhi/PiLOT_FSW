@@ -83,7 +83,78 @@ void Pilot_Init() {
 	Uart_Init();
 	SD_Init();
 	MSS_TIM64_init(MSS_TIMER_ONE_SHOT_MODE);
+	MSS_TIM64_load_immediate(0xFFFFFFFF,0xFFFFFFFF);
 }
+
+uint8_t test_peripherals() {
+	uint8_t count = 0;
+	uint8_t ch_read[] = {0x80};
+	uint8_t adc_read_value[2];
+	uint8_t result = 0x00,temp_result = 1;
+	uint8_t tx[] = {IMU_WHO_AM_I_REG};
+	uint8_t sd_test[512];
+	for(;count<512;count++) {
+		sd_test[count] = 0;
+	}
+	count = 0;
+	i2c_status_t status;
+	//Testing i2c_3 in cdh
+	while(count < 10) {
+		I2C_write_read(&g_core_i2c1,ADC_I2C_ADDR_1,ch_read,1,adc_read_value,2,I2C_RELEASE_BUS);
+		status = I2C_wait_complete(&g_core_i2c1, I2C_NO_TIMEOUT);
+		if(status == I2C_SUCCESS) {
+			result |= 0x01;
+			break;
+		}
+		count++;
+	}
+	//Testing i2c_5 in cdh
+	count = 0;
+	while(count < 10) {
+		I2C_write_read(&g_core_i2c3,ADC_I2C_ADDR_1,ch_read,1,adc_read_value,2,I2C_RELEASE_BUS);
+		status = I2C_wait_complete(&g_core_i2c3, I2C_NO_TIMEOUT);
+		if(status == I2C_SUCCESS) {
+			result |= 0x02;
+			break;
+		}
+		count++;
+	}
+	//Testing IMU
+	count = 0;
+	while(count < 10) {
+		I2C_write_read(&g_core_i2c5,IMU_ADDR,tx,1,ch_read,1,I2C_RELEASE_BUS);
+		status = I2C_wait_complete(&g_core_i2c5, I2C_NO_TIMEOUT);
+		if((status == I2C_SUCCESS) && (ch_read[0] == 0x68)) {
+			result |= 0x04;
+			break;
+		}
+		count++;
+	}
+	//SD card write test
+	count = 0;
+	while(count < 10) {
+		temp_result = SD_Write(1024,sd_test);
+		if(temp_result == 0) {
+			result |= 0x08;
+			temp_result = 1;
+			break;
+		}
+		count++;
+	}
+	//SD card read test
+	count = 0;
+	while(count < 10) {
+		temp_result = SD_Read(1024,sd_test);
+		if(temp_result == 0) {
+			result |= 0x10;
+			temp_result = 1;
+			break;
+		}
+		count++;
+	}
+	return result;
+}
+
 
 //void get_CDH_HK() {
 //

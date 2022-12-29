@@ -138,11 +138,17 @@
 #include "memory.h"
 #include "pilot.h"
 
-block_table_t current_block;
+block_table_t start_block,current_block;
+uint32_t current_time_lower,current_time_upper;
+uint32_t period = 0x00FF;
+uint32_t last_count;
 int main()
 {
 	Pilot_Init();
+	start_block.payload = 4;
+	start_block.cdh_hk = 10;
 	while(1) {
+		MSS_TIM64_get_current_value(&current_time_upper,&current_time_lower);
 
 	}
 

@@ -60,3 +60,44 @@
 //}
 //
 //#endif
+
+#include "memory.h"
+
+uint8_t store_data(block_table_t *block,uint8_t *data,block_type_t type) {
+	uint32_t address = 0;
+	switch(type) {
+	case PAYLOAD:
+		address = block->payload * 512;
+		block->payload = block->payload + 1;
+		break;
+	case CDH_HK:
+		address = block->cdh_hk * 512;
+		block->cdh_hk = block->cdh_hk + 1;
+		break;
+	case SD_TEST:
+		address = block->sd_test * 512;
+		block->sd_test = block->sd_test + 1;
+		break;
+	case PSLV_INTERFACE:
+		address = block->pslv_interface * 512;
+		block->pslv_interface = block->pslv_interface + 1;
+		break;
+	case IMU:
+		address = block->imu * 512;
+		block->imu = block->imu + 1;
+		break;
+	case TASK_LOGS:
+		address = block->task_logs * 512;
+		block->task_logs = block->task_logs + 1;
+		break;
+	default:
+		address = block->task_logs * 512;
+		block->task_logs = block->task_logs + 1;
+		break;
+	}
+	if(SD_Write(address,data) == 0) {
+		return 0;
+	} else {
+		return 1;
+	}
+}

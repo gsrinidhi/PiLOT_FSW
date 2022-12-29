@@ -4,6 +4,8 @@
 #include "SD.h"
 //ADC Macros
 #define ADC_I2C_ADDR 0x21
+#define ADC_I2C_ADDR_1 0x23
+#define ADC_I2C_ADDR_2 0x24
 #define DATAHIGH_MAX_H 0x0F
 #define DATAHIGH_MAX_L 0xFC
 #define DATA_LOW_MIN_H 0x00
@@ -24,6 +26,10 @@
 #define EPS_PIN2 GPIO_15
 #define EPS_PIN3 GPIO_16
 #define EPS_PIN4 GPIO_3
+
+//IMU Macros
+#define IMU_ADDR 0x6b
+#define IMU_WHO_AM_I_REG 0x0F
 
 /** Function to initialise ADC
  * @brief Initialises the ADC corresponding to the given address
