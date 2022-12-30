@@ -7,10 +7,15 @@
 
 #ifndef _PACKET_DEFINITIONS_
 #define _PACKET_DEFINITIONS_
-#define THERMISTOR_Version_ID
-#define THERMISTOR_API_ID
-#define THERMISTOR_PKT_LENGTH
-#define THERMISTOR_FLETCHER_CODE
+#define THERMISTOR_Version_ID		0x1
+#define THERMISTOR_API_ID			0x16
+#define THERMISTOR_PKT_LENGTH		76
+#define THERMISTOR_FLETCHER_CODE	0x00
+
+#define LOGS_Version_ID		0x2
+#define LOGS_API_ID			0x17
+#define LOGS_PKT_LENGTH		108
+#define LOGS_FLETCHER_CODE	0x00
 
 typedef struct {
     //CCSDS
@@ -27,5 +32,29 @@ typedef struct {
 
     uint16_t Fletcher_Code;
 }thermistor_pkt_t;
+
+/**
+ * @brief Each log entry has the below four fields for every task that occurs
+ * 
+ */
+typedef struct {
+	uint32_t time_L;//lower time value
+	uint32_t time_H;//upper time value
+	uint8_t task_id;//task id
+	uint8_t task_status;//task status;
+}log_entry_t;
+
+typedef struct {
+    //CCSDS
+
+    uint8_t Version_ID;
+    uint8_t APID;
+    uint16_t Seq_no;
+    uint16_t PL;
+
+    log_entry_t logs[10];
+
+    uint16_t Fletcher_Code;
+}log_packet_t;
 
 #endif

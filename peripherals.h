@@ -34,8 +34,8 @@
  i2c_status_t core_i2c_status;
 
  //i2c_2 is the pin on the OBC
-#define i2c_2 g_core_i2c0;
-#define i2c_3 g_core_i2c1;
+#define i2c_2 g_core_i2c0
+#define i2c_3 g_core_i2c1
 
 #define I2C_SLAVE_ADDRESS 0x12
 

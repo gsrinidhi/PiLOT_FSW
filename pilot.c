@@ -28,7 +28,7 @@ uint16_t get_ADC_value(i2c_instance_t i2c_chx,uint8_t address,uint8_t chx) {
 	ch_read[0] |= 0x8;
 	ch_read[0] = ch_read[0] << 4;
 	uint8_t status;
-	uint16_t conv_res,value;
+	//uint16_t conv_res,value;
 	uint16_t voltage;
 	I2C_write_read(&i2c_chx,address,ch_read,1,adc_read_value,2,I2C_RELEASE_BUS);
 	status = I2C_wait_complete(&i2c_chx, I2C_NO_TIMEOUT);
@@ -46,15 +46,13 @@ uint16_t get_ADC_value(i2c_instance_t i2c_chx,uint8_t address,uint8_t chx) {
 
 // Function below would generate the payload packet containing 40 items : -
 
-void get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no){
-
-
+uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no){
    pkt->Version_ID = THERMISTOR_Version_ID;
    pkt->APID = THERMISTOR_API_ID;
    pkt->Seq_no = seq_no;
    pkt->PL = THERMISTOR_PKT_LENGTH;
-
-   for(int i=0;i<8;i++){
+   uint8_t i = 0;
+   for(;i<8;i++){
         pkt->thermistor_set_A[i] = get_ADC_value(i2c_2, ADC_I2CU1_ADDR, i);
         pkt->thermistor_set_B[i] = get_ADC_value(i2c_2, ADC_I2CU2_ADDR, i);
         pkt->thermistor_set_C[i] = get_ADC_value(i2c_3, ADC_I2CU3_ADDR, i);
@@ -62,6 +60,8 @@ void get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no){
      }
 
     pkt->Fletcher_Code  = THERMISTOR_FLETCHER_CODE;
+
+    return 0;
 
 }
 

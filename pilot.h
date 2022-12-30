@@ -85,6 +85,14 @@
 #define IMU_ADDR 0x6b
 #define IMU_WHO_AM_I_REG 0x0F
 
+//PERIOD Macros
+#define PAYLOAD_PERIOD_L		0xFFFF
+#define PAYLOAD_PERIOD_H		0xFFFF
+
+//TASK IDs
+#define THERMISTOR_TASK_ID	1
+#define HK_TASK_ID			2
+
 /** Function to initialise ADC
  * @brief Initialises the ADC corresponding to the given address
  * 
@@ -127,5 +135,26 @@ void Uart_Init();
  *
  */
 void Pilot_Init();
+
+/**
+ * @brief Get the thermistor packet
+ * 
+ * @param pkt       : thermistor packet pointer
+ * @param seq_no    : sequence number of packet
+ * @return uint8_t  : Returns 0 if successful, 1 otherwise
+ */
+uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no);
+
+/**
+ * @brief Function to obtain CDH peripheral health
+ * 
+ * @return uint8_t 
+ * Bit 1(LSB)   : i2c_3
+ * Bit 2        : i2c_5
+ * Bit 3        : IMU
+ * Bit 4        : SD card write
+ * Bit 5        : SD card read
+ */
+uint8_t test_peripherals();
 
 #endif
