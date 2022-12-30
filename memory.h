@@ -21,45 +21,8 @@
 
 // We need to define the HK parameters in the below struct : -
 
-//struct HK_PKT
-//    {
-//        //CCSDS
-//
-//        uint8_t Version_ID;
-//        uint8_t APID;
-//        uint16_t Seq_no;
-//        uint16_t PL;
-//
-//        //CDH
-//        uint8_t CDH_Primary_info;
-//        uint8_t CDH_Subsystem_ON_Stat;
-//        uint8_t CDH_System_Data_Valid_flags;
-//        uint32_t Command_Accept_count;
-//        uint32_t Command_Reject_count;
-//
-//        //EPS
-//
-//        uint16_t EPS_Bat_Volt;
-//        uint16_t EPS_Bat_Curr;
-//        uint16_t EPS_Bus_Volt;
-//        uint16_t EPS_Bus_Curr;
-//        uint16_t EPS_Bat_Soc;
-//        uint16_t EPS_Bat_Temp1;
-//        uint16_t EPS_Bat_Temp2;
-//        uint8_t SubSystem_Temp_Valid_flags;
-//        uint8_t SubSystem_Curr_Valid_flags;
-//        uint8_t SubSystem_Volt_Valid_flags;
-//
-//        //UHF
-//
-//        uint16_t Status_and_Control_Word;
-//        uint16_t Num_Transmit_Packets;
-//        uint16_t Num_Receive_Packets;
-//
-//        //Fletcher Code
-//
-//        uint16_t Fletcher_Code;
-//    };
+
+typedef struct HK_PKT HK_PKT_t;
 
 typedef enum block_type {
 	PAYLOAD = 0u,
@@ -72,17 +35,17 @@ typedef enum block_type {
 
 //uint8_t memory_init();
 
-uint8_t gmc_store_data(block_table_t current_block,uint8_t *data);
-
-uint8_t eps_store_data(block_table_t current_block,uint8_t *data);
-
-/**
- * @brief stores the given data in the SD card according to which type of data it is
- * 
- * @param block     : the block holding the current block numbers
- * @param data      : the data to be written to the SD card
- * @param type      : the type of block 
- * @return uint8_t  : returns 0 if successful, 1 otherwise
- */
-uint8_t store_data(block_table_t *block,uint8_t *data,block_type_t type);
+//uint8_t gmc_store_data(block_table_t current_block,uint8_t *data);
+//
+//uint8_t eps_store_data(block_table_t current_block,uint8_t *data);
+//
+///**
+// * @brief stores the given data in the SD card according to which type of data it is
+// *
+// * @param block     : the block holding the current block numbers
+// * @param data      : the data to be written to the SD card
+// * @param type      : the type of block
+// * @return uint8_t  : returns 0 if successful, 1 otherwise
+// */
+//uint8_t store_data(block_table_t *block,uint8_t *data,block_type_t type);
 #endif

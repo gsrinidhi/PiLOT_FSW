@@ -1,7 +1,6 @@
 #include"pilot.h"
 #include "memory.h"
 
-struct HK_PKT p1;
 
 uint8_t ADC_Init(i2c_instance_t i2c_chx,uint8_t address){
 	uint8_t status;
@@ -23,60 +22,67 @@ uint8_t ADC_Init(i2c_instance_t i2c_chx,uint8_t address){
 	return return_value;
 }
 
-double get_ADC_value(i2c_instance_t i2c_chx,uint8_t address,uint8_t chx) {
+uint16_t get_ADC_value(i2c_instance_t i2c_chx,uint8_t address,uint8_t chx) {
 	uint8_t adc_read_value[2];
 	uint8_t ch_read[] = {chx};
 	ch_read[0] |= 0x8;
 	ch_read[0] = ch_read[0] << 4;
 	uint8_t status;
 	uint16_t conv_res,value;
-	double voltage;
+	uint16_t voltage;
 	I2C_write_read(&i2c_chx,address,ch_read,1,adc_read_value,2,I2C_RELEASE_BUS);
 	status = I2C_wait_complete(&i2c_chx, I2C_NO_TIMEOUT);
 	if(status != 0) {
-		voltage = -1;
+		voltage = 0;
 	} else {
-		conv_res = (adc_read_value[0] << 8 ) | adc_read_value[1];
-		value = conv_res & 0x0FFF;
-		value = value >> 2;
-		voltage = value * 5.0/1024;
+		voltage = (adc_read_value[0] << 8 ) | adc_read_value[1];
+//		conv_res = (adc_read_value[0] << 8 ) | adc_read_value[1];
+//		value = conv_res & 0x0FFF;
+//		value = value >> 2;
+//		voltage = value * 5.0/1024;
 	}
 	return voltage;
 }
 
 // Function below would generate the payload packet containing 40 items : -
 
-uint8_t get_thermistor_vals(){
-
-   struct thermistor A,B,C,D;
-   for(int i=0;i<8;i++){
-       A.E[i] = get_ADC_value(i2c_2, ADC_I2CU1_ADDR, i);
-       B.E[i] = get_ADC_value(i2c_2, ADC_I2CU2_ADDR, i);
-       C.E[i] = get_ADC_value(i2c_3, ADC_I2CU3_ADDR, i);
-       D.E[i] = get_ADC_value(i2c_3, ADC_I2CU4_ADDR, i);
-   }
-
-   uint8_t thermistor_pkt[40];
-
-   struct CCSDS C0;
-   thermistor_pkt[0] = C0;
-    for(int i=6;i<14:i++){
-        thermistor_pkt[i] = A.E[i];
-    }
-    for(int i=14;i<22:i++){
-            thermistor_pkt[i] = B.E[i];
-        }
-    for(int i=22;i<30:i++){
-            thermistor_pkt[i] = C.E[i];
-        }
-    for(int i=30;i<38:i++){
-            thermistor_pkt[i] = D.E[i];
-        }
-    struct Flet_Code F0;
-    thermistor_pkt[38] = F0;
-
-return thermistor_pkt;
-}
+//uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no){
+//
+//   struct thermistor A,B,C,D;
+//   for(int i=0;i<8;i++){
+//       A.E[i] = get_ADC_value(i2c_2, ADC_I2CU1_ADDR, i);
+//       B.E[i] = get_ADC_value(i2c_2, ADC_I2CU2_ADDR, i);
+//       C.E[i] = get_ADC_value(i2c_3, ADC_I2CU3_ADDR, i);
+//       D.E[i] = get_ADC_value(i2c_3, ADC_I2CU4_ADDR, i);
+//   }
+//
+//   uint8_t thermistor_pkt[40];
+//
+//   struct CCSDS C0;
+//   thermistor_pkt[0] = C0;
+//    for(int i=6;i<14:i++){
+//        thermistor_pkt[i] = A.E[i];
+//    }
+//    for(int i=14;i<22:i++){
+//            thermistor_pkt[i] = B.E[i];
+//        }
+//    for(int i=22;i<30:i++){
+//            thermistor_pkt[i] = C.E[i];
+//        }
+//    for(int i=30;i<38:i++){
+//            thermistor_pkt[i] = D.E[i];
+//        }
+//    struct Flet_Code F0;
+//    thermistor_pkt[38] = F0;
+//
+////    pkt->APID = THERMISTOR_API_ID;
+////    pkt->PL = THERMISTOR_PKT_LENGTH;
+////    pkt->thermistor_A[i] = get_ADC_value()
+//
+//
+//
+//return thermistor_pkt;
+//}
 
 void set_pkt2sd(){
 
@@ -157,7 +163,7 @@ uint8_t test_peripherals() {
 	i2c_status_t status;
 	//Testing i2c_3 in cdh
 	while(count < 10) {
-		I2C_write_read(&g_core_i2c1,ADC_I2C_ADDR_1,ch_read,1,adc_read_value,2,I2C_RELEASE_BUS);
+		I2C_write_read(&g_core_i2c1,ADC_I2CU1_ADDR,ch_read,1,adc_read_value,2,I2C_RELEASE_BUS);
 		status = I2C_wait_complete(&g_core_i2c1, I2C_NO_TIMEOUT);
 		if(status == I2C_SUCCESS) {
 			result |= 0x01;
@@ -168,7 +174,7 @@ uint8_t test_peripherals() {
 	//Testing i2c_5 in cdh
 	count = 0;
 	while(count < 10) {
-		I2C_write_read(&g_core_i2c3,ADC_I2C_ADDR_1,ch_read,1,adc_read_value,2,I2C_RELEASE_BUS);
+		I2C_write_read(&g_core_i2c3,ADC_I2CU1_ADDR,ch_read,1,adc_read_value,2,I2C_RELEASE_BUS);
 		status = I2C_wait_complete(&g_core_i2c3, I2C_NO_TIMEOUT);
 		if(status == I2C_SUCCESS) {
 			result |= 0x02;

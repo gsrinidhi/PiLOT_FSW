@@ -2,6 +2,7 @@
 #define _PILOT_H_
 #include"peripherals.h"
 #include "SD.h"
+#include "packet_definitions.h"
 
 //CCSDS Sub-Packet
 struct CCSDS
@@ -21,6 +22,34 @@ struct Flet_Code
 struct thermistor{
 
     uint8_t E[8];
+
+};
+
+//typedef struct {
+//    //CCSDS
+//
+//    uint8_t Version_ID;
+//    uint8_t APID;
+//    uint16_t Seq_no;
+//    uint16_t PL;
+//
+//    uint16_t thermistor_A[16];
+//    uint16_t thermistor_B[16];
+//    uint16_t thermistor_C[16];
+//    uint16_t thermistor_D[16];
+//
+//    uint16_t Fletcher_Code;
+//}thermistor_pkt_t;
+
+typedef struct {
+    //CCSDS
+
+    uint8_t Version_ID;
+    uint8_t APID;
+    uint16_t Seq_no;
+    uint16_t PL;
+
+    //OBC HK
 
 };
 
@@ -73,7 +102,7 @@ uint8_t ADC_Init(i2c_instance_t i2c_chx,uint8_t address);
  * @param chx       : the channel to convert  
  * @return double   : returns the value given by the ADC
  */
-double get_ADC_value(i2c_instance_t i2c_chx,uint8_t address,uint8_t chx);
+uint16_t get_ADC_value(i2c_instance_t i2c_chx,uint8_t address,uint8_t chx);
 
 /**
  * @brief Initialises the I2Cs in Pilot

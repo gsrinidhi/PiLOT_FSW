@@ -138,17 +138,26 @@
 #include "memory.h"
 #include "pilot.h"
 
-block_table_t start_block,current_block;
+//block_table_t start_block,current_block;
+HK_PKT_t *hk_packet;
+thermistor_pkt_t *thermistor_packet;
+uint8_t packet_data[512];
 uint32_t current_time_lower,current_time_upper;
 uint32_t period = 0x00FF;
 uint32_t last_count;
+uint16_t thermistor_seq_no;
 int main()
 {
 	Pilot_Init();
-	start_block.payload = 4;
-	start_block.cdh_hk = 10;
+//	start_block.payload = 4;
+//	start_block.cdh_hk = 10;
 	while(1) {
 		MSS_TIM64_get_current_value(&current_time_upper,&current_time_lower);
+		thermistor_packet = (thermistor_pkt_t*)packet_data;
+		//get_thermistor_vals(thermistor_packet);
+		thermistor_seq_no++;
+
+
 
 	}
 
