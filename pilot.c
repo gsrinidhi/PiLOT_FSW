@@ -46,43 +46,24 @@ uint16_t get_ADC_value(i2c_instance_t i2c_chx,uint8_t address,uint8_t chx) {
 
 // Function below would generate the payload packet containing 40 items : -
 
-//uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no){
-//
-//   struct thermistor A,B,C,D;
-//   for(int i=0;i<8;i++){
-//       A.E[i] = get_ADC_value(i2c_2, ADC_I2CU1_ADDR, i);
-//       B.E[i] = get_ADC_value(i2c_2, ADC_I2CU2_ADDR, i);
-//       C.E[i] = get_ADC_value(i2c_3, ADC_I2CU3_ADDR, i);
-//       D.E[i] = get_ADC_value(i2c_3, ADC_I2CU4_ADDR, i);
-//   }
-//
-//   uint8_t thermistor_pkt[40];
-//
-//   struct CCSDS C0;
-//   thermistor_pkt[0] = C0;
-//    for(int i=6;i<14:i++){
-//        thermistor_pkt[i] = A.E[i];
-//    }
-//    for(int i=14;i<22:i++){
-//            thermistor_pkt[i] = B.E[i];
-//        }
-//    for(int i=22;i<30:i++){
-//            thermistor_pkt[i] = C.E[i];
-//        }
-//    for(int i=30;i<38:i++){
-//            thermistor_pkt[i] = D.E[i];
-//        }
-//    struct Flet_Code F0;
-//    thermistor_pkt[38] = F0;
-//
-////    pkt->APID = THERMISTOR_API_ID;
-////    pkt->PL = THERMISTOR_PKT_LENGTH;
-////    pkt->thermistor_A[i] = get_ADC_value()
-//
-//
-//
-//return thermistor_pkt;
-//}
+void get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no){
+
+
+   pkt->Version_ID = THERMISTOR_Version_ID;
+   pkt->APID = THERMISTOR_API_ID;
+   pkt->Seq_no = seq_no;
+   pkt->PL = THERMISTOR_PKT_LENGTH;
+
+   for(int i=0;i<8;i++){
+        pkt->thermistor_set_A[i] = get_ADC_value(i2c_2, ADC_I2CU1_ADDR, i);
+        pkt->thermistor_set_B[i] = get_ADC_value(i2c_2, ADC_I2CU2_ADDR, i);
+        pkt->thermistor_set_C[i] = get_ADC_value(i2c_3, ADC_I2CU3_ADDR, i);
+        pkt->thermistor_set_D[i] = get_ADC_value(i2c_3, ADC_I2CU4_ADDR, i);
+     }
+
+    pkt->Fletcher_Code  = THERMISTOR_FLETCHER_CODE;
+
+}
 
 void set_pkt2sd(){
 

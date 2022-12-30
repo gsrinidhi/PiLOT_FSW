@@ -5,25 +5,25 @@
 #include "packet_definitions.h"
 
 //CCSDS Sub-Packet
-struct CCSDS
-    {
-       uint8_t Version_ID;
-        uint8_t APID;
-        uint16_t Seq_no;
-        uint16_t PL;
-    };
-//Fletcher Code
-struct Flet_Code
-    {
-        uint16_t Fletcher_Code;
-    };
-
-//For a single thermistor which contains 8 parameters.
-struct thermistor{
-
-    uint8_t E[8];
-
-};
+//struct CCSDS
+//    {
+//       uint8_t Version_ID;
+//        uint8_t APID;
+//        uint16_t Seq_no;
+//        uint16_t PL;
+//    };
+////Fletcher Code
+//struct Flet_Code
+//    {
+//        uint16_t Fletcher_Code;
+//    };
+//
+////For a single thermistor which contains 8 parameters.
+//struct thermistor{
+//
+//    uint8_t E[8];
+//
+//};
 
 //typedef struct {
 //    //CCSDS
@@ -33,25 +33,25 @@ struct thermistor{
 //    uint16_t Seq_no;
 //    uint16_t PL;
 //
-//    uint16_t thermistor_A[16];
-//    uint16_t thermistor_B[16];
-//    uint16_t thermistor_C[16];
-//    uint16_t thermistor_D[16];
+//    uint16_t thermistor_A[8];
+//    uint16_t thermistor_B[8];
+//    uint16_t thermistor_C[8];
+//    uint16_t thermistor_D[8];
 //
 //    uint16_t Fletcher_Code;
 //}thermistor_pkt_t;
 
-typedef struct {
-    //CCSDS
-
-    uint8_t Version_ID;
-    uint8_t APID;
-    uint16_t Seq_no;
-    uint16_t PL;
-
-    //OBC HK
-
-};
+//typedef struct {
+//    //CCSDS
+//
+//    uint8_t Version_ID;
+//    uint8_t APID;
+//    uint16_t Seq_no;
+//    uint16_t PL;
+//
+//    //OBC HK
+//
+//};
 
 //ADC Macros
 #define ADC_I2C_ADDR 0x21
