@@ -3,6 +3,7 @@
 #include"peripherals.h"
 #include "SD.h"
 #include "packet_definitions.h"
+#include "pslv_interface.h"
 
 //CCSDS Sub-Packet
 //struct CCSDS
@@ -110,7 +111,7 @@ uint8_t ADC_Init(i2c_instance_t i2c_chx,uint8_t address);
  * @param chx       : the channel to convert  
  * @return double   : returns the value given by the ADC
  */
-uint16_t get_ADC_value(i2c_instance_t i2c_chx,uint8_t address,uint8_t chx);
+uint16_t get_ADC_value(i2c_instance_t i2c_chx,uint8_t address,uint8_t chx,uint8_t *flag);
 
 /**
  * @brief Initialises the I2Cs in Pilot
@@ -129,6 +130,8 @@ void GPIO_Init();
  *
  */
 void Uart_Init();
+
+void Pilot_Peripherals_Init();
 
 /**
  * @brief Initialisation of Pilot CDH board
@@ -156,5 +159,9 @@ uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no);
  * Bit 5        : SD card read
  */
 uint8_t test_peripherals();
+
+uint8_t get_IMU_acc(uint16_t *a_x,uint16_t *a_y,uint16_t *a_z);
+
+uint8_t get_IMU_gyro(uint16_t *roll_rate, uint16_t *pitch_rate,uint16_t *yaw_rate);
 
 #endif

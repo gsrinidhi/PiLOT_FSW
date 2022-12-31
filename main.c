@@ -139,15 +139,15 @@
 #include "pilot.h"
 
 partition_t payload_p,hk_p,log_p;
-HK_PKT_t *hk_packet;
 thermistor_pkt_t *thermistor_packet;
+hk_pkt_t *hk_packet;
 log_packet_t *log_packet;
 uint8_t packet_data[512];
 uint8_t log_data[512];
 uint32_t current_time_lower,current_time_upper;
 uint32_t payload_period_L,payload_period_H;
 uint32_t payload_last_count_L,payload_last_count_H;
-uint16_t thermistor_seq_no,logs_seq_no;
+uint16_t thermistor_seq_no,logs_seq_no,hk_seq_no;
 uint8_t log_count,result;
 int main()
 {
@@ -186,6 +186,8 @@ int main()
 			store_data(&log_p,log_data);
 			log_count = 0;
 		}
+
+
 
 
 

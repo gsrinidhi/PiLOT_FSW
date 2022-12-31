@@ -22,7 +22,7 @@ uint8_t ADC_Init(i2c_instance_t i2c_chx,uint8_t address){
 	return return_value;
 }
 
-uint16_t get_ADC_value(i2c_instance_t i2c_chx,uint8_t address,uint8_t chx) {
+uint16_t get_ADC_value(i2c_instance_t i2c_chx,uint8_t address,uint8_t chx,uint8_t *flag) {
 	uint8_t adc_read_value[2];
 	uint8_t ch_read[] = {chx};
 	ch_read[0] |= 0x8;
@@ -33,9 +33,10 @@ uint16_t get_ADC_value(i2c_instance_t i2c_chx,uint8_t address,uint8_t chx) {
 	I2C_write_read(&i2c_chx,address,ch_read,1,adc_read_value,2,I2C_RELEASE_BUS);
 	status = I2C_wait_complete(&i2c_chx, I2C_NO_TIMEOUT);
 	if(status != 0) {
-		voltage = 0;
+		*flag = 1;
 	} else {
 		voltage = (adc_read_value[0] << 8 ) | adc_read_value[1];
+		*flag = 0;
 //		conv_res = (adc_read_value[0] << 8 ) | adc_read_value[1];
 //		value = conv_res & 0x0FFF;
 //		value = value >> 2;
@@ -51,17 +52,22 @@ uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no){
    pkt->APID = THERMISTOR_API_ID;
    pkt->Seq_no = seq_no;
    pkt->PL = THERMISTOR_PKT_LENGTH;
-   uint8_t i = 0;
+   uint8_t i = 0,flag;
+   uint8_t loss_count;
    for(;i<8;i++){
-        pkt->thermistor_set_A[i] = get_ADC_value(i2c_2, ADC_I2CU1_ADDR, i);
-        pkt->thermistor_set_B[i] = get_ADC_value(i2c_2, ADC_I2CU2_ADDR, i);
-        pkt->thermistor_set_C[i] = get_ADC_value(i2c_3, ADC_I2CU3_ADDR, i);
-        pkt->thermistor_set_D[i] = get_ADC_value(i2c_3, ADC_I2CU4_ADDR, i);
+        pkt->thermistor_set_A[i] = get_ADC_value(i2c_2, ADC_I2CU1_ADDR, i,&flag);
+        loss_count+=flag;
+        pkt->thermistor_set_B[i] = get_ADC_value(i2c_2, ADC_I2CU2_ADDR, i,&flag);
+        loss_count+=flag;
+        pkt->thermistor_set_C[i] = get_ADC_value(i2c_3, ADC_I2CU3_ADDR, i,&flag);
+        loss_count+=flag;
+        pkt->thermistor_set_D[i] = get_ADC_value(i2c_3, ADC_I2CU4_ADDR, i,&flag);
+        loss_count+=flag;
      }
 
     pkt->Fletcher_Code  = THERMISTOR_FLETCHER_CODE;
 
-    return 0;
+    return loss_count;
 
 }
 
@@ -121,13 +127,22 @@ void Uart_Init() {
 	UART_init(&uart4,COREUARTAPB_4_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
 }
 
-void Pilot_Init() {
+void Pilot_Peripherals_Init() {
 	GPIO_Init();
 	I2C_Init();
 	Uart_Init();
 	SD_Init();
 	MSS_TIM64_init(MSS_TIMER_ONE_SHOT_MODE);
 	MSS_TIM64_load_immediate(0xFFFFFFFF,0xFFFFFFFF);
+}
+void Pilot_Init() {
+	Pilot_Peripherals_Init();
+	ADC_Init(i2c_2,ADC_I2CU1_ADDR);
+	ADC_Init(i2c_2,ADC_I2CU2_ADDR);
+	ADC_Init(i2c_3,ADC_I2CU1_ADDR);
+	ADC_Init(i2c_3,ADC_I2CU2_ADDR);
+	SD_Init();
+	vc_init(VC1);
 }
 
 uint8_t test_peripherals() {
@@ -197,6 +212,70 @@ uint8_t test_peripherals() {
 		count++;
 	}
 	return result;
+}
+
+uint8_t get_IMU_acc(uint16_t *a_x,uint16_t *a_y,uint16_t *a_z) {
+	uint8_t write_CTRL_REG6_XL[2] = {0x20,0x60};
+	uint8_t read_ACC_out_X_L[] = {0x28};
+	uint8_t read_ACC_out_Y_L[] = {0x2A};
+	uint8_t read_ACC_out_Z_L[] = {0x2C};
+	uint8_t read_ACC_out_X_H[] = {0x29};
+	uint8_t read_ACC_out_Y_H[] = {0x2B};
+	uint8_t read_ACC_out_Z_H[] = {0x2D};
+	uint8_t IMU_slave_addr = 0x6b;
+	uint8_t rx_buffer[1],rx_buffer_2[1];
+	uint8_t result = 0,status;
+
+
+	I2C_write_read(&g_core_i2c5,IMU_slave_addr,write_CTRL_REG6_XL,2,rx_buffer,
+					1,I2C_RELEASE_BUS);
+	status = I2C_wait_complete(&g_core_i2c5,I2C_NO_TIMEOUT);
+	result+=status;
+
+	I2C_write_read(&g_core_i2c5,IMU_slave_addr,read_ACC_out_Z_L,1,rx_buffer,
+							1,I2C_RELEASE_BUS);
+
+	status = I2C_wait_complete(&g_core_i2c5,I2C_NO_TIMEOUT);
+	result+=status;
+
+	I2C_write_read(&g_core_i2c5,IMU_slave_addr,read_ACC_out_Z_H,1,rx_buffer_2,
+							1,I2C_RELEASE_BUS);
+
+	status = I2C_wait_complete(&g_core_i2c5,I2C_NO_TIMEOUT);
+	result+=status;
+
+	*a_z = ((rx_buffer_2[0] << 8) | rx_buffer[0]);
+
+	I2C_write_read(&g_core_i2c5,IMU_slave_addr,read_ACC_out_Y_L,1,rx_buffer,
+							1,I2C_RELEASE_BUS);
+
+	status = I2C_wait_complete(&g_core_i2c5,I2C_NO_TIMEOUT);
+	result+=status;
+
+	I2C_write_read(&g_core_i2c5,IMU_slave_addr,read_ACC_out_Y_H,1,rx_buffer_2,
+							1,I2C_RELEASE_BUS);
+
+	status = I2C_wait_complete(&g_core_i2c5,I2C_NO_TIMEOUT);
+	result+=status;
+
+	*a_y = ((rx_buffer_2[0] << 8) | rx_buffer[0]);
+
+	I2C_write_read(&g_core_i2c5,IMU_slave_addr,read_ACC_out_X_L,1,rx_buffer,
+							1,I2C_RELEASE_BUS);
+
+	status = I2C_wait_complete(&g_core_i2c5,I2C_NO_TIMEOUT);
+	result+=status;
+
+	I2C_write_read(&g_core_i2c5,IMU_slave_addr,read_ACC_out_X_H,1,rx_buffer_2,
+							1,I2C_RELEASE_BUS);
+
+	status = I2C_wait_complete(&g_core_i2c5,I2C_NO_TIMEOUT);
+	result+=status;
+
+	*a_x = ((rx_buffer_2[0] << 8) | rx_buffer[0]);
+
+	return status;
+
 }
 
 
