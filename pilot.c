@@ -68,7 +68,60 @@ uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no){
     pkt->Fletcher_Code  = THERMISTOR_FLETCHER_CODE;
 
     return loss_count;
+}
 
+// Function below will generate the HK Packet containing ___ items;
+
+uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no)
+    uint8_t loss_count;
+    hk_pkt->Version_ID = HK_Version_ID;
+    hk_pkt->APID = HK_API_ID;
+    hk_pkt->Seq_no = seq_no;
+    hk_pkt->PL = HK_PKT_LENGTH;
+
+    // CDH_Perip_Status
+
+    hk_pkt->CDH_Periph_Status = test_peripherals();
+
+
+    //IMU Values: -
+
+    //Acceleration
+    uint16_t ax, ay, az;
+    uint8_t result;
+    result = get_IMU_acc(&ax, &ay, &az);
+    hk_pkt->Acc[0] = ax;
+    hk_pkt->Acc[1] = ay;
+    hk_pkt->Acc[2] = az;
+
+    // Angular values
+    uint16_t w_roll, w_picth, w_yaw;
+    uint8_t result;
+    result  = get_IMU_gyro(&w_roll, &w_pitch, &w_yaw);
+    hk_pkt->Angular_Rate[0] = w_roll;
+    hk_pkt->Angular_Rate[1] = w_pitch;
+    hk_pkt->Angular_Rate[2] = w_yaw;
+
+    //CDH_VC
+for(int i=0;i<2;i++){
+    if(i == 0){
+    hk_pkt->Sensor_Board_VC[i] = read_bus_voltage(uint8_t VC1, uint8_t VC_BUSV_CHx(1),uint8_t *flag);
+    loss_count+= &flag;
+    hk_pkt->CDH_VC[i] = read_bus_voltage(uint8_t VC2, uint8_t VC_BUSV_CHx(2),uint8_t *flag);
+    loss_count+= &flag;
+    hk_pkt->Comms_VC[i] = read_bus_voltage(uint8_t VC3, uint8_t VC_BUSV_CHx(3),uint8_t *flag);
+    loss_count+= &flag;
+    }
+    else{
+    hk_pkt->Sensor_Board_VC[i] = read_shunt_voltage(uint8_t VC1, uint8_t VC_BUSV_CHx(1),uint8_t *flag);
+    loss_count+= &flag;
+    hk_pkt->CDH_VC[i] = read_shunt_voltage(uint8_t VC2, uint8_t VC_BUSV_CHx(2),uint8_t *flag);
+    loss_count+= &flag;
+    hk_pkt->Comms_VC[i] = read_shunt_voltage(uint8_t VC3, uint8_t VC_BUSV_CHx(3),uint8_t *flag);
+    loss_count+= &flag;
+    }
+
+    return loss_count;
 }
 
 void set_pkt2sd(){

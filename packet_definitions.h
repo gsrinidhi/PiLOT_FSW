@@ -44,8 +44,8 @@ typedef struct {
     uint8_t CDH_Periph_Status; //For all the 8 flags
     uint16_t Acc[3];  // X,Y,Z Axis
     uint16_t Angular_Rate[3]; //Pitch, Roll, Yaw
-    uint16_t CDH_VC[2];
     uint16_t Sensor_Board_VC[2];
+    uint16_t CDH_VC[2];
     uint16_t Comms_VC[2];
 
     uint16_t Fletcher_Code;
