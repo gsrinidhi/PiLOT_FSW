@@ -70,10 +70,23 @@ uint16_t read_bus_voltage(uint8_t addr, uint8_t chx,uint8_t *flag) {
 	if(vc_read_reg(addr,VC_BUSV_CHx(chx),read) == 0) {
 		bvol = read[0]<<8 | read[1];
 		*flag = 0;
-		return bvol;
+
 	} else {
 		*flag = 1;
 		bvol = 0;
 	}
+	return bvol;
+}
 
+uint16_t read_shunt_voltage(uint8_t addr, uint8_t chx,uint8_t *flag) {
+	uint8_t read[2] = {0x00,0x00};
+	uint16_t bvol = 0;
+	if(vc_read_reg(addr,VC_SHUNTV_CHx(chx),read) == 0) {
+		bvol = read[0]<<8 | read[1];
+		*flag = 0;
+	} else {
+		*flag = 1;
+		bvol = 0;
+	}
+	return bvol;
 }

@@ -30,5 +30,7 @@ uint8_t vc_init(uint8_t addr);
 
 uint16_t read_bus_voltage(uint8_t addr, uint8_t chx,uint8_t *flag);
 
+uint16_t read_shunt_voltage(uint8_t addr, uint8_t chx,uint8_t *flag);
+
 
 #endif

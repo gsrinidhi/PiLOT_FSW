@@ -72,8 +72,8 @@ uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no){
 
 // Function below will generate the HK Packet containing ___ items;
 
-uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no)
-    uint8_t loss_count;
+uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no) {
+    uint8_t loss_count,flag;
     hk_pkt->Version_ID = HK_Version_ID;
     hk_pkt->APID = HK_API_ID;
     hk_pkt->Seq_no = seq_no;
@@ -95,31 +95,32 @@ uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no)
     hk_pkt->Acc[2] = az;
 
     // Angular values
-    uint16_t w_roll, w_picth, w_yaw;
-    uint8_t result;
+    uint16_t w_roll, w_pitch, w_yaw;
     result  = get_IMU_gyro(&w_roll, &w_pitch, &w_yaw);
     hk_pkt->Angular_Rate[0] = w_roll;
     hk_pkt->Angular_Rate[1] = w_pitch;
     hk_pkt->Angular_Rate[2] = w_yaw;
 
     //CDH_VC
-for(int i=0;i<2;i++){
-    if(i == 0){
-    hk_pkt->Sensor_Board_VC[i] = read_bus_voltage(uint8_t VC1, uint8_t VC_BUSV_CHx(1),uint8_t *flag);
-    loss_count+= &flag;
-    hk_pkt->CDH_VC[i] = read_bus_voltage(uint8_t VC2, uint8_t VC_BUSV_CHx(2),uint8_t *flag);
-    loss_count+= &flag;
-    hk_pkt->Comms_VC[i] = read_bus_voltage(uint8_t VC3, uint8_t VC_BUSV_CHx(3),uint8_t *flag);
-    loss_count+= &flag;
-    }
-    else{
-    hk_pkt->Sensor_Board_VC[i] = read_shunt_voltage(uint8_t VC1, uint8_t VC_BUSV_CHx(1),uint8_t *flag);
-    loss_count+= &flag;
-    hk_pkt->CDH_VC[i] = read_shunt_voltage(uint8_t VC2, uint8_t VC_BUSV_CHx(2),uint8_t *flag);
-    loss_count+= &flag;
-    hk_pkt->Comms_VC[i] = read_shunt_voltage(uint8_t VC3, uint8_t VC_BUSV_CHx(3),uint8_t *flag);
-    loss_count+= &flag;
-    }
+    uint8_t i = 0;
+	for(;i<2;i++){
+		if(i == 0){
+			hk_pkt->Sensor_Board_VC[i] = read_bus_voltage(VC1, VC_BUSV_CHx(1), &flag);
+			loss_count+= flag;
+			hk_pkt->CDH_VC[i] = read_bus_voltage( VC1,  VC_BUSV_CHx(2), &flag);
+			loss_count+= flag;
+			hk_pkt->Comms_VC[i] = read_bus_voltage( VC1,  VC_BUSV_CHx(3), &flag);
+			loss_count+= flag;
+		}
+		else{
+			hk_pkt->Sensor_Board_VC[i] = read_shunt_voltage( VC1,  VC_BUSV_CHx(1), &flag);
+			loss_count+= flag;
+			hk_pkt->CDH_VC[i] = read_shunt_voltage( VC1,  VC_BUSV_CHx(2), &flag);
+			loss_count+= flag;
+			hk_pkt->Comms_VC[i] = read_shunt_voltage( VC1,  VC_BUSV_CHx(3), &flag);
+			loss_count+= flag;
+    	}
+	}
 
     return loss_count;
 }
@@ -331,6 +332,69 @@ uint8_t get_IMU_acc(uint16_t *a_x,uint16_t *a_y,uint16_t *a_z) {
 
 }
 
+uint8_t get_IMU_gyro(uint16_t *roll_rate, uint16_t *pitch_rate,uint16_t *yaw_rate) {
+
+	uint8_t write_CTRL_REG6_XL[2] = {0x20,0x60};
+		uint8_t read_ACC_out_X_L[] = {0x18};
+		uint8_t read_ACC_out_Y_L[] = {0x1A};
+		uint8_t read_ACC_out_Z_L[] = {0x1C};
+		uint8_t read_ACC_out_X_H[] = {0x19};
+		uint8_t read_ACC_out_Y_H[] = {0x1B};
+		uint8_t read_ACC_out_Z_H[] = {0x1D};
+		uint8_t IMU_slave_addr = 0x6b;
+		uint8_t rx_buffer[1],rx_buffer_2[1];
+		uint8_t result = 0,status;
+
+
+		I2C_write_read(&g_core_i2c5,IMU_slave_addr,write_CTRL_REG6_XL,2,rx_buffer,
+						1,I2C_RELEASE_BUS);
+		status = I2C_wait_complete(&g_core_i2c5,I2C_NO_TIMEOUT);
+		result+=status;
+
+		I2C_write_read(&g_core_i2c5,IMU_slave_addr,read_ACC_out_Z_L,1,rx_buffer,
+								1,I2C_RELEASE_BUS);
+
+		status = I2C_wait_complete(&g_core_i2c5,I2C_NO_TIMEOUT);
+		result+=status;
+
+		I2C_write_read(&g_core_i2c5,IMU_slave_addr,read_ACC_out_Z_H,1,rx_buffer_2,
+								1,I2C_RELEASE_BUS);
+
+		status = I2C_wait_complete(&g_core_i2c5,I2C_NO_TIMEOUT);
+		result+=status;
+
+		*a_z = ((rx_buffer_2[0] << 8) | rx_buffer[0]);
+
+		I2C_write_read(&g_core_i2c5,IMU_slave_addr,read_ACC_out_Y_L,1,rx_buffer,
+								1,I2C_RELEASE_BUS);
+
+		status = I2C_wait_complete(&g_core_i2c5,I2C_NO_TIMEOUT);
+		result+=status;
+
+		I2C_write_read(&g_core_i2c5,IMU_slave_addr,read_ACC_out_Y_H,1,rx_buffer_2,
+								1,I2C_RELEASE_BUS);
+
+		status = I2C_wait_complete(&g_core_i2c5,I2C_NO_TIMEOUT);
+		result+=status;
+
+		*a_y = ((rx_buffer_2[0] << 8) | rx_buffer[0]);
+
+		I2C_write_read(&g_core_i2c5,IMU_slave_addr,read_ACC_out_X_L,1,rx_buffer,
+								1,I2C_RELEASE_BUS);
+
+		status = I2C_wait_complete(&g_core_i2c5,I2C_NO_TIMEOUT);
+		result+=status;
+
+		I2C_write_read(&g_core_i2c5,IMU_slave_addr,read_ACC_out_X_H,1,rx_buffer_2,
+								1,I2C_RELEASE_BUS);
+
+		status = I2C_wait_complete(&g_core_i2c5,I2C_NO_TIMEOUT);
+		result+=status;
+
+		*a_x = ((rx_buffer_2[0] << 8) | rx_buffer[0]);
+
+		return status;
+}
 
 //void get_CDH_HK() {
 //

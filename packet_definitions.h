@@ -17,6 +17,11 @@
 #define LOGS_PKT_LENGTH		108
 #define LOGS_FLETCHER_CODE	0x00
 
+#define HK_Version_ID		0x3
+#define HK_API_ID			0x18
+#define HK_PKT_LENGTH		33
+#define HK_FLETCHER_CODE	0x00
+
 typedef struct {
     //CCSDS
 
@@ -24,6 +29,11 @@ typedef struct {
     uint8_t APID;
     uint16_t Seq_no;
     uint16_t PL;
+
+    //Uncomment the primary fields and implement bit shifting in packet formation functions for all packets
+//	uint16_t primary_1;
+//	uint16_t primary_2;
+//	uint16_t primary_3;
 
     uint16_t thermistor_set_A[8];
     uint16_t thermistor_set_B[8];
@@ -40,6 +50,10 @@ typedef struct {
     uint8_t APID;
     uint16_t Seq_no;
     uint16_t PL;
+
+    //	uint16_t primary_1;
+    //	uint16_t primary_2;
+    //	uint16_t primary_3;
 
     uint8_t CDH_Periph_Status; //For all the 8 flags
     uint16_t Acc[3];  // X,Y,Z Axis
@@ -69,6 +83,10 @@ typedef struct {
     uint8_t APID;
     uint16_t Seq_no;
     uint16_t PL;
+
+    //	uint16_t primary_1;
+    //	uint16_t primary_2;
+    //	uint16_t primary_3;
 
     log_entry_t logs[10];
 
