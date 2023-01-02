@@ -153,6 +153,7 @@ int main()
 {
 	Pilot_Init();
 	thermistor_seq_no = 0;
+	hk_seq_no = 0;
 	logs_seq_no = 0;
 	log_count = 0;
 	initialise_partition(&payload_p,PAYLOAD_BLOCK_INIT,PAYLOAD_BLOCK_END);
@@ -160,6 +161,8 @@ int main()
 	initialise_partition(&log_p,LOGS_BLOCK_INIT,LOGS_BLOCK_END);
 	payload_period_H = PAYLOAD_PERIOD_H;
 	payload_period_L = PAYLOAD_PERIOD_L;
+	HK_period_H = HK_PERIOD_H;
+	HK_period_L = HK_PERIOD_L;
 	log_packet = (log_packet_t*)log_data;
 	while(1) {
 		MSS_TIM64_get_current_value(&current_time_upper,&current_time_lower);
@@ -175,6 +178,20 @@ int main()
 			thermistor_seq_no++;
 			log_count++;
 		}
+
+		// For HK Packet
+		if((hk_last_count_H - current_time_upper > hk_period_H) || ((hk_last_count_H - current_time_upper < hk_period_H) && (hk_last_count_L - current_time_lower > hk_period_L))) {
+            log_packet->logs[log_count].task_id = HK_TASK_ID;
+            log_packet->logs[log_count].time_H = current_time_upper;
+            log_packet->logs[log_count].time_L = current_time_lower;
+            hk_packet = (hk_pkt_t*)packet_data;
+            result = get_hk(hk_packet,hk_seq_no);
+            log_packet->logs[log_count].task_status = result;
+            store_data(&hk_p,packet_data);
+            hk_seq_no++;
+            log_count++;
+		 }
+
 
 		//If 10 log entries have been recorded, write the logs to the SD card and reset the log counter
 		if(log_count == 10) {

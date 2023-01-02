@@ -48,10 +48,10 @@ uint16_t get_ADC_value(i2c_instance_t i2c_chx,uint8_t address,uint8_t chx,uint8_
 // Function below would generate the payload packet containing 40 items : -
 
 uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no){
-   pkt->Version_ID = THERMISTOR_Version_ID;
-   pkt->APID = THERMISTOR_API_ID;
-   pkt->Seq_no = seq_no;
-   pkt->PL = THERMISTOR_PKT_LENGTH;
+   pkt->ccsds_p1 = ccsds_p1(tlm_pkt_type, THERMISTOR_API_ID);
+   pkt->ccsds_p2 = ccsds_p2(seq_no)
+   pkt->ccsds_p3 = ccsds_p3(THERMISTOR_PKT_LENGTH);
+
    uint8_t i = 0,flag;
    uint8_t loss_count;
    for(;i<8;i++){
@@ -74,10 +74,10 @@ uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no){
 
 uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no) {
     uint8_t loss_count,flag;
-    hk_pkt->Version_ID = HK_Version_ID;
-    hk_pkt->APID = HK_API_ID;
-    hk_pkt->Seq_no = seq_no;
-    hk_pkt->PL = HK_PKT_LENGTH;
+
+    hk_pkt->ccsds_p1 = ccsds_p1(tlm_pkt_type, HK_API_ID);
+    hk_pkt->ccsds_p2 = ccsds_p2(seq_no)
+    hk_pkt->ccsds_p3 = ccsds_p3(HK_PKT_LENGTH);
 
     // CDH_Perip_Status
 
@@ -121,6 +121,8 @@ uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no) {
 			loss_count+= flag;
     	}
 	}
+
+	 hk_pkt->Fletcher_Code  = HK_FLETCHER_CODE;
 
     return loss_count;
 }

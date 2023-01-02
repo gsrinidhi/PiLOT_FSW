@@ -7,33 +7,31 @@
 
 #ifndef _PACKET_DEFINITIONS_
 #define _PACKET_DEFINITIONS_
-#define THERMISTOR_Version_ID		0x1
+//#define THERMISTOR_Version_ID		0x1
 #define THERMISTOR_API_ID			0x16
 #define THERMISTOR_PKT_LENGTH		76
 #define THERMISTOR_FLETCHER_CODE	0x00
 
-#define LOGS_Version_ID		0x2
+//#define LOGS_Version_ID		0x2
 #define LOGS_API_ID			0x17
 #define LOGS_PKT_LENGTH		108
 #define LOGS_FLETCHER_CODE	0x00
 
-#define HK_Version_ID		0x3
+//#define HK_Version_ID		0x3
 #define HK_API_ID			0x18
 #define HK_PKT_LENGTH		33
 #define HK_FLETCHER_CODE	0x00
 
+
+
 typedef struct {
     //CCSDS
 
-    uint8_t Version_ID;
-    uint8_t APID;
-    uint16_t Seq_no;
-    uint16_t PL;
 
-    //Uncomment the primary fields and implement bit shifting in packet formation functions for all packets
-//	uint16_t primary_1;
-//	uint16_t primary_2;
-//	uint16_t primary_3;
+//    Uncomment the primary fields and implement bit shifting in packet formation functions for all packets
+	uint16_t ccsds_p1;
+	uint16_t ccsds_p2;
+	uint16_t ccsds_p3;
 
     uint16_t thermistor_set_A[8];
     uint16_t thermistor_set_B[8];
