@@ -1,12 +1,13 @@
 #include"pslv_interface.h"
-static i2c_status_t status;
+//static i2c_status_t status;
 uint8_t count;
 uint8_t vc_write(uint8_t addr, uint8_t *tx, uint8_t tx_size) {
+	i2c_status_t status;
      count = 0;
     while(count < 10) {
         I2C_write(VC_SENSOR_I2C,addr,tx,tx_size,I2C_RELEASE_BUS);
         status = I2C_wait_complete(VC_SENSOR_I2C,I2C_NO_TIMEOUT);
-        if(status == 0) {
+        if(status == I2C_SUCCESS) {
             return 0;
         }
         count++;
@@ -16,11 +17,12 @@ uint8_t vc_write(uint8_t addr, uint8_t *tx, uint8_t tx_size) {
 }
 
 uint8_t vc_read(uint8_t addr, uint8_t *rx, uint8_t rx_size) {
+	i2c_status_t status;
     count = 0;
     while(count < 10) {
         I2C_read(VC_SENSOR_I2C,addr,rx,rx_size,I2C_RELEASE_BUS);
         status = I2C_wait_complete(VC_SENSOR_I2C,I2C_NO_TIMEOUT);
-        if(status == 0) {
+        if(status == I2C_SUCCESS) {
             return 0;
         }
         count++;

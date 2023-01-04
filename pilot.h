@@ -4,6 +4,7 @@
 #include "SD.h"
 #include "packet_definitions.h"
 #include "pslv_interface.h"
+#include "ccsds.h"
 
 //CCSDS Sub-Packet
 //struct CCSDS
@@ -77,7 +78,8 @@
 
 //GPIO MACROS
 #define GMC_EN_PIN MSS_GPIO_24
-#define EPS_PIN1 GPIO_14
+#define EN_COMMS_PIN MSS_GPIO_14
+#define EN_UART		MSS_GPIO_13
 #define EPS_PIN2 GPIO_15
 #define EPS_PIN3 GPIO_16
 #define EPS_PIN4 GPIO_3
@@ -89,6 +91,8 @@
 //PERIOD Macros
 #define PAYLOAD_PERIOD_L		0xFFFF
 #define PAYLOAD_PERIOD_H		0xFFFF
+#define HK_PERIOD_H				0xFFFF
+#define HK_PERIOD_L				0xFFFF
 
 //TASK IDs
 #define THERMISTOR_TASK_ID	1

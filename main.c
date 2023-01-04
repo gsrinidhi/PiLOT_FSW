@@ -145,69 +145,85 @@ log_packet_t *log_packet;
 uint8_t packet_data[512];
 uint8_t log_data[512];
 uint32_t current_time_lower,current_time_upper;
-uint32_t payload_period_L,payload_period_H;
-uint32_t payload_last_count_L,payload_last_count_H;
+uint32_t payload_period_L,payload_period_H,hk_period_H,hk_period_L;
+uint32_t payload_last_count_L,payload_last_count_H,hk_last_count_L,hk_last_count_H;
 uint16_t thermistor_seq_no,logs_seq_no,hk_seq_no;
 uint8_t log_count,result;
 int main()
 {
 	Pilot_Init();
-	thermistor_seq_no = 0;
-	hk_seq_no = 0;
-	logs_seq_no = 0;
-	log_count = 0;
-	initialise_partition(&payload_p,PAYLOAD_BLOCK_INIT,PAYLOAD_BLOCK_END);
-	initialise_partition(&hk_p,HK_BLOCK_INIT,HK_BLOCK_END);
-	initialise_partition(&log_p,LOGS_BLOCK_INIT,LOGS_BLOCK_END);
-	payload_period_H = PAYLOAD_PERIOD_H;
-	payload_period_L = PAYLOAD_PERIOD_L;
-	HK_period_H = HK_PERIOD_H;
-	HK_period_L = HK_PERIOD_L;
-	log_packet = (log_packet_t*)log_data;
+	uint8_t i = 1,flag;
+	uint16_t vol_read;
+	double voltage;
+	MSS_GPIO_set_output(EN_COMMS_PIN,1);
+	MSS_GPIO_set_output(EN_UART,1);
+//	for(;i<4;i++) {
+//		vol_read = read_bus_voltage(VC1,(i),&flag);
+//		voltage = vol_read * 0.001;
+//	}
+	uint8_t tx[] = {0xAA};
+
+
+//	i2c_status_t status;
 	while(1) {
-		MSS_TIM64_get_current_value(&current_time_upper,&current_time_lower);
-		//Checking if it is time to take thermistor readings (must be verified)
-		if((payload_last_count_H - current_time_upper > payload_period_H) || ((payload_last_count_H - current_time_upper < payload_period_H) && (payload_last_count_L - current_time_lower > payload_period_L))) {
-			log_packet->logs[log_count].task_id = THERMISTOR_TASK_ID;
-			log_packet->logs[log_count].time_H = current_time_upper;
-			log_packet->logs[log_count].time_L = current_time_lower;
-			thermistor_packet = (thermistor_pkt_t*)packet_data;
-			result = get_thermistor_vals(thermistor_packet,thermistor_seq_no);
-			log_packet->logs[log_count].task_status = result;
-			store_data(&payload_p,packet_data);
-			thermistor_seq_no++;
-			log_count++;
-		}
-
-		// For HK Packet
-		if((hk_last_count_H - current_time_upper > hk_period_H) || ((hk_last_count_H - current_time_upper < hk_period_H) && (hk_last_count_L - current_time_lower > hk_period_L))) {
-            log_packet->logs[log_count].task_id = HK_TASK_ID;
-            log_packet->logs[log_count].time_H = current_time_upper;
-            log_packet->logs[log_count].time_L = current_time_lower;
-            hk_packet = (hk_pkt_t*)packet_data;
-            result = get_hk(hk_packet,hk_seq_no);
-            log_packet->logs[log_count].task_status = result;
-            store_data(&hk_p,packet_data);
-            hk_seq_no++;
-            log_count++;
-		 }
-
-
-		//If 10 log entries have been recorded, write the logs to the SD card and reset the log counter
-		if(log_count == 10) {
-			log_packet->APID = LOGS_API_ID;
-			log_packet->PL = LOGS_PKT_LENGTH;
-			log_packet->Version_ID = LOGS_Version_ID;
-			log_packet->Seq_no = logs_seq_no;
-			log_packet->Fletcher_Code = LOGS_FLETCHER_CODE;
-			store_data(&log_p,log_data);
-			log_count = 0;
-		}
-
-
-
-
+		UART_send(&uart4,tx,1);
 
 	}
+//	thermistor_seq_no = 0;
+//	hk_seq_no = 0;
+//	logs_seq_no = 0;
+//	log_count = 0;
+//	initialise_partition(&payload_p,PAYLOAD_BLOCK_INIT,PAYLOAD_BLOCK_END);
+//	initialise_partition(&hk_p,HK_BLOCK_INIT,HK_BLOCK_END);
+//	initialise_partition(&log_p,LOGS_BLOCK_INIT,LOGS_BLOCK_END);
+//	payload_period_H = PAYLOAD_PERIOD_H;
+//	payload_period_L = PAYLOAD_PERIOD_L;
+//	hk_period_H = HK_PERIOD_H;
+//	hk_period_L = HK_PERIOD_L;
+//	log_packet = (log_packet_t*)log_data;
+//	while(1) {
+//		MSS_TIM64_get_current_value(&current_time_upper,&current_time_lower);
+//		//Checking if it is time to take thermistor readings (must be verified)
+//		if((payload_last_count_H - current_time_upper > payload_period_H) || ((payload_last_count_H - current_time_upper < payload_period_H) && (payload_last_count_L - current_time_lower > payload_period_L))) {
+//			log_packet->logs[log_count].task_id = THERMISTOR_TASK_ID;
+//			log_packet->logs[log_count].time_H = current_time_upper;
+//			log_packet->logs[log_count].time_L = current_time_lower;
+//			thermistor_packet = (thermistor_pkt_t*)packet_data;
+//			result = get_thermistor_vals(thermistor_packet,thermistor_seq_no);
+//			log_packet->logs[log_count].task_status = result;
+//			store_data(&payload_p,packet_data);
+//			thermistor_seq_no++;
+//			log_count++;
+//		}
+//
+//		// For HK Packet
+//		if((hk_last_count_H - current_time_upper > hk_period_H) || ((hk_last_count_H - current_time_upper < hk_period_H) && (hk_last_count_L - current_time_lower > hk_period_L))) {
+//            log_packet->logs[log_count].task_id = HK_TASK_ID;
+//            log_packet->logs[log_count].time_H = current_time_upper;
+//            log_packet->logs[log_count].time_L = current_time_lower;
+//            hk_packet = (hk_pkt_t*)packet_data;
+//            result = get_hk(hk_packet,hk_seq_no);
+//            log_packet->logs[log_count].task_status = result;
+//            store_data(&hk_p,packet_data);
+//            hk_seq_no++;
+//            log_count++;
+//		 }
+//
+//
+//		//If 10 log entries have been recorded, write the logs to the SD card and reset the log counter
+//		if(log_count == 10) {
+//			log_packet->ccsds_p1 = ccsds_p1(tlm_pkt_type,LOGS_API_ID);
+//			log_packet->ccsds_p2 = ccsds_p2(logs_seq_no);
+//			log_packet->ccsds_p3 = ccsds_p3(LOGS_PKT_LENGTH);
+//			log_packet->Fletcher_Code = LOGS_FLETCHER_CODE;
+//			store_data(&log_p,log_data);
+//			log_count = 0;
+//		}
+
+
+
+
+
+	//}
 
 }

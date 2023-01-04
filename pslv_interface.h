@@ -15,7 +15,7 @@
 #define VC_BUSV_CHx(x)                  ((0x2 * x))
 #define VC_SHUNTV_CHx(x)                ((0x2 * x - 1))
 
-#define VC_INIT_CMD                     0x7000
+#define VC_INIT_CMD                     0x7007
 #define VC_CONFIG_REG 					0x00
 
 uint8_t vc_write(uint8_t addr, uint8_t *tx, uint8_t tx_size);
