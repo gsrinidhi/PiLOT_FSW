@@ -141,15 +141,15 @@
 partition_t payload_p,hk_p,log_p, sd_hk_p;
 thermistor_pkt_t *thermistor_packet;
 hk_pkt_t *hk_packet;
-SD_HK_pkt_t *sd_hk_pkt;
+SD_HK_pkt_t *sd_hk_packet;
 log_packet_t *log_packet;
 cmd_packet_t *cmd;
 uint8_t packet_data[512];
 uint8_t log_data[512];
 uint32_t current_time_lower,current_time_upper;
-uint32_t payload_period_L,payload_period_H,hk_period_H,hk_period_L;
-uint32_t payload_last_count_L,payload_last_count_H,hk_last_count_H,hk_last_count_L;
-uint16_t thermistor_seq_no,logs_seq_no,hk_seq_no;
+uint32_t payload_period_L,payload_period_H,hk_period_H,hk_period_L,sd_hk_period_L,sd_hk_period_H;
+uint32_t payload_last_count_L,payload_last_count_H,hk_last_count_H,hk_last_count_L,sd_hk_last_count_L,sd_hk_last_count_H;
+uint16_t thermistor_seq_no,logs_seq_no,hk_seq_no,sd_hk_seq_no;
 uint8_t log_count,result_global,api_id;
 
 uint8_t downlink(partition_t *p,uint8_t size) {
@@ -244,6 +244,7 @@ uint8_t command() {
 uint8_t Flags_Init() {
 	time_to_count(DEFAULT_HK_PERIOD,&hk_period_H,&hk_period_L);
 	time_to_count(DEFAULT_PAYLOAD_PERIOD,&payload_period_H,&payload_period_L);
+	time_to_count(TEN_SPP_RATE,&sd_hk_period_H,&sd_hk_period_L);
 	thermistor_seq_no = 0;
 	hk_seq_no = 0;
 	logs_seq_no = 0;
@@ -252,6 +253,29 @@ uint8_t Flags_Init() {
 	initialise_partition(&hk_p,HK_BLOCK_INIT,HK_BLOCK_END);
 	initialise_partition(&log_p,LOGS_BLOCK_INIT,LOGS_BLOCK_END);
 	return 0;
+}
+
+uint8_t get_sd_hk(SD_HK_pkt_t *sd_hk_pkt, uint16_t seq_no){
+
+   sd_hk_pkt->ccsds_p1 = ccsds_p1(tlm_pkt_type, SD_HK_API_ID);
+   sd_hk_pkt->ccsds_p2 = ccsds_p2(seq_no);
+   sd_hk_pkt->ccsds_p3 = ccsds_p3(SD_HK_PKT_LENGTH);
+
+   sd_hk_pkt->Thermistor_Read_Pointer = payload_p.read_pointer;
+   sd_hk_pkt->Thermistor_Write_Pointer = payload_p.write_pointer;
+
+   sd_hk_pkt->HK_Read_Pointer = hk_p.read_pointer;
+   sd_hk_pkt->HK_Write_Pointer = hk_p.write_pointer;
+
+   sd_hk_pkt->Logs_Read_Pointer = log_p.read_pointer;
+   sd_hk_pkt->Logs_Write_Pointer = log_p.write_pointer;
+
+   sd_hk_pkt->SD_Test_Read_Pointer = sd_hk_p.read_pointer;
+   sd_hk_pkt->SD_Test_Write_Pointer = sd_hk_p.write_pointer;
+
+   sd_hk_pkt->Fletcher_Code = SD_HK_FLETCHER_CODE;
+
+   return 0;
 }
 int main()
 {
@@ -290,17 +314,17 @@ int main()
 		 }
 
 		//For SD_HK Packet
-		if((sd_hk_last_count_H - current_time_upper > hk_period_H) || ((sd_hk_last_count_H - current_time_upper < sd_hk_period_H) && (sd_hk_last_count_L - current_time_lower > sd_hk_period_L))) {
+		if((sd_hk_last_count_H - current_time_upper > sd_hk_period_H) && (sd_hk_last_count_L - current_time_lower > sd_hk_period_L)) {
             log_packet->logs[log_count].task_id = SD_HK_TASK_ID;
             log_packet->logs[log_count].time_H = current_time_upper;
             log_packet->logs[log_count].time_L = current_time_lower;
-            sd_hk_packet = (sd_hk_pkt_t*)packet_data;
-            result = get_sd_hk(sd_hk_packet,sd_hk_seq_no);
-            log_packet->logs[log_count].task_status = result;
+            sd_hk_packet = (SD_HK_pkt_t*)packet_data;
+            result_global = get_sd_hk(sd_hk_packet,sd_hk_seq_no);
+            log_packet->logs[log_count].task_status = result_global;
             store_data(&sd_hk_p,packet_data);
             sd_hk_seq_no++;
             log_count++;
-		         }
+		 }
 
 
 		//If 10 log entries have been recorded, write the logs to the SD card and reset the log counter

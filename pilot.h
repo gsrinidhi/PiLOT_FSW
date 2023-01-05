@@ -99,6 +99,7 @@
 //TASK IDs
 #define THERMISTOR_TASK_ID	1
 #define HK_TASK_ID			2
+#define SD_HK_TASK_ID		3
 
 //Packet rate options
 typedef enum PACKET_RATES {
