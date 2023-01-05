@@ -44,10 +44,10 @@ typedef struct {
 typedef struct {
     //CCSDS
 
-    uint8_t Version_ID;
-    uint8_t APID;
-    uint16_t Seq_no;
-    uint16_t PL;
+    uint16_t ccsds_p1;
+    uint16_t ccsds_p2;
+    uint16_t ccsds_p3;
+
 
     //	uint16_t primary_1;
     //	uint16_t primary_2;
@@ -77,10 +77,9 @@ typedef struct {
 typedef struct {
     //CCSDS
 
-    uint8_t Version_ID;
-    uint8_t APID;
-    uint16_t Seq_no;
-    uint16_t PL;
+    uint16_t ccsds_p1;
+    uint16_t ccsds_p2;
+    uint16_t ccsds_p3;
 
     //	uint16_t primary_1;
     //	uint16_t primary_2;
