@@ -141,6 +141,7 @@
 partition_t payload_p,hk_p,log_p, sd_hk_p;
 thermistor_pkt_t *thermistor_packet;
 hk_pkt_t *hk_packet;
+SD_HK_pkt_t *sd_hk_pkt;
 log_packet_t *log_packet;
 cmd_packet_t *cmd;
 uint8_t packet_data[512];
@@ -287,6 +288,19 @@ int main()
             hk_seq_no++;
             log_count++;
 		 }
+
+		//For SD_HK Packet
+		if((sd_hk_last_count_H - current_time_upper > hk_period_H) || ((sd_hk_last_count_H - current_time_upper < sd_hk_period_H) && (sd_hk_last_count_L - current_time_lower > sd_hk_period_L))) {
+            log_packet->logs[log_count].task_id = SD_HK_TASK_ID;
+            log_packet->logs[log_count].time_H = current_time_upper;
+            log_packet->logs[log_count].time_L = current_time_lower;
+            sd_hk_packet = (sd_hk_pkt_t*)packet_data;
+            result = get_sd_hk(sd_hk_packet,sd_hk_seq_no);
+            log_packet->logs[log_count].task_status = result;
+            store_data(&sd_hk_p,packet_data);
+            sd_hk_seq_no++;
+            log_count++;
+		         }
 
 
 		//If 10 log entries have been recorded, write the logs to the SD card and reset the log counter
