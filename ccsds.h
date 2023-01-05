@@ -1,7 +1,7 @@
 
 
-#ifndef
-
+#ifndef _CCSDS_H_
+#define _CCSDS_H_
 #define Version 0b0
 #define tlm_pkt_type 0b0
 #define cmd_pkt_type 0b1
