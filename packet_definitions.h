@@ -22,6 +22,10 @@
 #define HK_PKT_LENGTH		33
 #define HK_FLETCHER_CODE	0x00
 
+#define SD_HK_API_ID    0x19
+#define SD_HK_PKT_LENGTH  0x30
+#define SD_HK_FLETCHER_CODE 0x00
+
 
 
 typedef struct {
@@ -89,5 +93,24 @@ typedef struct {
 
     uint16_t Fletcher_Code;
 }log_packet_t;
+
+typedef struct {
+    //CCSDS
+
+    uint16_t ccsds_p1;
+    uint16_t ccsds_p2;
+    uint16_t ccsds_p3;
+
+    uint32_t HK_Read_Pointer;
+    uint32_t HK_Write_Pointer;
+    uint32_t Thermistor_Read_Pointer;
+    uint32_t Thermistor_Write_Pointer;
+    uint32_t Logs_Read_Pointer;
+    uint32_t Logs_Write_Pointer;
+    uint32_t SD_Test_Read_Pointer;
+    uint32_t SD_Test_Write_Pointer;
+
+    uint16_t Fletcher_Code;
+}SD_HK_pkt_t;
 
 #endif

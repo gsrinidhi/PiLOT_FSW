@@ -76,7 +76,7 @@ uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no) {
     uint8_t loss_count,flag;
 
     hk_pkt->ccsds_p1 = ccsds_p1(tlm_pkt_type, HK_API_ID);
-    hk_pkt->ccsds_p2 = ccsds_p2(seq_no)
+    hk_pkt->ccsds_p2 = ccsds_p2(seq_no);
     hk_pkt->ccsds_p3 = ccsds_p3(HK_PKT_LENGTH);
 
     // CDH_Perip_Status
@@ -127,12 +127,7 @@ uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no) {
     return loss_count;
 }
 
-void set_pkt2sd(){
 
-    // Store the packet values by defining the pointer(by timestamping the data)
-    //in the SD_CARD.
-
-}
 
 void test_sd(){
 
