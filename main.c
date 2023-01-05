@@ -138,20 +138,111 @@
 #include "memory.h"
 #include "pilot.h"
 
-partition_t payload_p,hk_p,log_p;
+partition_t payload_p,hk_p,log_p, sd_hk_p;
 thermistor_pkt_t *thermistor_packet;
 hk_pkt_t *hk_packet;
 log_packet_t *log_packet;
+cmd_packet_t *cmd;
 uint8_t packet_data[512];
 uint8_t log_data[512];
 uint32_t current_time_lower,current_time_upper;
 uint32_t payload_period_L,payload_period_H,hk_period_H,hk_period_L;
 uint32_t payload_last_count_L,payload_last_count_H,hk_last_count_H,hk_last_count_L;
 uint16_t thermistor_seq_no,logs_seq_no,hk_seq_no;
-uint8_t log_count,result;
-int main()
-{
-	Pilot_Init();
+uint8_t log_count,result_global,api_id;
+
+uint8_t downlink(partition_t *p,uint8_t size) {
+	uint8_t result;
+	result = read_data(p,packet_data);
+	MSS_GPIO_set_output(EN_UART,1);
+	UART_send(&uart4,packet_data,size);
+	MSS_GPIO_set_output(EN_UART,0);
+	return result;
+}
+
+uint8_t command() {
+	uint8_t size = 0,opcode = 0,result;
+	MSS_GPIO_set_output(EN_UART,0);
+	uint32_t *period_L,*period_H,rate,rate2;
+	partition_t *part;
+	size = UART_get_rx(&uart4,packet_data,CMD_PKT_LENGTH);
+	if(size == 0) {
+		return 0;
+	} else {
+		cmd = (cmd_packet_t*)packet_data;
+		opcode = cmd->cmd_opcaode;
+
+		switch(opcode){
+		case 0x01:
+			break;
+		case 0x02:
+			break;
+		case 0x03:
+			if(cmd->cmd_arg[0] == THERMISTOR_API_ID) {
+				period_L = &payload_period_L;
+				period_H = &payload_period_H;
+			}else if(cmd->cmd_arg[0] == HK_API_ID) {
+				period_L = &hk_period_L;
+				period_H = &hk_period_H;
+			}
+			if(cmd->cmd_arg[1] == RATE_ONE_SPP) {
+				rate = ONE_SPP_RATE;
+				result = 1;
+			}else if(cmd->cmd_arg[1] == RATE_TWO_SPP) {
+				rate = TWO_SPP_RATE;
+				result = 1;
+			}else if(cmd->cmd_arg[1] == RATE_FIVE_SPP) {
+				rate = FIVE_SPP_RATE;
+				result = 1;
+			}else if(cmd->cmd_arg[1] == RATE_TEN_SPP) {
+				rate = TEN_SPP_RATE;
+				result = 1;
+			}else {
+				rate = DEFAULT_PAYLOAD_PERIOD;
+				result = 2;
+			}
+			time_to_count(rate,period_H,period_L);
+			break;
+		case 0x04:
+			break;
+		case 0x05:
+			if(cmd->cmd_arg[0] == HK_PARTITION) {
+				part = &hk_p;
+				rate = HK_BLOCK_INIT;
+				rate2 = HK_BLOCK_END;
+				result = 1;
+			}else if(cmd->cmd_arg[0] == PAYLOAD_PARTITION) {
+				part = &payload_p;
+				rate = PAYLOAD_BLOCK_INIT;
+				rate2 = PAYLOAD_BLOCK_END;
+				result = 1;
+			}else if(cmd->cmd_arg[0] == SD_PARTITION) {
+				part = &sd_hk_p;
+				rate = SD_BLOCK_INIT;
+				rate2 = SD_BLOCK_END;
+				result = 1;
+			}else if(cmd->cmd_arg[0] == LOGS_PARTITION) {
+				part = &log_p;
+				rate = LOGS_BLOCK_INIT;
+				rate2 = LOGS_BLOCK_END;
+				result = 1;
+			}else {
+				result = 2;
+			}
+			initialise_partition(part,rate,rate2);
+			break;
+		case 0x06:
+			break;
+		default:
+			result = 2;
+		}
+	}
+	return result;
+
+}
+uint8_t Flags_Init() {
+	time_to_count(DEFAULT_HK_PERIOD,&hk_period_H,&hk_period_L);
+	time_to_count(DEFAULT_PAYLOAD_PERIOD,&payload_period_H,&payload_period_L);
 	thermistor_seq_no = 0;
 	hk_seq_no = 0;
 	logs_seq_no = 0;
@@ -159,35 +250,40 @@ int main()
 	initialise_partition(&payload_p,PAYLOAD_BLOCK_INIT,PAYLOAD_BLOCK_END);
 	initialise_partition(&hk_p,HK_BLOCK_INIT,HK_BLOCK_END);
 	initialise_partition(&log_p,LOGS_BLOCK_INIT,LOGS_BLOCK_END);
-	payload_period_H = PAYLOAD_PERIOD_H;
-	payload_period_L = PAYLOAD_PERIOD_L;
-	HK_period_H = HK_PERIOD_H;
-	HK_period_L = HK_PERIOD_L;
+	return 0;
+}
+int main()
+{
+	Pilot_Init();
+	Flags_Init();
 	log_packet = (log_packet_t*)log_data;
 	while(1) {
+		result_global = command();
 		MSS_TIM64_get_current_value(&current_time_upper,&current_time_lower);
 		//Checking if it is time to take thermistor readings (must be verified)
-		if((payload_last_count_H - current_time_upper > payload_period_H) || ((payload_last_count_H - current_time_upper < payload_period_H) && (payload_last_count_L - current_time_lower > payload_period_L))) {
+		if((payload_last_count_H - current_time_upper > payload_period_H) && (payload_last_count_L - current_time_lower > payload_period_L)) {
 			log_packet->logs[log_count].task_id = THERMISTOR_TASK_ID;
 			log_packet->logs[log_count].time_H = current_time_upper;
 			log_packet->logs[log_count].time_L = current_time_lower;
 			thermistor_packet = (thermistor_pkt_t*)packet_data;
-			result = get_thermistor_vals(thermistor_packet,thermistor_seq_no);
-			log_packet->logs[log_count].task_status = result;
+			result_global = get_thermistor_vals(thermistor_packet,thermistor_seq_no);
+			log_packet->logs[log_count].task_status = result_global;
 			store_data(&payload_p,packet_data);
+			result_global = downlink(&payload_p,THERMISTOR_PKT_LENGTH);
 			thermistor_seq_no++;
 			log_count++;
 		}
 
 		// For HK Packet
-		if((hk_last_count_H - current_time_upper > hk_period_H) || ((hk_last_count_H - current_time_upper < hk_period_H) && (hk_last_count_L - current_time_lower > hk_period_L))) {
+		if((hk_last_count_H - current_time_upper > hk_period_H) && (hk_last_count_L - current_time_lower > hk_period_L)) {
             log_packet->logs[log_count].task_id = HK_TASK_ID;
             log_packet->logs[log_count].time_H = current_time_upper;
             log_packet->logs[log_count].time_L = current_time_lower;
             hk_packet = (hk_pkt_t*)packet_data;
-            result = get_hk(hk_packet,hk_seq_no);
-            log_packet->logs[log_count].task_status = result;
+            result_global = get_hk(hk_packet,hk_seq_no);
+            log_packet->logs[log_count].task_status = result_global;
             store_data(&hk_p,packet_data);
+            result_global = downlink(&hk_p,HK_PKT_LENGTH);
             hk_seq_no++;
             log_count++;
 		 }
@@ -195,10 +291,9 @@ int main()
 
 		//If 10 log entries have been recorded, write the logs to the SD card and reset the log counter
 		if(log_count == 10) {
-			log_packet->APID = LOGS_API_ID;
-			log_packet->PL = LOGS_PKT_LENGTH;
-			log_packet->Version_ID = LOGS_Version_ID;
-			log_packet->Seq_no = logs_seq_no;
+			log_packet->ccsds_p1 = ccsds_p1(tlm_pkt_type,LOGS_API_ID);
+			log_packet->ccsds_p2 = ccsds_p2((logs_seq_no));
+			log_packet->ccsds_p3 = ccsds_p3(LOGS_PKT_LENGTH);
 			log_packet->Fletcher_Code = LOGS_FLETCHER_CODE;
 			store_data(&log_p,log_data);
 			log_count = 0;

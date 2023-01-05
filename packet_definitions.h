@@ -22,6 +22,11 @@
 #define HK_PKT_LENGTH		sizeof(hk_pkt_t)
 #define HK_FLETCHER_CODE	0x00
 
+//Command packet parameters
+#define CMD_API_ID			0x20
+#define CMD_PKT_LENGTH		sizeof(cmd_packet_t)
+#define CMD_FLETCHER_CODE	0x00
+
 
 
 typedef struct {
@@ -89,5 +94,21 @@ typedef struct {
 
     uint16_t Fletcher_Code;
 }log_packet_t;
+
+typedef struct {
+    //CCSDS
+
+    uint16_t ccsds_p1;
+    uint16_t ccsds_p2;
+    uint16_t ccsds_p3;
+
+    uint16_t ccsds_s1;
+    uint16_t ccsds_s2;
+
+    uint8_t cmd_opcaode;
+    uint8_t cmd_arg[4];
+
+    uint16_t Fletcher_Code;
+}cmd_packet_t;
 
 #endif

@@ -49,7 +49,7 @@ uint16_t get_ADC_value(i2c_instance_t i2c_chx,uint8_t address,uint8_t chx,uint8_
 
 uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no){
    pkt->ccsds_p1 = ccsds_p1(tlm_pkt_type, THERMISTOR_API_ID);
-   pkt->ccsds_p2 = ccsds_p2(seq_no)
+   pkt->ccsds_p2 = ccsds_p2(seq_no);
    pkt->ccsds_p3 = ccsds_p3(THERMISTOR_PKT_LENGTH);
 
    uint8_t i = 0,flag;
@@ -76,7 +76,7 @@ uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no) {
     uint8_t loss_count,flag;
 
     hk_pkt->ccsds_p1 = ccsds_p1(tlm_pkt_type, HK_API_ID);
-    hk_pkt->ccsds_p2 = ccsds_p2(seq_no)
+    hk_pkt->ccsds_p2 = ccsds_p2(seq_no);
     hk_pkt->ccsds_p3 = ccsds_p3(HK_PKT_LENGTH);
 
     // CDH_Perip_Status
@@ -170,8 +170,9 @@ void GPIO_Init() {
 	MSS_GPIO_enable_irq(MSS_GPIO_4);
 	MSS_GPIO_config(MSS_GPIO_26,MSS_GPIO_INPUT_MODE | MSS_GPIO_IRQ_EDGE_POSITIVE);
 	MSS_GPIO_enable_irq(MSS_GPIO_26);
-	MSS_GPIO_config(MSS_GPIO_13,MSS_GPIO_OUTPUT_MODE);
-	MSS_GPIO_config(GMC_EN_PIN,MSS_GPIO_OUTPUT_MODE);
+	MSS_GPIO_config(EN_COMMS,MSS_GPIO_OUTPUT_MODE);
+	MSS_GPIO_config(EN_UART,MSS_GPIO_OUTPUT_MODE);
+	MSS_GPIO_config(RESET_GPIO,MSS_GPIO_OUTPUT_MODE);
 }
 
 void Uart_Init() {
@@ -365,7 +366,7 @@ uint8_t get_IMU_gyro(uint16_t *roll_rate, uint16_t *pitch_rate,uint16_t *yaw_rat
 		status = I2C_wait_complete(&g_core_i2c5,I2C_NO_TIMEOUT);
 		result+=status;
 
-		*a_z = ((rx_buffer_2[0] << 8) | rx_buffer[0]);
+		*roll_rate = ((rx_buffer_2[0] << 8) | rx_buffer[0]);
 
 		I2C_write_read(&g_core_i2c5,IMU_slave_addr,read_ACC_out_Y_L,1,rx_buffer,
 								1,I2C_RELEASE_BUS);
@@ -379,7 +380,7 @@ uint8_t get_IMU_gyro(uint16_t *roll_rate, uint16_t *pitch_rate,uint16_t *yaw_rat
 		status = I2C_wait_complete(&g_core_i2c5,I2C_NO_TIMEOUT);
 		result+=status;
 
-		*a_y = ((rx_buffer_2[0] << 8) | rx_buffer[0]);
+		*pitch_rate = ((rx_buffer_2[0] << 8) | rx_buffer[0]);
 
 		I2C_write_read(&g_core_i2c5,IMU_slave_addr,read_ACC_out_X_L,1,rx_buffer,
 								1,I2C_RELEASE_BUS);
@@ -393,9 +394,14 @@ uint8_t get_IMU_gyro(uint16_t *roll_rate, uint16_t *pitch_rate,uint16_t *yaw_rat
 		status = I2C_wait_complete(&g_core_i2c5,I2C_NO_TIMEOUT);
 		result+=status;
 
-		*a_x = ((rx_buffer_2[0] << 8) | rx_buffer[0]);
+		*yaw_rate = ((rx_buffer_2[0] << 8) | rx_buffer[0]);
 
 		return status;
+}
+
+void time_to_count(uint32_t ms,uint32_t *upper_count,uint32_t *lower_count) {
+    *lower_count = (ms%FULL_SCALE_TIME_MS) * TIMER_COUNT_PER_MS;
+    *upper_count = (ms/FULL_SCALE_TIME_MS) * TIMER_COUNT_PER_MS;
 }
 
 //void get_CDH_HK() {
