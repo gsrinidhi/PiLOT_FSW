@@ -42,6 +42,12 @@ typedef struct {
 	uint16_t ccsds_p2;
 	uint16_t ccsds_p3;
 
+    uint16_t ccsds_s1;
+    uint16_t ccsds_s2;
+
+    uint16_t collection_time;
+    uint16_t collection_location;
+
     uint16_t thermistor_set_A[8];
     uint16_t thermistor_set_B[8];
     uint16_t thermistor_set_C[8];
@@ -56,6 +62,9 @@ typedef struct {
     uint16_t ccsds_p1;
     uint16_t ccsds_p2;
     uint16_t ccsds_p3;
+
+    uint16_t ccsds_s1;
+    uint16_t ccsds_s2;
 
 
     //	uint16_t primary_1;
@@ -90,6 +99,9 @@ typedef struct {
     uint16_t ccsds_p2;
     uint16_t ccsds_p3;
 
+    uint16_t ccsds_s1;
+    uint16_t ccsds_s2;
+
     //	uint16_t primary_1;
     //	uint16_t primary_2;
     //	uint16_t primary_3;
@@ -105,6 +117,9 @@ typedef struct {
     uint16_t ccsds_p1;
     uint16_t ccsds_p2;
     uint16_t ccsds_p3;
+
+    uint16_t ccsds_s1;
+    uint16_t ccsds_s2;
 
     uint32_t HK_Read_Pointer;
     uint32_t HK_Write_Pointer;

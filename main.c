@@ -152,11 +152,21 @@ uint32_t payload_last_count_L,payload_last_count_H,hk_last_count_H,hk_last_count
 uint16_t thermistor_seq_no,logs_seq_no,hk_seq_no,sd_hk_seq_no;
 uint8_t log_count,result_global,api_id;
 
+void uart1_rx_handler(mss_uart_instance_t * this_uart) {
+	uint8_t rx_buffer[3],size;
+	size = MSS_UART_get_rx(this_uart,rx_buffer,1);
+	if(rx_buffer[0] == PSLV_ADDR) {
+
+	}else {
+
+	}
+}
+
 uint8_t downlink(partition_t *p,uint8_t size) {
 	uint8_t result;
 	result = read_data(p,packet_data);
 	MSS_GPIO_set_output(EN_UART,1);
-	UART_send(&uart4,packet_data,size);
+	MSS_UART_polled_tx(&g_mss_uart1,packet_data,size);
 	MSS_GPIO_set_output(EN_UART,0);
 	return result;
 }
@@ -166,7 +176,7 @@ uint8_t command() {
 	MSS_GPIO_set_output(EN_UART,0);
 	uint32_t *period_L,*period_H,rate,rate2;
 	partition_t *part;
-	size = UART_get_rx(&uart4,packet_data,CMD_PKT_LENGTH);
+	size = MSS_UART_get_rx(&g_mss_uart1,packet_data,CMD_PKT_LENGTH);
 	if(size == 0) {
 		return 0;
 	} else {
@@ -258,6 +268,9 @@ uint8_t Flags_Init() {
 	payload_last_count_L = 0xFFFFFFFF;
 	sd_hk_last_count_H = 0xFFFFFFFF;
 	sd_hk_last_count_L = 0xFFFFFFFF;
+    MSS_UART_set_rx_handler(&g_mss_uart1,
+                            uart1_rx_handler,
+                            MSS_UART_FIFO_SINGLE_BYTE);
 	return 0;
 }
 

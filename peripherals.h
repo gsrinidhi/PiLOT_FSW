@@ -9,6 +9,7 @@
 #include <AHAN_hw_platform.h>
 #include <drivers/mss_gpio/mss_gpio.h>
 #include <drivers/mss_i2c/mss_i2c.h>
+#include <drivers/mss_uart/mss_uart.h>
 //UART
 //UART instances
  UART_instance_t uart0;

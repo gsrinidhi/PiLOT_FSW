@@ -101,6 +101,9 @@
 #define HK_TASK_ID			2
 #define SD_HK_TASK_ID		3
 
+//PSLV address
+#define PSLV_ADDR			0x50
+
 //Packet rate options
 typedef enum PACKET_RATES {
 	RATE_ONE_SPP = 0u,
