@@ -21,7 +21,11 @@
 #define COREUARTAPB_4_0                 0x5000B000U
 #define UART_BAUD_9600                  (((MSS_SYS_M3_CLK_FREQ)/(9600 * 16))  - 1)
 #define UART_BAUD_115200                26
+#if DEBUG_ON == 1
+#define MSS_UART_BAUD_2000000				MSS_UART_9600_BAUD
+#else
 #define MSS_UART_BAUD_2000000				2000000
+#endif
 
 //I2C instances
 

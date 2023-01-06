@@ -54,16 +54,16 @@ uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no){
 
    uint8_t i = 0,flag;
    uint8_t loss_count = 0;
-   for(;i<8;i++){
-        pkt->thermistor_set_A[i] = get_ADC_value(i2c_3, ADC_I2CU1_ADDR, i,&flag);
-        loss_count+=flag;
-        pkt->thermistor_set_B[i] = get_ADC_value(i2c_3, ADC_I2CU2_ADDR, i,&flag);
-        loss_count+=flag;
-        pkt->thermistor_set_C[i] = get_ADC_value(i2c_5, ADC_I2CU3_ADDR, i,&flag);
-        loss_count+=flag;
-        pkt->thermistor_set_D[i] = get_ADC_value(i2c_5, ADC_I2CU4_ADDR, i,&flag);
-        loss_count+=flag;
-     }
+//   for(;i<8;i++){
+//        pkt->thermistor_set_A[i] = get_ADC_value(i2c_3, ADC_I2CU1_ADDR, i,&flag);
+//        loss_count+=flag;
+//        pkt->thermistor_set_B[i] = get_ADC_value(i2c_3, ADC_I2CU2_ADDR, i,&flag);
+//        loss_count+=flag;
+//        pkt->thermistor_set_C[i] = get_ADC_value(i2c_5, ADC_I2CU3_ADDR, i,&flag);
+//        loss_count+=flag;
+//        pkt->thermistor_set_D[i] = get_ADC_value(i2c_5, ADC_I2CU4_ADDR, i,&flag);
+//        loss_count+=flag;
+//     }
 
     pkt->Fletcher_Code  = THERMISTOR_FLETCHER_CODE;
 
@@ -103,24 +103,24 @@ uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no) {
 
     //CDH_VC
     uint8_t i = 0;
-	for(;i<2;i++){
-		if(i == 0){
-			hk_pkt->Sensor_Board_VC[i] = read_bus_voltage(VC1, 1, &flag);
-			loss_count+= flag;
-			hk_pkt->CDH_VC[i] = read_bus_voltage( VC1,  2, &flag);
-			loss_count+= flag;
-			hk_pkt->Comms_VC[i] = read_bus_voltage( VC1,  3, &flag);
-			loss_count+= flag;
-		}
-		else{
-			hk_pkt->Sensor_Board_VC[i] = read_shunt_voltage( VC1,  1, &flag);
-			loss_count+= flag;
-			hk_pkt->CDH_VC[i] = read_shunt_voltage( VC1,  2, &flag);
-			loss_count+= flag;
-			hk_pkt->Comms_VC[i] = read_shunt_voltage( VC1,  3, &flag);
-			loss_count+= flag;
-    	}
-	}
+//	for(;i<2;i++){
+//		if(i == 0){
+//			hk_pkt->Sensor_Board_VC[i] = read_bus_voltage(VC1, 1, &flag);
+//			loss_count+= flag;
+//			hk_pkt->CDH_VC[i] = read_bus_voltage( VC1,  2, &flag);
+//			loss_count+= flag;
+//			hk_pkt->Comms_VC[i] = read_bus_voltage( VC1,  3, &flag);
+//			loss_count+= flag;
+//		}
+//		else{
+//			hk_pkt->Sensor_Board_VC[i] = read_shunt_voltage( VC1,  1, &flag);
+//			loss_count+= flag;
+//			hk_pkt->CDH_VC[i] = read_shunt_voltage( VC1,  2, &flag);
+//			loss_count+= flag;
+//			hk_pkt->Comms_VC[i] = read_shunt_voltage( VC1,  3, &flag);
+//			loss_count+= flag;
+//    	}
+//	}
 
 	 hk_pkt->Fletcher_Code  = HK_FLETCHER_CODE;
 
@@ -177,7 +177,11 @@ void Uart_Init() {
 	UART_init(&uart2,COREUARTAPB_2_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
 	UART_init(&uart3,COREUARTAPB_3_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
 	//UART_init(&uart4,COREUARTAPB_4_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
-	MSS_UART_init(&g_mss_uart1,MSS_UART_BAUD_2000000,MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT);
+	SYSREG->WDOG_CR = 0;
+	MSS_UART_init(&g_mss_uart1,220000,MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT);
+//	MSS_UART_set_tx_endian(&g_mss_uart1, MSS_UART_LITTLEEND);
+//
+//	MSS_UART_set_usart_mode(&g_mss_uart1,MSS_UART_ASYNC_MODE);
 }
 
 uint8_t Pilot_Peripherals_Init() {
@@ -194,10 +198,10 @@ uint8_t Pilot_Peripherals_Init() {
 uint8_t Pilot_Init() {
 	uint8_t res;
 	res = Pilot_Peripherals_Init();
-	ADC_Init(i2c_3,ADC_I2CU1_ADDR);
-	ADC_Init(i2c_3,ADC_I2CU2_ADDR);
-	ADC_Init(i2c_5,ADC_I2CU1_ADDR);
-	ADC_Init(i2c_5,ADC_I2CU2_ADDR);
+//	ADC_Init(i2c_3,ADC_I2CU1_ADDR);
+//	ADC_Init(i2c_3,ADC_I2CU2_ADDR);
+//	ADC_Init(i2c_5,ADC_I2CU1_ADDR);
+//	ADC_Init(i2c_5,ADC_I2CU2_ADDR);
 	res = res | (vc_init(VC1) << 1);
 	return res;
 }
@@ -215,26 +219,26 @@ uint8_t test_peripherals() {
 	count = 0;
 	i2c_status_t status;
 	//Testing i2c_3 in cdh
-	while(count < 10) {
-		I2C_write_read(&g_core_i2c1,ADC_I2CU1_ADDR,ch_read,1,adc_read_value,2,I2C_RELEASE_BUS);
-		status = I2C_wait_complete(&g_core_i2c1, I2C_NO_TIMEOUT);
-		if(status == I2C_SUCCESS) {
-			result |= 0x01;
-			break;
-		}
-		count++;
-	}
-	//Testing i2c_5 in cdh
-	count = 0;
-	while(count < 10) {
-		I2C_write_read(&g_core_i2c3,ADC_I2CU1_ADDR,ch_read,1,adc_read_value,2,I2C_RELEASE_BUS);
-		status = I2C_wait_complete(&g_core_i2c3, I2C_NO_TIMEOUT);
-		if(status == I2C_SUCCESS) {
-			result |= 0x02;
-			break;
-		}
-		count++;
-	}
+//	while(count < 10) {
+//		I2C_write_read(&g_core_i2c1,ADC_I2CU1_ADDR,ch_read,1,adc_read_value,2,I2C_RELEASE_BUS);
+//		status = I2C_wait_complete(&g_core_i2c1, I2C_NO_TIMEOUT);
+//		if(status == I2C_SUCCESS) {
+//			result |= 0x01;
+//			break;
+//		}
+//		count++;
+//	}
+//	//Testing i2c_5 in cdh
+//	count = 0;
+//	while(count < 10) {
+//		I2C_write_read(&g_core_i2c3,ADC_I2CU1_ADDR,ch_read,1,adc_read_value,2,I2C_RELEASE_BUS);
+//		status = I2C_wait_complete(&g_core_i2c3, I2C_NO_TIMEOUT);
+//		if(status == I2C_SUCCESS) {
+//			result |= 0x02;
+//			break;
+//		}
+//		count++;
+//	}
 	//Testing IMU
 	count = 0;
 	while(count < 10) {

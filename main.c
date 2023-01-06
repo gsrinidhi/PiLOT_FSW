@@ -134,7 +134,7 @@
 //	}
 //
 //}
-
+#define DEBUG_ON 		1
 #include "memory.h"
 #include "pilot.h"
 
@@ -268,9 +268,9 @@ uint8_t Flags_Init() {
 	payload_last_count_L = 0xFFFFFFFF;
 	sd_hk_last_count_H = 0xFFFFFFFF;
 	sd_hk_last_count_L = 0xFFFFFFFF;
-    MSS_UART_set_rx_handler(&g_mss_uart1,
-                            uart1_rx_handler,
-                            MSS_UART_FIFO_SINGLE_BYTE);
+//    MSS_UART_set_rx_handler(&g_mss_uart1,
+//                            uart1_rx_handler,
+//                            MSS_UART_FIFO_SINGLE_BYTE);
 	return 0;
 }
 
@@ -296,11 +296,46 @@ uint8_t get_sd_hk(SD_HK_pkt_t *sd_hk_pkt, uint16_t seq_no){
 
    return 0;
 }
+
+#if DEBUG_ON == 1
+#define DEBUG_UART                  &g_mss_uart1
+#define DEBUG_UART_PRINT            MSS_UART_polled_tx
+#define DEBUG_UART_IP               MSS_UART_get_rx
+#include<stdlib.h>
+#include<stdio.h>
+#include<stdint.h>
+#include<string.h>
+char null_print[] = "Trying to print null";
+void print(uint8_t *str,uint8_t size) {
+	DEBUG_UART_PRINT(DEBUG_UART,(uint8_t*)str,size);
+
+}
+uint8_t k = 0;
+void disp_hk_pkt(hk_pkt_t *pkt) {
+//	print("Hello\n");
+//	print("CCSDS P1: ");
+//	print((char*)&pkt->ccsds_p1);
+//	print("\n");
+//	print("CCSDS P2: ");
+//	print((char*)&pkt->ccsds_p2);
+//	print("\n");
+//	print("CCSDS P3: ");
+//	print((char*)&pkt->ccsds_p3);
+//	print("\n");
+	k = 0x50;
+	print(&k,1);
+	k = pkt->CDH_Periph_Status;
+	print(&k,1);
+}
+#endif
+
+
 int main()
 {
 	result_global = Pilot_Init();
 	Flags_Init();
 	log_packet = (log_packet_t*)log_data;
+	MSS_GPIO_set_output(EN_UART,1);
 	while(1) {
 		result_global = command();
 		MSS_TIM64_get_current_value(&current_time_upper,&current_time_lower);
@@ -313,7 +348,7 @@ int main()
 			result_global = get_thermistor_vals(thermistor_packet,thermistor_seq_no);
 			log_packet->logs[log_count].task_status = result_global;
 			store_data(&payload_p,packet_data);
-			result_global = downlink(&payload_p,THERMISTOR_PKT_LENGTH);
+			//result_global = downlink(&payload_p,THERMISTOR_PKT_LENGTH);
 			thermistor_seq_no++;
 			log_count++;
 		}
@@ -327,7 +362,11 @@ int main()
             result_global = get_hk(hk_packet,hk_seq_no);
             log_packet->logs[log_count].task_status = result_global;
             store_data(&hk_p,packet_data);
-            result_global = downlink(&hk_p,HK_PKT_LENGTH);
+//#if DEBUG_ON == 1
+//            disp_hk_pkt(hk_packet);
+//#else
+//            result_global = downlink(&hk_p,HK_PKT_LENGTH);
+//#endif
             hk_seq_no++;
             log_count++;
 		 }
@@ -355,67 +394,16 @@ int main()
 			store_data(&log_p,log_data);
 			log_count = 0;
 		}
-
-
-
-
-
 	}
-//	thermistor_seq_no = 0;
-//	hk_seq_no = 0;
-//	logs_seq_no = 0;
-//	log_count = 0;
-//	initialise_partition(&payload_p,PAYLOAD_BLOCK_INIT,PAYLOAD_BLOCK_END);
-//	initialise_partition(&hk_p,HK_BLOCK_INIT,HK_BLOCK_END);
-//	initialise_partition(&log_p,LOGS_BLOCK_INIT,LOGS_BLOCK_END);
-//	payload_period_H = PAYLOAD_PERIOD_H;
-//	payload_period_L = PAYLOAD_PERIOD_L;
-//	hk_period_H = HK_PERIOD_H;
-//	hk_period_L = HK_PERIOD_L;
-//	log_packet = (log_packet_t*)log_data;
 //	while(1) {
-//		MSS_TIM64_get_current_value(&current_time_upper,&current_time_lower);
-//		//Checking if it is time to take thermistor readings (must be verified)
-//		if((payload_last_count_H - current_time_upper > payload_period_H) || ((payload_last_count_H - current_time_upper < payload_period_H) && (payload_last_count_L - current_time_lower > payload_period_L))) {
-//			log_packet->logs[log_count].task_id = THERMISTOR_TASK_ID;
-//			log_packet->logs[log_count].time_H = current_time_upper;
-//			log_packet->logs[log_count].time_L = current_time_lower;
-//			thermistor_packet = (thermistor_pkt_t*)packet_data;
-//			result = get_thermistor_vals(thermistor_packet,thermistor_seq_no);
-//			log_packet->logs[log_count].task_status = result;
-//			store_data(&payload_p,packet_data);
-//			thermistor_seq_no++;
-//			log_count++;
-//		}
-//
-//		// For HK Packet
-//		if((hk_last_count_H - current_time_upper > hk_period_H) || ((hk_last_count_H - current_time_upper < hk_period_H) && (hk_last_count_L - current_time_lower > hk_period_L))) {
-//            log_packet->logs[log_count].task_id = HK_TASK_ID;
-//            log_packet->logs[log_count].time_H = current_time_upper;
-//            log_packet->logs[log_count].time_L = current_time_lower;
-//            hk_packet = (hk_pkt_t*)packet_data;
-//            result = get_hk(hk_packet,hk_seq_no);
-//            log_packet->logs[log_count].task_status = result;
-//            store_data(&hk_p,packet_data);
-//            hk_seq_no++;
-//            log_count++;
-//		 }
-//
-//
-//		//If 10 log entries have been recorded, write the logs to the SD card and reset the log counter
-//		if(log_count == 10) {
-//			log_packet->ccsds_p1 = ccsds_p1(tlm_pkt_type,LOGS_API_ID);
-//			log_packet->ccsds_p2 = ccsds_p2(logs_seq_no);
-//			log_packet->ccsds_p3 = ccsds_p3(LOGS_PKT_LENGTH);
-//			log_packet->Fletcher_Code = LOGS_FLETCHER_CODE;
-//			store_data(&log_p,log_data);
-//			log_count = 0;
-//		}
+//		uint8_t tx[] = {0x01};
+//		MSS_UART_polled_tx(&g_mss_uart1,tx,1);
+//	}
 
 
 
 
 
-	//}
+
 
 }
