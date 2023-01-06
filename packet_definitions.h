@@ -23,7 +23,7 @@
 #define HK_FLETCHER_CODE	0x00
 
 #define SD_HK_API_ID    0x19
-#define SD_HK_PKT_LENGTH  0x30
+#define SD_HK_PKT_LENGTH  sizeof(SD_HK_pkt_t)
 #define SD_HK_FLETCHER_CODE 0x00
 
 //Command packet parameters
