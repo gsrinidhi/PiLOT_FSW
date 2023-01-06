@@ -252,6 +252,12 @@ uint8_t Flags_Init() {
 	initialise_partition(&payload_p,PAYLOAD_BLOCK_INIT,PAYLOAD_BLOCK_END);
 	initialise_partition(&hk_p,HK_BLOCK_INIT,HK_BLOCK_END);
 	initialise_partition(&log_p,LOGS_BLOCK_INIT,LOGS_BLOCK_END);
+	hk_last_count_H = 0xFFFFFFFF;
+	hk_last_count_L = 0xFFFFFFFF;
+	payload_last_count_H = 0xFFFFFFFF;
+	payload_last_count_L = 0xFFFFFFFF;
+	sd_hk_last_count_H = 0xFFFFFFFF;
+	sd_hk_last_count_L = 0xFFFFFFFF;
 	return 0;
 }
 
@@ -279,14 +285,14 @@ uint8_t get_sd_hk(SD_HK_pkt_t *sd_hk_pkt, uint16_t seq_no){
 }
 int main()
 {
-	Pilot_Init();
+	result_global = Pilot_Init();
 	Flags_Init();
 	log_packet = (log_packet_t*)log_data;
 	while(1) {
 		result_global = command();
 		MSS_TIM64_get_current_value(&current_time_upper,&current_time_lower);
 		//Checking if it is time to take thermistor readings (must be verified)
-		if((payload_last_count_H - current_time_upper > payload_period_H) && (payload_last_count_L - current_time_lower > payload_period_L)) {
+		if((payload_last_count_H - current_time_upper >= payload_period_H) && (payload_last_count_L - current_time_lower >= payload_period_L)) {
 			log_packet->logs[log_count].task_id = THERMISTOR_TASK_ID;
 			log_packet->logs[log_count].time_H = current_time_upper;
 			log_packet->logs[log_count].time_L = current_time_lower;
@@ -300,7 +306,7 @@ int main()
 		}
 
 		// For HK Packet
-		if((hk_last_count_H - current_time_upper > hk_period_H) && (hk_last_count_L - current_time_lower > hk_period_L)) {
+		if((hk_last_count_H - current_time_upper >= hk_period_H) && (hk_last_count_L - current_time_lower >= hk_period_L)) {
             log_packet->logs[log_count].task_id = HK_TASK_ID;
             log_packet->logs[log_count].time_H = current_time_upper;
             log_packet->logs[log_count].time_L = current_time_lower;
@@ -314,7 +320,7 @@ int main()
 		 }
 
 		//For SD_HK Packet
-		if((sd_hk_last_count_H - current_time_upper > sd_hk_period_H) && (sd_hk_last_count_L - current_time_lower > sd_hk_period_L)) {
+		if((sd_hk_last_count_H - current_time_upper >= sd_hk_period_H) && (sd_hk_last_count_L - current_time_lower >= sd_hk_period_L)) {
             log_packet->logs[log_count].task_id = SD_HK_TASK_ID;
             log_packet->logs[log_count].time_H = current_time_upper;
             log_packet->logs[log_count].time_L = current_time_lower;

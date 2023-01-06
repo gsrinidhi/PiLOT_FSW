@@ -81,7 +81,7 @@
 #define RESET_GPIO				MSS_GPIO_17
 
 //IMU Macros
-#define IMU_ADDR 0x6b
+#define IMU_ADDR 0x6a
 #define IMU_WHO_AM_I_REG 0x0F
 
 //PERIOD Macros
@@ -146,13 +146,13 @@ void GPIO_Init();
  */
 void Uart_Init();
 
-void Pilot_Peripherals_Init();
+uint8_t Pilot_Peripherals_Init();
 
 /**
  * @brief Initialisation of Pilot CDH board
  *
  */
-void Pilot_Init();
+uint8_t Pilot_Init();
 
 /**
  * @brief Get the thermistor packet

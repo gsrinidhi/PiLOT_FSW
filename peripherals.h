@@ -20,6 +20,7 @@
 #define COREUARTAPB_4_0                 0x5000B000U
 #define UART_BAUD_9600                  (((MSS_SYS_M3_CLK_FREQ)/(9600 * 16))  - 1)
 #define UART_BAUD_115200                26
+#define MSS_UART_BAUD_2000000				2000000
 
 //I2C instances
 
@@ -34,8 +35,8 @@
  i2c_status_t core_i2c_status;
 
  //i2c_2 is the pin on the OBC
-#define i2c_2 g_core_i2c0
 #define i2c_3 g_core_i2c1
+#define i2c_5 g_core_i2c3
 
 #define I2C_SLAVE_ADDRESS 0x12
 
