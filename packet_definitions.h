@@ -9,18 +9,27 @@
 #define _PACKET_DEFINITIONS_
 //#define THERMISTOR_Version_ID		0x1
 #define THERMISTOR_API_ID			0x16
-#define THERMISTOR_PKT_LENGTH		76
+#define THERMISTOR_PKT_LENGTH		sizeof(thermistor_pkt_t)
 #define THERMISTOR_FLETCHER_CODE	0x00
 
 //#define LOGS_Version_ID		0x2
 #define LOGS_API_ID			0x17
-#define LOGS_PKT_LENGTH		108
+#define LOGS_PKT_LENGTH		sizeof(log_packet_t)
 #define LOGS_FLETCHER_CODE	0x00
 
 //#define HK_Version_ID		0x3
 #define HK_API_ID			0x18
-#define HK_PKT_LENGTH		33
+#define HK_PKT_LENGTH		sizeof(hk_pkt_t)
 #define HK_FLETCHER_CODE	0x00
+
+#define SD_HK_API_ID    0x19
+#define SD_HK_PKT_LENGTH  sizeof(SD_HK_pkt_t)
+#define SD_HK_FLETCHER_CODE 0x00
+
+//Command packet parameters
+#define CMD_API_ID			0x20
+#define CMD_PKT_LENGTH		sizeof(cmd_packet_t)
+#define CMD_FLETCHER_CODE	0x00
 
 
 
@@ -32,6 +41,12 @@ typedef struct {
 	uint16_t ccsds_p1;
 	uint16_t ccsds_p2;
 	uint16_t ccsds_p3;
+
+    uint16_t ccsds_s1;
+    uint16_t ccsds_s2;
+
+    uint16_t collection_time;
+    uint16_t collection_location;
 
     uint16_t thermistor_set_A[8];
     uint16_t thermistor_set_B[8];
@@ -47,6 +62,9 @@ typedef struct {
     uint16_t ccsds_p1;
     uint16_t ccsds_p2;
     uint16_t ccsds_p3;
+
+    uint16_t ccsds_s1;
+    uint16_t ccsds_s2;
 
 
     //	uint16_t primary_1;
@@ -81,6 +99,9 @@ typedef struct {
     uint16_t ccsds_p2;
     uint16_t ccsds_p3;
 
+    uint16_t ccsds_s1;
+    uint16_t ccsds_s2;
+
     //	uint16_t primary_1;
     //	uint16_t primary_2;
     //	uint16_t primary_3;
@@ -89,5 +110,43 @@ typedef struct {
 
     uint16_t Fletcher_Code;
 }log_packet_t;
+
+typedef struct {
+    //CCSDS
+
+    uint16_t ccsds_p1;
+    uint16_t ccsds_p2;
+    uint16_t ccsds_p3;
+
+    uint16_t ccsds_s1;
+    uint16_t ccsds_s2;
+
+    uint32_t HK_Read_Pointer;
+    uint32_t HK_Write_Pointer;
+    uint32_t Thermistor_Read_Pointer;
+    uint32_t Thermistor_Write_Pointer;
+    uint32_t Logs_Read_Pointer;
+    uint32_t Logs_Write_Pointer;
+    uint32_t SD_Test_Read_Pointer;
+    uint32_t SD_Test_Write_Pointer;
+
+    uint16_t Fletcher_Code;
+}SD_HK_pkt_t;
+
+typedef struct {
+    //CCSDS
+
+    uint16_t ccsds_p1;
+    uint16_t ccsds_p2;
+    uint16_t ccsds_p3;
+
+    uint16_t ccsds_s1;
+    uint16_t ccsds_s2;
+
+    uint8_t cmd_opcaode;
+    uint8_t cmd_arg[4];
+
+    uint16_t Fletcher_Code;
+}cmd_packet_t;
 
 #endif

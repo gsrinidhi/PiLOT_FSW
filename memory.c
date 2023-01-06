@@ -117,7 +117,7 @@ uint8_t store_data(partition_t *partition,uint8_t *data) {
 }
 
 uint8_t read_data(partition_t *partition,uint8_t *data) {
-	if((partition->read_pointer >= partition->end_block) || (partition->read_pointer < partition->start_block)) {
+	if((partition->read_pointer >= partition->write_pointer) || (partition->read_pointer < partition->start_block)) {
 		return 1;
 	}
 

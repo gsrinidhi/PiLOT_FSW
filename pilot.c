@@ -53,15 +53,15 @@ uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no){
    pkt->ccsds_p3 = ccsds_p3(THERMISTOR_PKT_LENGTH);
 
    uint8_t i = 0,flag;
-   uint8_t loss_count;
+   uint8_t loss_count = 0;
    for(;i<8;i++){
-        pkt->thermistor_set_A[i] = get_ADC_value(i2c_2, ADC_I2CU1_ADDR, i,&flag);
+        pkt->thermistor_set_A[i] = get_ADC_value(i2c_3, ADC_I2CU1_ADDR, i,&flag);
         loss_count+=flag;
-        pkt->thermistor_set_B[i] = get_ADC_value(i2c_2, ADC_I2CU2_ADDR, i,&flag);
+        pkt->thermistor_set_B[i] = get_ADC_value(i2c_3, ADC_I2CU2_ADDR, i,&flag);
         loss_count+=flag;
-        pkt->thermistor_set_C[i] = get_ADC_value(i2c_3, ADC_I2CU3_ADDR, i,&flag);
+        pkt->thermistor_set_C[i] = get_ADC_value(i2c_5, ADC_I2CU3_ADDR, i,&flag);
         loss_count+=flag;
-        pkt->thermistor_set_D[i] = get_ADC_value(i2c_3, ADC_I2CU4_ADDR, i,&flag);
+        pkt->thermistor_set_D[i] = get_ADC_value(i2c_5, ADC_I2CU4_ADDR, i,&flag);
         loss_count+=flag;
      }
 
@@ -105,19 +105,19 @@ uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no) {
     uint8_t i = 0;
 	for(;i<2;i++){
 		if(i == 0){
-			hk_pkt->Sensor_Board_VC[i] = read_bus_voltage(VC1, VC_BUSV_CHx(1), &flag);
+			hk_pkt->Sensor_Board_VC[i] = read_bus_voltage(VC1, 1, &flag);
 			loss_count+= flag;
-			hk_pkt->CDH_VC[i] = read_bus_voltage( VC1,  VC_BUSV_CHx(2), &flag);
+			hk_pkt->CDH_VC[i] = read_bus_voltage( VC1,  2, &flag);
 			loss_count+= flag;
-			hk_pkt->Comms_VC[i] = read_bus_voltage( VC1,  VC_BUSV_CHx(3), &flag);
+			hk_pkt->Comms_VC[i] = read_bus_voltage( VC1,  3, &flag);
 			loss_count+= flag;
 		}
 		else{
-			hk_pkt->Sensor_Board_VC[i] = read_shunt_voltage( VC1,  VC_BUSV_CHx(1), &flag);
+			hk_pkt->Sensor_Board_VC[i] = read_shunt_voltage( VC1,  1, &flag);
 			loss_count+= flag;
-			hk_pkt->CDH_VC[i] = read_shunt_voltage( VC1,  VC_BUSV_CHx(2), &flag);
+			hk_pkt->CDH_VC[i] = read_shunt_voltage( VC1,  2, &flag);
 			loss_count+= flag;
-			hk_pkt->Comms_VC[i] = read_shunt_voltage( VC1,  VC_BUSV_CHx(3), &flag);
+			hk_pkt->Comms_VC[i] = read_shunt_voltage( VC1,  3, &flag);
 			loss_count+= flag;
     	}
 	}
@@ -127,12 +127,7 @@ uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no) {
     return loss_count;
 }
 
-void set_pkt2sd(){
 
-    // Store the packet values by defining the pointer(by timestamping the data)
-    //in the SD_CARD.
-
-}
 
 void test_sd(){
 
@@ -170,8 +165,9 @@ void GPIO_Init() {
 	MSS_GPIO_enable_irq(MSS_GPIO_4);
 	MSS_GPIO_config(MSS_GPIO_26,MSS_GPIO_INPUT_MODE | MSS_GPIO_IRQ_EDGE_POSITIVE);
 	MSS_GPIO_enable_irq(MSS_GPIO_26);
+	MSS_GPIO_config(EN_COMMS,MSS_GPIO_OUTPUT_MODE);
 	MSS_GPIO_config(EN_UART,MSS_GPIO_OUTPUT_MODE);
-	MSS_GPIO_config(EN_COMMS_PIN,MSS_GPIO_OUTPUT_MODE);
+	MSS_GPIO_config(RESET_GPIO,MSS_GPIO_OUTPUT_MODE);
 }
 
 void Uart_Init() {
@@ -180,31 +176,34 @@ void Uart_Init() {
 	UART_init(&uart1,COREUARTAPB_1_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
 	UART_init(&uart2,COREUARTAPB_2_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
 	UART_init(&uart3,COREUARTAPB_3_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
-	UART_init(&uart4,COREUARTAPB_4_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
+	//UART_init(&uart4,COREUARTAPB_4_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
+	MSS_UART_init(&g_mss_uart1,MSS_UART_BAUD_2000000,MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT);
 }
 
-void Pilot_Peripherals_Init() {\
-	uint8_t result;
+uint8_t Pilot_Peripherals_Init() {
+	uint8_t res;
 	GPIO_Init();
 	I2C_Init();
 	Uart_Init();
-	result = SD_Init();
+	res = SD_Init();
 	MSS_TIM64_init(MSS_TIMER_ONE_SHOT_MODE);
 	MSS_TIM64_load_immediate(0xFFFFFFFF,0xFFFFFFFF);
+	MSS_TIM64_start();
+	return res;
 }
-void Pilot_Init() {
-
-	Pilot_Peripherals_Init();
-//	ADC_Init(i2c_2,ADC_I2CU1_ADDR);
-//	ADC_Init(i2c_2,ADC_I2CU2_ADDR);
-//	ADC_Init(i2c_3,ADC_I2CU1_ADDR);
-//	ADC_Init(i2c_3,ADC_I2CU2_ADDR);
-	uint8_t result = vc_init(VC1);
-	result++;
+uint8_t Pilot_Init() {
+	uint8_t res;
+	res = Pilot_Peripherals_Init();
+	ADC_Init(i2c_3,ADC_I2CU1_ADDR);
+	ADC_Init(i2c_3,ADC_I2CU2_ADDR);
+	ADC_Init(i2c_5,ADC_I2CU1_ADDR);
+	ADC_Init(i2c_5,ADC_I2CU2_ADDR);
+	res = res | (vc_init(VC1) << 1);
+	return res;
 }
 
 uint8_t test_peripherals() {
-	uint8_t count = 0;
+	uint16_t count = 0;
 	uint8_t ch_read[] = {0x80};
 	uint8_t adc_read_value[2];
 	uint8_t result = 0x00,temp_result = 1;
@@ -398,6 +397,11 @@ uint8_t get_IMU_gyro(uint16_t *roll_rate, uint16_t *pitch_rate,uint16_t *yaw_rat
 		*yaw_rate = ((rx_buffer_2[0] << 8) | rx_buffer[0]);
 
 		return status;
+}
+
+void time_to_count(uint32_t ms,uint32_t *upper_count,uint32_t *lower_count) {
+    *lower_count = (ms%FULL_SCALE_TIME_MS) * TIMER_COUNT_PER_MS;
+    *upper_count = (ms/FULL_SCALE_TIME_MS) * TIMER_COUNT_PER_MS;
 }
 
 //void get_CDH_HK() {

@@ -5,7 +5,6 @@
 #include "packet_definitions.h"
 #include "pslv_interface.h"
 #include "ccsds.h"
-
 //CCSDS Sub-Packet
 //struct CCSDS
 //    {
@@ -77,18 +76,21 @@
 #define ADC_CHX(x) (((x) + 0x8)<<4)
 
 //GPIO MACROS
-#define GMC_EN_PIN MSS_GPIO_24
-#define EN_COMMS_PIN MSS_GPIO_14
-#define EN_UART		MSS_GPIO_13
-#define EPS_PIN2 GPIO_15
-#define EPS_PIN3 GPIO_16
-#define EPS_PIN4 GPIO_3
+#define EN_UART					MSS_GPIO_13
+#define EN_COMMS				MSS_GPIO_14
+#define RESET_GPIO				MSS_GPIO_17
 
 //IMU Macros
-#define IMU_ADDR 0x6b
+#define IMU_ADDR 0x6a
 #define IMU_WHO_AM_I_REG 0x0F
 
 //PERIOD Macros
+#define DEFAULT_PAYLOAD_PERIOD	10000
+#define DEFAULT_HK_PERIOD		1000
+#define ONE_SPP_RATE			1000
+#define TWO_SPP_RATE			2000
+#define FIVE_SPP_RATE			5000
+#define TEN_SPP_RATE			10000
 #define PAYLOAD_PERIOD_L		0xFFFF
 #define PAYLOAD_PERIOD_H		0xFFFF
 #define HK_PERIOD_H				0xFFFF
@@ -97,6 +99,18 @@
 //TASK IDs
 #define THERMISTOR_TASK_ID	1
 #define HK_TASK_ID			2
+#define SD_HK_TASK_ID		3
+
+//PSLV address
+#define PSLV_ADDR			0x50
+
+//Packet rate options
+typedef enum PACKET_RATES {
+	RATE_ONE_SPP = 0u,
+	RATE_TWO_SPP,
+	RATE_FIVE_SPP,
+	RATE_TEN_SPP
+}PACKET_RATES_t;
 
 /** Function to initialise ADC
  * @brief Initialises the ADC corresponding to the given address
@@ -135,13 +149,13 @@ void GPIO_Init();
  */
 void Uart_Init();
 
-void Pilot_Peripherals_Init();
+uint8_t Pilot_Peripherals_Init();
 
 /**
  * @brief Initialisation of Pilot CDH board
  *
  */
-void Pilot_Init();
+uint8_t Pilot_Init();
 
 /**
  * @brief Get the thermistor packet
@@ -168,4 +182,7 @@ uint8_t get_IMU_acc(uint16_t *a_x,uint16_t *a_y,uint16_t *a_z);
 
 uint8_t get_IMU_gyro(uint16_t *roll_rate, uint16_t *pitch_rate,uint16_t *yaw_rate);
 
+void time_to_count(uint32_t ms,uint32_t *upper_count,uint32_t *lower_count);
+
+uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no);
 #endif

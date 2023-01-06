@@ -9,10 +9,18 @@
 #define PAYLOAD_BLOCK_INIT        	100
 #define HK_BLOCK_INIT        		150
 #define LOGS_BLOCK_INIT          	200
+#define SD_BLOCK_INIT				250
 
 #define PAYLOAD_BLOCK_END			149
 #define HK_BLOCK_END				199
 #define LOGS_BLOCK_END				249
+#define SD_BLOCK_END				299
+
+//All the Partitions used
+#define HK_PARTITION 				0x01
+#define PAYLOAD_PARTITION			0x02
+#define SD_PARTITION				0x03
+#define LOGS_PARTITION				0x04
 // typedef struct {
 //     uint16_t payload;
 //     uint16_t hk;
@@ -29,6 +37,7 @@ typedef struct {
 	uint32_t read_pointer;//Block number currently reading
 	uint32_t write_pointer;//Block number currently writing
 }partition_t;
+
 
 // We need to define the HK parameters in the below struct : -
 
