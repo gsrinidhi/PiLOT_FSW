@@ -48,9 +48,9 @@ uint16_t get_ADC_value(i2c_instance_t i2c_chx,uint8_t address,uint8_t chx,uint8_
 // Function below would generate the payload packet containing 40 items : -
 
 uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no){
-   pkt->ccsds_p1 = ccsds_p1(tlm_pkt_type, THERMISTOR_API_ID);
-   pkt->ccsds_p2 = ccsds_p2(seq_no);
-   pkt->ccsds_p3 = ccsds_p3(THERMISTOR_PKT_LENGTH);
+   pkt->ccsds_p1 = PILOT_REVERSE_BYTE_ORDER((ccsds_p1(tlm_pkt_type, THERMISTOR_API_ID)));
+   pkt->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER((ccsds_p2(seq_no)));
+   pkt->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER((ccsds_p3(THERMISTOR_PKT_LENGTH)));
 
    uint8_t i = 0,flag;
    uint8_t loss_count = 0;
@@ -75,9 +75,14 @@ uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no){
 uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no) {
     uint8_t loss_count,flag;
 
-    hk_pkt->ccsds_p1 = ccsds_p1(tlm_pkt_type, HK_API_ID);
-    hk_pkt->ccsds_p2 = ccsds_p2(seq_no);
-    hk_pkt->ccsds_p3 = ccsds_p3(HK_PKT_LENGTH);
+    hk_pkt->ccsds_p1 = PILOT_REVERSE_BYTE_ORDER(((ccsds_p1(tlm_pkt_type, HK_API_ID))));
+    hk_pkt->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(((ccsds_p2(seq_no))));
+    hk_pkt->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(((ccsds_p3(HK_PKT_LENGTH-7))));
+    hk_pkt->ccsds_s1 = 1;
+    hk_pkt->ccsds_s2 = 1;
+
+//    hk_pkt->pkt_length = HK_PKT_LENGTH;
+    //hk_pkt->pkt_id = 10;
 
     // CDH_Perip_Status
 
@@ -86,13 +91,13 @@ uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no) {
 
     //IMU Values: -
 
-    //Acceleration
-    uint16_t ax, ay, az;
+   // Acceleration
+    short ax, ay, az;
     uint8_t result;
     result = get_IMU_acc(&ax, &ay, &az);
-    hk_pkt->Acc[0] = ax;
-    hk_pkt->Acc[1] = ay;
-    hk_pkt->Acc[2] = az;
+    hk_pkt->Acc[0] = ((ax));
+    hk_pkt->Acc[1] = ((ay));
+    hk_pkt->Acc[2] = ((az));
 
     // Angular values
     uint16_t w_roll, w_pitch, w_yaw;
@@ -122,7 +127,7 @@ uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no) {
 //    	}
 //	}
 
-	 hk_pkt->Fletcher_Code  = HK_FLETCHER_CODE;
+    hk_pkt->Fletcher_Code  = HK_FLETCHER_CODE;
 
     return loss_count;
 }
@@ -178,8 +183,8 @@ void Uart_Init() {
 	UART_init(&uart3,COREUARTAPB_3_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
 	//UART_init(&uart4,COREUARTAPB_4_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
 	SYSREG->WDOG_CR = 0;
-	MSS_UART_init(&g_mss_uart1,220000,MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT);
-//	MSS_UART_set_tx_endian(&g_mss_uart1, MSS_UART_LITTLEEND);
+	MSS_UART_init(&g_mss_uart1,2*MSS_UART_115200_BAUD,MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT);
+	MSS_UART_set_tx_endian(&g_mss_uart1, MSS_UART_LITTLEEND);
 //
 //	MSS_UART_set_usart_mode(&g_mss_uart1,MSS_UART_ASYNC_MODE);
 }
@@ -275,7 +280,7 @@ uint8_t test_peripherals() {
 	return result;
 }
 
-uint8_t get_IMU_acc(uint16_t *a_x,uint16_t *a_y,uint16_t *a_z) {
+uint8_t get_IMU_acc(short *a_x,short *a_y,short *a_z) {
 	uint8_t write_CTRL_REG6_XL[2] = {0x20,0x60};
 	uint8_t read_ACC_out_X_L[] = {0x28};
 	uint8_t read_ACC_out_Y_L[] = {0x2A};
@@ -283,57 +288,65 @@ uint8_t get_IMU_acc(uint16_t *a_x,uint16_t *a_y,uint16_t *a_z) {
 	uint8_t read_ACC_out_X_H[] = {0x29};
 	uint8_t read_ACC_out_Y_H[] = {0x2B};
 	uint8_t read_ACC_out_Z_H[] = {0x2D};
-	uint8_t IMU_slave_addr = 0x6b;
 	uint8_t rx_buffer[1],rx_buffer_2[1];
 	uint8_t result = 0,status;
 
 
-	I2C_write_read(&g_core_i2c5,IMU_slave_addr,write_CTRL_REG6_XL,2,rx_buffer,
+	I2C_write_read(&g_core_i2c5,IMU_ADDR,write_CTRL_REG6_XL,2,rx_buffer,
 					1,I2C_RELEASE_BUS);
 	status = I2C_wait_complete(&g_core_i2c5,I2C_NO_TIMEOUT);
 	result+=status;
 
-	I2C_write_read(&g_core_i2c5,IMU_slave_addr,read_ACC_out_Z_L,1,rx_buffer,
+	I2C_write_read(&g_core_i2c5,IMU_ADDR,read_ACC_out_Z_L,1,rx_buffer,
 							1,I2C_RELEASE_BUS);
 
 	status = I2C_wait_complete(&g_core_i2c5,I2C_NO_TIMEOUT);
 	result+=status;
 
-	I2C_write_read(&g_core_i2c5,IMU_slave_addr,read_ACC_out_Z_H,1,rx_buffer_2,
+	I2C_write_read(&g_core_i2c5,IMU_ADDR,read_ACC_out_Z_H,1,rx_buffer_2,
 							1,I2C_RELEASE_BUS);
 
 	status = I2C_wait_complete(&g_core_i2c5,I2C_NO_TIMEOUT);
 	result+=status;
 
 	*a_z = ((rx_buffer_2[0] << 8) | rx_buffer[0]);
+	if((*a_z) > 32768) {
+		*a_z = 65500-*a_z;
+	}
 
-	I2C_write_read(&g_core_i2c5,IMU_slave_addr,read_ACC_out_Y_L,1,rx_buffer,
+	I2C_write_read(&g_core_i2c5,IMU_ADDR,read_ACC_out_Y_L,1,rx_buffer,
 							1,I2C_RELEASE_BUS);
 
 	status = I2C_wait_complete(&g_core_i2c5,I2C_NO_TIMEOUT);
 	result+=status;
 
-	I2C_write_read(&g_core_i2c5,IMU_slave_addr,read_ACC_out_Y_H,1,rx_buffer_2,
+	I2C_write_read(&g_core_i2c5,IMU_ADDR,read_ACC_out_Y_H,1,rx_buffer_2,
 							1,I2C_RELEASE_BUS);
 
 	status = I2C_wait_complete(&g_core_i2c5,I2C_NO_TIMEOUT);
 	result+=status;
 
 	*a_y = ((rx_buffer_2[0] << 8) | rx_buffer[0]);
+	if((*a_y) > 32768) {
+		*a_y = 65500-*a_y;
+	}
 
-	I2C_write_read(&g_core_i2c5,IMU_slave_addr,read_ACC_out_X_L,1,rx_buffer,
+	I2C_write_read(&g_core_i2c5,IMU_ADDR,read_ACC_out_X_L,1,rx_buffer,
 							1,I2C_RELEASE_BUS);
 
 	status = I2C_wait_complete(&g_core_i2c5,I2C_NO_TIMEOUT);
 	result+=status;
 
-	I2C_write_read(&g_core_i2c5,IMU_slave_addr,read_ACC_out_X_H,1,rx_buffer_2,
+	I2C_write_read(&g_core_i2c5,IMU_ADDR,read_ACC_out_X_H,1,rx_buffer_2,
 							1,I2C_RELEASE_BUS);
 
 	status = I2C_wait_complete(&g_core_i2c5,I2C_NO_TIMEOUT);
 	result+=status;
 
 	*a_x = ((rx_buffer_2[0] << 8) | rx_buffer[0]);
+	if((*a_x) > 32768) {
+		*a_x = 65500-*a_x;
+	}
 
 	return status;
 

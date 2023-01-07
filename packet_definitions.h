@@ -18,9 +18,9 @@
 #define LOGS_FLETCHER_CODE	0x00
 
 //#define HK_Version_ID		0x3
-#define HK_API_ID			0x18
+#define HK_API_ID			10
 #define HK_PKT_LENGTH		sizeof(hk_pkt_t)
-#define HK_FLETCHER_CODE	0x00
+#define HK_FLETCHER_CODE	0x01
 
 #define SD_HK_API_ID    0x19
 #define SD_HK_PKT_LENGTH  sizeof(SD_HK_pkt_t)
@@ -42,7 +42,7 @@ typedef struct {
 	uint16_t ccsds_p2;
 	uint16_t ccsds_p3;
 
-    uint16_t ccsds_s1;
+    uint32_t ccsds_s1;
     uint16_t ccsds_s2;
 
     uint16_t collection_time;
@@ -63,8 +63,11 @@ typedef struct {
     uint16_t ccsds_p2;
     uint16_t ccsds_p3;
 
-    uint16_t ccsds_s1;
+    uint32_t ccsds_s1;
     uint16_t ccsds_s2;
+
+//	uint8_t pkt_id;
+//	uint8_t pkt_length;
 
 
     //	uint16_t primary_1;
@@ -77,9 +80,9 @@ typedef struct {
     uint16_t Sensor_Board_VC[2];
     uint16_t CDH_VC[2];
     uint16_t Comms_VC[2];
-
+//
     uint16_t Fletcher_Code;
-}hk_pkt_t;
+}__attribute__((packed)) hk_pkt_t;
 
 /**
  * @brief Each log entry has the below four fields for every task that occurs

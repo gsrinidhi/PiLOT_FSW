@@ -86,7 +86,7 @@
 
 //PERIOD Macros
 #define DEFAULT_PAYLOAD_PERIOD	10000
-#define DEFAULT_HK_PERIOD		1000
+#define DEFAULT_HK_PERIOD		5000
 #define ONE_SPP_RATE			1000
 #define TWO_SPP_RATE			2000
 #define FIVE_SPP_RATE			5000
@@ -103,6 +103,8 @@
 
 //PSLV address
 #define PSLV_ADDR			0x50
+
+#define PILOT_REVERSE_BYTE_ORDER(var)	(((var) << 8) | ((var) >> 8))
 
 //Packet rate options
 typedef enum PACKET_RATES {
@@ -178,7 +180,7 @@ uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no);
  */
 uint8_t test_peripherals();
 
-uint8_t get_IMU_acc(uint16_t *a_x,uint16_t *a_y,uint16_t *a_z);
+uint8_t get_IMU_acc(short *a_x,short *a_y,short *a_z);
 
 uint8_t get_IMU_gyro(uint16_t *roll_rate, uint16_t *pitch_rate,uint16_t *yaw_rate);
 

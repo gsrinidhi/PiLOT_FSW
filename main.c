@@ -134,7 +134,7 @@
 //	}
 //
 //}
-#define DEBUG_ON 		1
+#define DEBUG_ON 		0
 #include "memory.h"
 #include "pilot.h"
 
@@ -162,13 +162,29 @@ void uart1_rx_handler(mss_uart_instance_t * this_uart) {
 	}
 }
 
-uint8_t downlink(partition_t *p,uint8_t size) {
-	uint8_t result;
-	result = read_data(p,packet_data);
-	MSS_GPIO_set_output(EN_UART,1);
-	MSS_UART_polled_tx(&g_mss_uart1,packet_data,size);
-	MSS_GPIO_set_output(EN_UART,0);
-	return result;
+//uint8_t downlink(partition_t *p,uint8_t size) {
+//	uint8_t result;
+//	result = read_data(p,packet_data);
+//	MSS_GPIO_set_output(EN_UART,1);
+//	MSS_UART_polled_tx(&g_mss_uart1,packet_data,size);
+//	MSS_GPIO_set_output(EN_UART,0);
+//	return result;
+//}
+
+uint8_t downlink(uint8_t *data,uint8_t size) {
+		MSS_GPIO_set_output(EN_UART,1);
+		uint8_t k = 0;
+		//MSS_UART_set_tx_endian(&g_mss_uart1, MSS_UART_BIGEND);
+		MSS_UART_polled_tx(&g_mss_uart1,data,size);
+//		for(;k<6;k++) {
+//			MSS_UART_polled_tx(&g_mss_uart1,data[k],1);
+//		}
+//		MSS_UART_set_tx_endian(&g_mss_uart1, MSS_UART_LITTLEEND);
+//		for(;k<size;k++) {
+//			MSS_UART_polled_tx(&g_mss_uart1,data[k],1);
+//		}
+		MSS_GPIO_set_output(EN_UART,0);
+		return 0;
 }
 
 uint8_t command() {
@@ -256,7 +272,7 @@ uint8_t Flags_Init() {
 	time_to_count(DEFAULT_PAYLOAD_PERIOD,&payload_period_H,&payload_period_L);
 	time_to_count(TEN_SPP_RATE,&sd_hk_period_H,&sd_hk_period_L);
 	thermistor_seq_no = 0;
-	hk_seq_no = 0;
+	hk_seq_no = 1;
 	logs_seq_no = 0;
 	log_count = 0;
 	initialise_partition(&payload_p,PAYLOAD_BLOCK_INIT,PAYLOAD_BLOCK_END);
@@ -337,7 +353,7 @@ int main()
 	log_packet = (log_packet_t*)log_data;
 	MSS_GPIO_set_output(EN_UART,1);
 	while(1) {
-		result_global = command();
+		//result_global = command();
 		MSS_TIM64_get_current_value(&current_time_upper,&current_time_lower);
 		//Checking if it is time to take thermistor readings (must be verified)
 		if((payload_last_count_H - current_time_upper >= payload_period_H) && (payload_last_count_L - current_time_lower >= payload_period_L)) {
@@ -362,11 +378,11 @@ int main()
             result_global = get_hk(hk_packet,hk_seq_no);
             log_packet->logs[log_count].task_status = result_global;
             store_data(&hk_p,packet_data);
-//#if DEBUG_ON == 1
-//            disp_hk_pkt(hk_packet);
-//#else
-//            result_global = downlink(&hk_p,HK_PKT_LENGTH);
-//#endif
+#if DEBUG_ON == 1
+            disp_hk_pkt(hk_packet);
+#else
+            result_global = downlink(packet_data,HK_PKT_LENGTH);
+#endif
             hk_seq_no++;
             log_count++;
 		 }
