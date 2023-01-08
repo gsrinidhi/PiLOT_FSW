@@ -10,6 +10,7 @@
 #include <drivers/mss_gpio/mss_gpio.h>
 #include <drivers/mss_i2c/mss_i2c.h>
 #include <drivers/mss_uart/mss_uart.h>
+#include<drivers_config/sys_config/sys_config_mss_clocks.h>
 
 //Logic Levels
 #define LOGIC_HIGH					1
@@ -22,9 +23,8 @@
  UART_instance_t uart3;
  UART_instance_t uart4;
 
-#define COREUARTAPB_4_0                 0x5000B000U
 #define UART_BAUD_9600                  (((MSS_SYS_M3_CLK_FREQ)/(9600 * 16))  - 1)
-#define UART_BAUD_115200                26
+#define UART_BAUD_115200                (((MSS_SYS_M3_CLK_FREQ)/(115200 * 16))  - 1)
 #if DEBUG_ON == 1
 #define MSS_UART_BAUD_2000000				MSS_UART_9600_BAUD
 #else
@@ -62,7 +62,7 @@
  #define SD_CARD_GPIO				MSS_GPIO_10
 
  //RTC and timer
-#define TIMER_COUNT_PER_MS 50000
-#define FULL_SCALE_TIME_MS 85899
+#define TIMER_COUNT_PER_MS 100000
+#define FULL_SCALE_TIME_MS 42949
  //mss_rtc_calendar_t now;
 #endif

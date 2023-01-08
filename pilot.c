@@ -181,7 +181,7 @@ void Uart_Init() {
 	UART_init(&uart2,COREUARTAPB_2_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
 	UART_init(&uart3,COREUARTAPB_3_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
 	SYSREG->WDOG_CR = 0;
-	MSS_UART_init(&g_mss_uart1,2000000,MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY);
+	MSS_UART_init(&g_mss_uart1,MSS_UART_BAUD_2000000,MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY);
 }
 
 uint8_t Pilot_Peripherals_Init() {
@@ -189,6 +189,7 @@ uint8_t Pilot_Peripherals_Init() {
 	GPIO_Init();
 	I2C_Init();
 	Uart_Init();
+	SD_Init();
 	res = SD_Init();
 	MSS_TIM64_init(MSS_TIMER_ONE_SHOT_MODE);
 	MSS_TIM64_load_immediate(0xFFFFFFFF,0xFFFFFFFF);
