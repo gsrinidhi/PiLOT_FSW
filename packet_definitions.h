@@ -8,12 +8,12 @@
 #ifndef _PACKET_DEFINITIONS_
 #define _PACKET_DEFINITIONS_
 //#define THERMISTOR_Version_ID		0x1
-#define THERMISTOR_API_ID			0x16
+#define THERMISTOR_API_ID			20
 #define THERMISTOR_PKT_LENGTH		sizeof(thermistor_pkt_t)
 #define THERMISTOR_FLETCHER_CODE	0x00
 
 //#define LOGS_Version_ID		0x2
-#define LOGS_API_ID			0x17
+#define LOGS_API_ID			30
 #define LOGS_PKT_LENGTH		sizeof(log_packet_t)
 #define LOGS_FLETCHER_CODE	0x00
 
@@ -22,7 +22,7 @@
 #define HK_PKT_LENGTH		sizeof(hk_pkt_t)
 #define HK_FLETCHER_CODE	0x01
 
-#define SD_HK_API_ID    0x19
+#define SD_HK_API_ID    	40
 #define SD_HK_PKT_LENGTH  sizeof(SD_HK_pkt_t)
 #define SD_HK_FLETCHER_CODE 0x00
 

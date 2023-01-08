@@ -7,14 +7,14 @@
 #define CURRENT_BLOCK 1024
 
 #define PAYLOAD_BLOCK_INIT        	100
-#define HK_BLOCK_INIT        		150
-#define LOGS_BLOCK_INIT          	200
-#define SD_BLOCK_INIT				250
+#define HK_BLOCK_INIT        		300
+#define LOGS_BLOCK_INIT          	500
+#define SD_BLOCK_INIT				700
 
-#define PAYLOAD_BLOCK_END			149
-#define HK_BLOCK_END				199
-#define LOGS_BLOCK_END				249
-#define SD_BLOCK_END				299
+#define PAYLOAD_BLOCK_END			200
+#define HK_BLOCK_END				400
+#define LOGS_BLOCK_END				600
+#define SD_BLOCK_END				800
 
 //All the Partitions used
 #define HK_PARTITION 				0x01

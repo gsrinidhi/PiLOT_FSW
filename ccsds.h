@@ -10,7 +10,7 @@
 #define tlm_head_mask 0b0000
 
 #define ccsds_p1(pkt_type, api) (uint16_t)( /*(tlm_head_mask << 4)*/  (Version << 13) | (pkt_type << 12) | (shf << 11) | api)
-#define ccsds_p2(pkt_seq_count) (uint16_t)( (seq_flg << 14) | (pkt_seq_count) )
+#define ccsds_p2(pkt_seq_count) (uint16_t)( (seq_flg << 14) | (pkt_seq_count & 0x3FFF) )
 #define ccsds_p3(pkt_len) (uint16_t)(pkt_len)
 
 #endif

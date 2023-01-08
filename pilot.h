@@ -86,7 +86,7 @@
 
 //PERIOD Macros
 #define DEFAULT_PAYLOAD_PERIOD	10000
-#define DEFAULT_HK_PERIOD		5000
+#define DEFAULT_HK_PERIOD		2000
 #define ONE_SPP_RATE			1000
 #define TWO_SPP_RATE			2000
 #define FIVE_SPP_RATE			5000
@@ -178,13 +178,13 @@ uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no);
  * Bit 4        : SD card write
  * Bit 5        : SD card read
  */
-uint8_t test_peripherals();
+uint8_t test_peripherals(uint8_t sd);
 
-uint8_t get_IMU_acc(short *a_x,short *a_y,short *a_z);
+uint8_t get_IMU_acc(uint16_t *a_x,uint16_t *a_y,uint16_t *a_z);
 
 uint8_t get_IMU_gyro(uint16_t *roll_rate, uint16_t *pitch_rate,uint16_t *yaw_rate);
 
 void time_to_count(uint32_t ms,uint32_t *upper_count,uint32_t *lower_count);
 
-uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no);
+uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no,uint8_t sd_s);
 #endif

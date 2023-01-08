@@ -50,7 +50,7 @@ uint16_t get_ADC_value(i2c_instance_t i2c_chx,uint8_t address,uint8_t chx,uint8_
 uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no){
    pkt->ccsds_p1 = PILOT_REVERSE_BYTE_ORDER((ccsds_p1(tlm_pkt_type, THERMISTOR_API_ID)));
    pkt->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER((ccsds_p2(seq_no)));
-   pkt->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER((ccsds_p3(THERMISTOR_PKT_LENGTH)));
+   pkt->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER((ccsds_p3(THERMISTOR_PKT_LENGTH-7)));
 
    uint8_t i = 0,flag;
    uint8_t loss_count = 0;
@@ -72,7 +72,7 @@ uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no){
 
 // Function below will generate the HK Packet containing ___ items;
 
-uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no) {
+uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no,uint8_t sd_s) {
     uint8_t loss_count,flag;
 
     hk_pkt->ccsds_p1 = PILOT_REVERSE_BYTE_ORDER(((ccsds_p1(tlm_pkt_type, HK_API_ID))));
@@ -86,13 +86,13 @@ uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no) {
 
     // CDH_Perip_Status
 
-    hk_pkt->CDH_Periph_Status = test_peripherals();
+    hk_pkt->CDH_Periph_Status = test_peripherals(sd_s);
 
 
     //IMU Values: -
 
    // Acceleration
-    short ax, ay, az;
+    uint16_t ax, ay, az;
     uint8_t result;
     result = get_IMU_acc(&ax, &ay, &az);
     hk_pkt->Acc[0] = ((ax));
@@ -183,7 +183,7 @@ void Uart_Init() {
 	UART_init(&uart3,COREUARTAPB_3_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
 	//UART_init(&uart4,COREUARTAPB_4_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
 	SYSREG->WDOG_CR = 0;
-	MSS_UART_init(&g_mss_uart1,2*MSS_UART_115200_BAUD,MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT);
+	MSS_UART_init(&g_mss_uart1,2*115200,MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT);
 	MSS_UART_set_tx_endian(&g_mss_uart1, MSS_UART_LITTLEEND);
 //
 //	MSS_UART_set_usart_mode(&g_mss_uart1,MSS_UART_ASYNC_MODE);
@@ -211,7 +211,7 @@ uint8_t Pilot_Init() {
 	return res;
 }
 
-uint8_t test_peripherals() {
+uint8_t test_peripherals(uint8_t sd) {
 	uint16_t count = 0;
 	uint8_t ch_read[] = {0x80};
 	uint8_t adc_read_value[2];
@@ -255,32 +255,36 @@ uint8_t test_peripherals() {
 		}
 		count++;
 	}
-	//SD card write test
+
 	count = 0;
-	while(count < 10) {
-		temp_result = SD_Write(1024,sd_test);
-		if(temp_result == 0) {
-			result |= 0x08;
-			temp_result = 1;
-			break;
+	if(sd == 0) {
+		//SD card write test
+		while(count < 10) {
+			temp_result = SD_Write(SD_BLOCK_END+10,sd_test);
+			if(temp_result == 0) {
+				result |= 0x08;
+				temp_result = 1;
+				break;
+			}
+			count++;
 		}
-		count++;
-	}
-	//SD card read test
-	count = 0;
-	while(count < 10) {
-		temp_result = SD_Read(1024,sd_test);
-		if(temp_result == 0) {
-			result |= 0x10;
-			temp_result = 1;
-			break;
+		//SD card read test
+		count = 0;
+		while(count < 10) {
+			temp_result = SD_Read(SD_BLOCK_END+10,sd_test);
+			if(temp_result == 0) {
+				result |= 0x10;
+				temp_result = 1;
+				break;
+			}
+			count++;
 		}
-		count++;
 	}
+
 	return result;
 }
 
-uint8_t get_IMU_acc(short *a_x,short *a_y,short *a_z) {
+uint8_t get_IMU_acc(uint16_t *a_x,uint16_t *a_y,uint16_t *a_z) {
 	uint8_t write_CTRL_REG6_XL[2] = {0x20,0x60};
 	uint8_t read_ACC_out_X_L[] = {0x28};
 	uint8_t read_ACC_out_Y_L[] = {0x2A};
