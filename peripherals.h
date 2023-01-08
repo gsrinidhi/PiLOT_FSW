@@ -10,6 +10,10 @@
 #include <drivers/mss_gpio/mss_gpio.h>
 #include <drivers/mss_i2c/mss_i2c.h>
 #include <drivers/mss_uart/mss_uart.h>
+
+//Logic Levels
+#define LOGIC_HIGH					1
+#define LOGIC_LOW					0
 //UART
 //UART instances
  UART_instance_t uart0;
@@ -50,6 +54,12 @@
  uint8_t gpio2_irq_cnt;
  uint8_t gpio3_irq_cnt;
  uint8_t gpio4_irq_cnt;
+
+ //GPIO MACROS
+ #define EN_UART					MSS_GPIO_13
+ #define EN_COMMS					MSS_GPIO_14
+ #define RESET_GPIO					MSS_GPIO_17
+ #define SD_CARD_GPIO				MSS_GPIO_10
 
  //RTC and timer
 #define TIMER_COUNT_PER_MS 50000

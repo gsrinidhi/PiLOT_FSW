@@ -165,22 +165,16 @@ void uart1_rx_handler(mss_uart_instance_t * this_uart) {
 uint8_t downlink_sd(partition_t *p,uint8_t size) {
 	uint8_t result;
 	result = read_data(p,packet_data);
-	MSS_GPIO_set_output(EN_UART,1);
+	MSS_GPIO_set_output(EN_UART,LOGIC_HIGH);
 	MSS_UART_polled_tx(&g_mss_uart1,packet_data,size);
-	MSS_GPIO_set_output(EN_UART,0);
+	MSS_GPIO_set_output(EN_UART,LOGIC_LOW);
 	return result;
 }
 
 uint8_t downlink(uint8_t *data,uint8_t size) {
-		//MSS_GPIO_set_output(EN_UART,1);
-		uint8_t k = 0;
-		//MSS_UART_set_tx_endian(&g_mss_uart1, MSS_UART_BIGEND);
+		MSS_GPIO_set_output(EN_UART,LOGIC_HIGH);
 		MSS_UART_polled_tx(&g_mss_uart1,data,size);
-		//MSS_GPIO_set_output(EN_UART,0);
-//	char ping[] = "pingpingpingpingpingpingpingpingpingpingpingpingpingping\n";
-//	uint8_t tx[] = {10};
-//	MSS_UART_polled_tx(&g_mss_uart1,(uint8_t*)tx,1);
-//	MSS_UART_polled_tx(&g_mss_uart1,(uint8_t*)ping,58);
+		MSS_GPIO_set_output(EN_UART,LOGIC_LOW);
 		return 0;
 }
 
@@ -369,7 +363,7 @@ int main()
 			} else {
 				downlink(packet_data,THERMISTOR_PKT_LENGTH);
 			}
-			//
+
 			thermistor_seq_no++;
 			log_count++;
 			payload_last_count_H = current_time_upper;
@@ -392,7 +386,7 @@ int main()
             log_packet->logs[log_count].time_H = current_time_upper;
             log_packet->logs[log_count].time_L = current_time_lower;
             hk_packet = (hk_pkt_t*)packet_data;
-            result_global = get_hk(hk_packet,hk_seq_no,sd_state);
+            result_global = get_hk(hk_packet,hk_seq_no,&sd_state);
             log_packet->logs[log_count].task_status = result_global;
             if(sd_state == 0) {
             	store_data(&hk_p,packet_data);
@@ -448,15 +442,4 @@ int main()
 			log_count = 0;
 		}
 	}
-//	while(1) {
-//		uint8_t tx[] = {0x01};
-//		MSS_UART_polled_tx(&g_mss_uart1,tx,1);
-//	}
-
-
-
-
-
-
-
 }

@@ -66,10 +66,6 @@ typedef struct {
     uint32_t ccsds_s1;
     uint16_t ccsds_s2;
 
-//	uint8_t pkt_id;
-//	uint8_t pkt_length;
-
-
     //	uint16_t primary_1;
     //	uint16_t primary_2;
     //	uint16_t primary_3;

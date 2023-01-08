@@ -1,13 +1,9 @@
 #include"SD.h"
 
+
 uint8_t SD_Init() {
 	uint8_t flag = 0;
-	MSS_GPIO_init();
-	MSS_GPIO_config( MSS_GPIO_10 , MSS_GPIO_OUTPUT_MODE );
-	MSS_GPIO_set_output( MSS_GPIO_10,1);
-
-	MSS_SPI_init(&g_mss_spi1);
-	MSS_SPI_configure_master_mode(&g_mss_spi1, MSS_SPI_SLAVE_0, MSS_SPI_MODE0, 512, 8);
+	MSS_GPIO_set_output( SD_CARD_GPIO,1);
 
 	uint8_t rd_buff[1] = {0x1F};
 	uint8_t rx_buffer[5] = {0x00,0x00,0x00,0x00,0x00};

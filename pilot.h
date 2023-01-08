@@ -75,11 +75,6 @@
 #define HYST_REG(x) ((x) * 3 + 0x6)
 #define ADC_CHX(x) (((x) + 0x8)<<4)
 
-//GPIO MACROS
-#define EN_UART					MSS_GPIO_13
-#define EN_COMMS				MSS_GPIO_14
-#define RESET_GPIO				MSS_GPIO_17
-
 //IMU Macros
 #define IMU_ADDR 0x6a
 #define IMU_WHO_AM_I_REG 0x0F
@@ -178,7 +173,7 @@ uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no);
  * Bit 4        : SD card write
  * Bit 5        : SD card read
  */
-uint8_t test_peripherals(uint8_t sd);
+uint8_t test_peripherals(uint8_t *sd);
 
 uint8_t get_IMU_acc(uint16_t *a_x,uint16_t *a_y,uint16_t *a_z);
 
@@ -186,5 +181,5 @@ uint8_t get_IMU_gyro(uint16_t *roll_rate, uint16_t *pitch_rate,uint16_t *yaw_rat
 
 void time_to_count(uint32_t ms,uint32_t *upper_count,uint32_t *lower_count);
 
-uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no,uint8_t sd_s);
+uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no,uint8_t *sd_s);
 #endif
