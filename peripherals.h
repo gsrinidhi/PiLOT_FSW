@@ -10,6 +10,7 @@
 #include <drivers/mss_gpio/mss_gpio.h>
 #include <drivers/mss_i2c/mss_i2c.h>
 #include <drivers/mss_uart/mss_uart.h>
+#include <drivers_config/sys_config/sys_config_mss_clocks.h>
 
 //Logic Levels
 #define LOGIC_HIGH					1
