@@ -7,7 +7,7 @@
 
 #ifndef _PACKET_DEFINITIONS_
 #define _PACKET_DEFINITIONS_
-//#define THERMISTOR_Version_ID		0x1
+
 #define THERMISTOR_API_ID			20
 #define THERMISTOR_PKT_LENGTH		sizeof(thermistor_pkt_t)
 #define THERMISTOR_FLETCHER_CODE	0x00
@@ -16,12 +16,10 @@
 #define ARIS_PKT_LENGTH       sizeof(aris_pkt_t)
 #define ARIS_FLETCHER_CODE    0x00
 
-//#define LOGS_Version_ID		0x2
 #define LOGS_API_ID			30
 #define LOGS_PKT_LENGTH		sizeof(log_packet_t)
 #define LOGS_FLETCHER_CODE	0x00
 
-//#define HK_Version_ID		0x3
 #define HK_API_ID			10
 #define HK_PKT_LENGTH		sizeof(hk_pkt_t)
 #define HK_FLETCHER_CODE	0x01
@@ -40,8 +38,6 @@
 typedef struct {
     //CCSDS
 
-
-//    Uncomment the primary fields and implement bit shifting in packet formation functions for all packets
 	uint16_t ccsds_p1;
 	uint16_t ccsds_p2;
 	uint16_t ccsds_p3;
@@ -83,10 +79,6 @@ typedef struct {
     uint32_t ccsds_s1;
     uint16_t ccsds_s2;
 
-    //	uint16_t primary_1;
-    //	uint16_t primary_2;
-    //	uint16_t primary_3;
-
     uint8_t CDH_Periph_Status; //For all the 8 flags
     uint16_t Acc[3];  // X,Y,Z Axis
     uint16_t Angular_Rate[3]; //Pitch, Roll, Yaw
@@ -117,10 +109,6 @@ typedef struct {
 
     uint16_t ccsds_s1;
     uint16_t ccsds_s2;
-
-    //	uint16_t primary_1;
-    //	uint16_t primary_2;
-    //	uint16_t primary_3;
 
     log_entry_t logs[10];
 

@@ -1,5 +1,4 @@
 #include"pslv_interface.h"
-//static i2c_status_t status;
 uint8_t count;
 uint8_t vc_write(uint8_t addr, uint8_t *tx, uint8_t tx_size) {
 	i2c_status_t status;

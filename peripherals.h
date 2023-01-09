@@ -61,8 +61,6 @@
  #define RESET_GPIO					MSS_GPIO_17
  #define SD_CARD_GPIO				MSS_GPIO_10
 
- //RTC and timer
-#define TIMER_COUNT_PER_MS 1000000
+#define TIMER_COUNT_PER_MS 100000
 #define FULL_SCALE_TIME_MS 42949
- //mss_rtc_calendar_t now;
 #endif

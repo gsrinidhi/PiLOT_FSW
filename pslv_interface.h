@@ -8,10 +8,8 @@
 #define VC2 0x41
 #define VC3 0x43
 #define VC_SENSOR_I2C &g_core_i2c2
+
 // Reg Addresses
-
-
-
 #define VC_BUSV_CHx(x)                  ((0x2 * x))
 #define VC_SHUNTV_CHx(x)                ((0x2 * x - 1))
 

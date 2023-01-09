@@ -28,7 +28,6 @@ uint16_t get_ADC_value(i2c_instance_t i2c_chx,uint8_t address,uint8_t chx,uint8_
 	ch_read[0] |= 0x8;
 	ch_read[0] = ch_read[0] << 4;
 	uint8_t status;
-	//uint16_t conv_res,value;
 	uint16_t voltage;
 	I2C_write_read(&i2c_chx,address,ch_read,1,adc_read_value,2,I2C_RELEASE_BUS);
 	status = I2C_wait_complete(&i2c_chx, I2C_NO_TIMEOUT);
@@ -56,8 +55,6 @@ uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no){
         pkt->thermistor_set_B[i] = get_ADC_value(i2c_3, ADC_I2CU2_ADDR, i,&flag);
         loss_count+=flag;
         pkt->thermistor_set_C[i] = get_ADC_value(i2c_5, ADC_I2CU3_ADDR, i,&flag);
-        loss_count+=flag;
-        pkt->thermistor_set_D[i] = get_ADC_value(i2c_5, ADC_I2CU4_ADDR, i,&flag);
         loss_count+=flag;
      }
 
@@ -272,7 +269,7 @@ uint8_t test_peripherals(uint8_t *sd) {
 
 	count = 0;
 	*sd = SD_Init();
-	if(sd == 0) {
+	if(*sd == 0) {
 		result |= 0x20;
 		//SD card write test
 		while(count < 10) {
@@ -441,12 +438,6 @@ void time_to_count(uint32_t ms,uint32_t *upper_count,uint32_t *lower_count) {
     *upper_count = (ms/FULL_SCALE_TIME_MS) * TIMER_COUNT_PER_MS;
 }
 
-//void get_CDH_HK() {
-//
-//}
-
-
-
 void FabricIrq0_IRQHandler(void)
 {
     I2C_isr(&g_core_i2c0);
@@ -476,11 +467,6 @@ void FabricIrq5_IRQHandler(void)
 {
     I2C_isr(&g_core_i2c5);
 }
-
-//void Timer1_IRQHandler(void) {
-//	timer_flag = 0;
-//	MSS_TIM1_clear_irq();
-//}
 
 void GPIO19_IRQHandler(void) {
 	gpio1_irq_cnt++;
