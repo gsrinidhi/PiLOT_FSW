@@ -12,6 +12,10 @@
 #define THERMISTOR_PKT_LENGTH		sizeof(thermistor_pkt_t)
 #define THERMISTOR_FLETCHER_CODE	0x00
 
+#define ARIS_API_ID           20
+#define ARIS_PKT_LENGTH       sizeof(aris_pkt_t)
+#define ARIS_FLETCHER_CODE    0x00
+
 //#define LOGS_Version_ID		0x2
 #define LOGS_API_ID			30
 #define LOGS_PKT_LENGTH		sizeof(log_packet_t)
@@ -51,10 +55,23 @@ typedef struct {
     uint16_t thermistor_set_A[8];
     uint16_t thermistor_set_B[8];
     uint16_t thermistor_set_C[8];
-    uint16_t thermistor_set_D[8];
 
     uint16_t Fletcher_Code;
 }thermistor_pkt_t;
+
+typedef struct{
+    uint16_t ccsds_p1;
+    uint16_t ccsds_p2;
+    uint16_t ccsds_p3;
+
+    uint32_t ccsds_s1;
+    uint16_t ccsds_s2;
+
+    uint16_t aris[8];
+
+    uint16_t Fletcher_Code;
+
+}aris_pkt_t;
 
 typedef struct {
     //CCSDS
