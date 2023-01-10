@@ -1,19 +1,19 @@
 #define DEBUG_ON 		0
 #include "memory.h"
 #include "pilot.h"
-
 partition_t payload_p,hk_p,log_p, sd_hk_p;
 thermistor_pkt_t *thermistor_packet;
 hk_pkt_t *hk_packet;
 SD_HK_pkt_t *sd_hk_packet;
 log_packet_t *log_packet;
 cmd_packet_t *cmd;
+aris_pkt_t *aris_packet;
 uint8_t packet_data[512];
 uint8_t log_data[512];
 uint32_t current_time_lower,current_time_upper;
-uint32_t payload_period_L,payload_period_H,hk_period_H,hk_period_L,sd_hk_period_L,sd_hk_period_H;
-uint32_t payload_last_count_L,payload_last_count_H,hk_last_count_H,hk_last_count_L,sd_hk_last_count_L,sd_hk_last_count_H;
-uint16_t thermistor_seq_no,logs_seq_no,hk_seq_no,sd_hk_seq_no;
+uint32_t payload_period_L,payload_period_H,hk_period_H,hk_period_L,sd_hk_period_L,sd_hk_period_H,aris_period_L,aris_period_H;
+uint32_t payload_last_count_L,payload_last_count_H,hk_last_count_H,hk_last_count_L,sd_hk_last_count_L,sd_hk_last_count_H,aris_last_count_L,aris_last_count_H;
+uint16_t thermistor_seq_no,logs_seq_no,hk_seq_no,sd_hk_seq_no,aris_seq_no;
 uint8_t log_count,result_global,api_id,sd_state;
 
 void uart1_rx_handler(mss_uart_instance_t * this_uart) {
@@ -126,6 +126,7 @@ uint8_t Flags_Init() {
 	time_to_count(DEFAULT_HK_PERIOD,&hk_period_H,&hk_period_L);
 	time_to_count(DEFAULT_PAYLOAD_PERIOD,&payload_period_H,&payload_period_L);
 	time_to_count(FIVE_SPP_RATE,&sd_hk_period_H,&sd_hk_period_L);
+	time_to_count(10,&aris_period_H,&aris_period_L);
 	thermistor_seq_no = 1;
 	hk_seq_no = 1;
 	logs_seq_no = 1;
@@ -141,6 +142,8 @@ uint8_t Flags_Init() {
 	payload_last_count_L = 0xFFFFFFFF;
 	sd_hk_last_count_H = 0xFFFFFFFF;
 	sd_hk_last_count_L = 0xFFFFFFFF;
+	aris_last_count_H = 0xFFFFFFFF;
+	aris_last_count_L = 0xFFFFFFFF;
 //    MSS_UART_set_rx_handler(&g_mss_uart1,
 //                            uart1_rx_handler,
 //                            MSS_UART_FIFO_SINGLE_BYTE);
@@ -209,7 +212,6 @@ int main()
 	sd_state = result_global & 0x1;
 	Flags_Init();
 	log_packet = (log_packet_t*)log_data;
-	MSS_GPIO_set_output(EN_UART,1);
 	while(1) {
 		//result_global = command();
 		MSS_TIM64_get_current_value(&current_time_upper,&current_time_lower);
@@ -227,7 +229,7 @@ int main()
 			} else {
 				downlink(packet_data,THERMISTOR_PKT_LENGTH);
 			}
-
+			uint8_t kl = sizeof(thermistor_pkt_t);
 			thermistor_seq_no++;
 			log_count++;
 			payload_last_count_H = current_time_upper;
@@ -305,10 +307,25 @@ int main()
 			store_data(&log_p,log_data);
 			log_count = 0;
 		}
+
+		if((aris_last_count_H - current_time_upper >= aris_period_H) && (aris_last_count_L - current_time_lower >= aris_period_L)) {
+			log_packet->logs[log_count].task_id = ARIS_TASK_ID;
+			log_packet->logs[log_count].time_H = current_time_upper;
+			log_packet->logs[log_count].time_L = current_time_lower;
+			aris_packet = (aris_pkt_t*)packet_data;
+			result_global = get_aris_vals(aris_packet,aris_seq_no);
+			log_packet->logs[log_count].task_status = result_global;
+			downlink(packet_data,ARIS_PKT_LENGTH);
+			uint8_t ka = sizeof(aris_pkt_t);
+			aris_seq_no++;
+			log_count++;
+			aris_last_count_H = current_time_upper;
+			aris_last_count_L = current_time_lower;
+		}
 	}
-//
+
 //	while(1) {
-//		uint8_t tx[] = {0x08};
+//		uint8_t tx[] = {0x03};
 //		MSS_UART_polled_tx(&g_mss_uart1,tx,1);
 //	}
 }

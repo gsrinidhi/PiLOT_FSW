@@ -10,11 +10,11 @@
 
 #define THERMISTOR_API_ID			20
 #define THERMISTOR_PKT_LENGTH		sizeof(thermistor_pkt_t)
-#define THERMISTOR_FLETCHER_CODE	0x00
+#define THERMISTOR_FLETCHER_CODE	0x01
 
-#define ARIS_API_ID           20
+#define ARIS_API_ID           50
 #define ARIS_PKT_LENGTH       sizeof(aris_pkt_t)
-#define ARIS_FLETCHER_CODE    0x00
+#define ARIS_FLETCHER_CODE    0x01
 
 #define LOGS_API_ID			30
 #define LOGS_PKT_LENGTH		sizeof(log_packet_t)
@@ -26,7 +26,7 @@
 
 #define SD_HK_API_ID    	40
 #define SD_HK_PKT_LENGTH  sizeof(SD_HK_pkt_t)
-#define SD_HK_FLETCHER_CODE 0x00
+#define SD_HK_FLETCHER_CODE 0x01
 
 //Command packet parameters
 #define CMD_API_ID			0x20
@@ -53,7 +53,7 @@ typedef struct {
     uint16_t thermistor_set_C[8];
 
     uint16_t Fletcher_Code;
-}thermistor_pkt_t;
+}__attribute__((packed)) thermistor_pkt_t;
 
 typedef struct{
     uint16_t ccsds_p1;
@@ -67,7 +67,7 @@ typedef struct{
 
     uint16_t Fletcher_Code;
 
-}aris_pkt_t;
+}__attribute__((packed)) aris_pkt_t;
 
 typedef struct {
     //CCSDS
@@ -98,7 +98,7 @@ typedef struct {
 	uint32_t time_H;//upper time value
 	uint8_t task_id;//task id
 	uint8_t task_status;//task status;
-}log_entry_t;
+}__attribute__((packed)) log_entry_t;
 
 typedef struct {
     //CCSDS
@@ -107,13 +107,13 @@ typedef struct {
     uint16_t ccsds_p2;
     uint16_t ccsds_p3;
 
-    uint16_t ccsds_s1;
+    uint32_t ccsds_s1;
     uint16_t ccsds_s2;
 
     log_entry_t logs[10];
 
     uint16_t Fletcher_Code;
-}log_packet_t;
+}__attribute__((packed)) log_packet_t;
 
 typedef struct {
     //CCSDS
@@ -122,7 +122,7 @@ typedef struct {
     uint16_t ccsds_p2;
     uint16_t ccsds_p3;
 
-    uint16_t ccsds_s1;
+    uint32_t ccsds_s1;
     uint16_t ccsds_s2;
 
     uint32_t HK_Read_Pointer;
@@ -135,7 +135,7 @@ typedef struct {
     uint32_t SD_Test_Write_Pointer;
 
     uint16_t Fletcher_Code;
-}SD_HK_pkt_t;
+}__attribute__((packed)) SD_HK_pkt_t;
 
 typedef struct {
     //CCSDS
@@ -144,13 +144,13 @@ typedef struct {
     uint16_t ccsds_p2;
     uint16_t ccsds_p3;
 
-    uint16_t ccsds_s1;
+    uint32_t ccsds_s1;
     uint16_t ccsds_s2;
 
     uint8_t cmd_opcaode;
     uint8_t cmd_arg[4];
 
     uint16_t Fletcher_Code;
-}cmd_packet_t;
+}__attribute__((packed)) cmd_packet_t;
 
 #endif

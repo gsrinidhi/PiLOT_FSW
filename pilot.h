@@ -47,6 +47,7 @@
 #define THERMISTOR_TASK_ID	1
 #define HK_TASK_ID			2
 #define SD_HK_TASK_ID		3
+#define ARIS_TASK_ID		4
 
 //PSLV address
 #define PSLV_ADDR			0x50
@@ -68,7 +69,7 @@ typedef enum PACKET_RATES {
  * @param address: The address of the ADC
  * 
  */
-uint8_t ADC_Init(i2c_instance_t i2c_chx,uint8_t address);
+uint8_t ADC_Init(i2c_instance_t *i2c_chx,uint8_t address);
 
 /**
  * @brief Get the ADC value 
@@ -78,7 +79,7 @@ uint8_t ADC_Init(i2c_instance_t i2c_chx,uint8_t address);
  * @param chx       : the channel to convert  
  * @return double   : returns the value given by the ADC
  */
-uint16_t get_ADC_value(i2c_instance_t i2c_chx,uint8_t address,uint8_t chx,uint8_t *flag);
+uint16_t get_ADC_value(i2c_instance_t *i2c_chx,uint8_t address,uint8_t chx,uint8_t *flag);
 
 /**
  * @brief Initialises the I2Cs in Pilot
@@ -134,4 +135,6 @@ uint8_t get_IMU_gyro(uint16_t *roll_rate, uint16_t *pitch_rate,uint16_t *yaw_rat
 void time_to_count(uint32_t ms,uint32_t *upper_count,uint32_t *lower_count);
 
 uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no,uint8_t *sd_s);
+
+uint8_t get_aris_vals(aris_pkt_t *pkt, uint16_t seq_no);
 #endif

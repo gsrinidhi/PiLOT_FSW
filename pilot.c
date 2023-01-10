@@ -2,7 +2,7 @@
 #include "memory.h"
 
 
-uint8_t ADC_Init(i2c_instance_t i2c_chx,uint8_t address){
+uint8_t ADC_Init(i2c_instance_t *i2c_chx,uint8_t address){
 	uint8_t status;
 	uint8_t channel = 0;
 	uint8_t return_value = 0;
@@ -12,25 +12,25 @@ uint8_t ADC_Init(i2c_instance_t i2c_chx,uint8_t address){
 	for(;channel <= 3;channel++) {
 		DATA_HIGH[0] = DATA_HIGH_REG(channel);
 		DATA_LOW[0] = DATA_LOW_REG(channel);
-		I2C_write(&i2c_chx,address,DATA_HIGH,sizeof(DATA_HIGH),I2C_RELEASE_BUS);
-		status = I2C_wait_complete(&i2c_chx, I2C_NO_TIMEOUT);
-		I2C_write(&i2c_chx,address,DATA_LOW,sizeof(DATA_LOW),I2C_RELEASE_BUS);
-		status = I2C_wait_complete(&i2c_chx, I2C_NO_TIMEOUT);
+		I2C_write(i2c_chx,address,DATA_HIGH,sizeof(DATA_HIGH),I2C_RELEASE_BUS);
+		status = I2C_wait_complete(i2c_chx, I2C_NO_TIMEOUT);
+		I2C_write(i2c_chx,address,DATA_LOW,sizeof(DATA_LOW),I2C_RELEASE_BUS);
+		status = I2C_wait_complete(i2c_chx, I2C_NO_TIMEOUT);
 		return_value |= (status << channel);
 	}
 	
 	return return_value;
 }
 
-uint16_t get_ADC_value(i2c_instance_t i2c_chx,uint8_t address,uint8_t chx,uint8_t *flag) {
+uint16_t get_ADC_value(i2c_instance_t *i2c_chx,uint8_t address,uint8_t chx,uint8_t *flag) {
 	uint8_t adc_read_value[2];
 	uint8_t ch_read[] = {chx};
 	ch_read[0] |= 0x8;
 	ch_read[0] = ch_read[0] << 4;
 	uint8_t status;
 	uint16_t voltage;
-	I2C_write_read(&i2c_chx,address,ch_read,1,adc_read_value,2,I2C_RELEASE_BUS);
-	status = I2C_wait_complete(&i2c_chx, I2C_NO_TIMEOUT);
+	I2C_write_read(i2c_chx,address,ch_read,1,adc_read_value,2,I2C_RELEASE_BUS);
+	status = I2C_wait_complete(i2c_chx, I2C_NO_TIMEOUT);
 	if(status != 0) {
 		*flag = 1;
 	} else {
@@ -50,11 +50,11 @@ uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no){
    uint8_t i = 0,flag;
    uint8_t loss_count = 0;
    for(;i<8;i++){
-        pkt->thermistor_set_A[i] = get_ADC_value(i2c_3, ADC_I2CU1_ADDR, i,&flag);
+        pkt->thermistor_set_A[i] = get_ADC_value(&i2c_3, ADC_I2CU1_ADDR, i,&flag);
         loss_count+=flag;
-        pkt->thermistor_set_B[i] = get_ADC_value(i2c_3, ADC_I2CU2_ADDR, i,&flag);
+        pkt->thermistor_set_B[i] = get_ADC_value(&i2c_3, ADC_I2CU2_ADDR, i,&flag);
         loss_count+=flag;
-        pkt->thermistor_set_C[i] = get_ADC_value(i2c_5, ADC_I2CU3_ADDR, i,&flag);
+        pkt->thermistor_set_C[i] = get_ADC_value(&i2c_5, ADC_I2CU3_ADDR, i,&flag);
         loss_count+=flag;
      }
 
@@ -72,7 +72,7 @@ uint8_t get_aris_vals(aris_pkt_t *pkt, uint16_t seq_no){
     uint8_t loss_count = 0;
 
     for(;i<8;i++){
-        pkt->aris[i] = get_ADC_value(i2c_5, ADC_I2CU4_ADDR, i,&flag);
+        pkt->aris[i] = get_ADC_value(&i2c_5, ADC_I2CU4_ADDR, i,&flag);
         loss_count+=flag;
 
     }
@@ -196,7 +196,7 @@ void Uart_Init() {
 	UART_init(&uart2,COREUARTAPB_2_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
 	UART_init(&uart3,COREUARTAPB_3_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
 	SYSREG->WDOG_CR = 0;
-	MSS_UART_init(&g_mss_uart1,MSS_UART_BAUD_2000000,MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY);
+	MSS_UART_init(&g_mss_uart1,2000000,MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT);
 }
 
 uint8_t Pilot_Peripherals_Init() {
@@ -214,10 +214,10 @@ uint8_t Pilot_Peripherals_Init() {
 uint8_t Pilot_Init() {
 	uint8_t res;
 	res = Pilot_Peripherals_Init();
-	ADC_Init(i2c_3,ADC_I2CU1_ADDR);
-	ADC_Init(i2c_3,ADC_I2CU2_ADDR);
-	ADC_Init(i2c_5,ADC_I2CU1_ADDR);
-	ADC_Init(i2c_5,ADC_I2CU2_ADDR);
+	ADC_Init(&i2c_3,ADC_I2CU1_ADDR);
+	ADC_Init(&i2c_3,ADC_I2CU2_ADDR);
+	ADC_Init(&i2c_5,ADC_I2CU1_ADDR);
+	ADC_Init(&i2c_5,ADC_I2CU2_ADDR);
 	res = res | (vc_init(VC1) << 1);
 	return res;
 }
@@ -328,7 +328,7 @@ uint8_t get_IMU_acc(uint16_t *a_x,uint16_t *a_y,uint16_t *a_z) {
 
 	*a_z = ((rx_buffer_2[0] << 8) | rx_buffer[0]);
 	if((*a_z) > 32768) {
-		*a_z = 65500-*a_z;
+		*a_z = 65535-*a_z;
 	}
 
 	I2C_write_read(&g_core_i2c5,IMU_ADDR,read_ACC_out_Y_L,1,rx_buffer,
@@ -345,7 +345,7 @@ uint8_t get_IMU_acc(uint16_t *a_x,uint16_t *a_y,uint16_t *a_z) {
 
 	*a_y = ((rx_buffer_2[0] << 8) | rx_buffer[0]);
 	if((*a_y) > 32768) {
-		*a_y = 65500-*a_y;
+		*a_y = 65535-*a_y;
 	}
 
 	I2C_write_read(&g_core_i2c5,IMU_ADDR,read_ACC_out_X_L,1,rx_buffer,
@@ -362,7 +362,7 @@ uint8_t get_IMU_acc(uint16_t *a_x,uint16_t *a_y,uint16_t *a_z) {
 
 	*a_x = ((rx_buffer_2[0] << 8) | rx_buffer[0]);
 	if((*a_x) > 32768) {
-		*a_x = 65500-*a_x;
+		*a_x = 65535-*a_x;
 	}
 
 	return status;
