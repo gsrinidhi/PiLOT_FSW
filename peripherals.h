@@ -1,6 +1,7 @@
 #ifndef PERIPH_H
 #define PERIPH_H
 
+#include<CMSIS/hw_reg_io.h>
 #include<drivers/CoreUARTapb/core_uart_apb.h>
 #include<drivers/CoreI2C/core_i2c.h>
 #include<drivers/mss_rtc/mss_rtc.h>
@@ -16,6 +17,8 @@
 #define LOGIC_HIGH					1
 #define LOGIC_LOW					0
 //UART
+//defining PE bit of LSR register for MSS_UART
+#define PE							2u
 //UART instances
  UART_instance_t uart0;
  UART_instance_t uart1;
@@ -30,6 +33,9 @@
 #else
 #define MSS_UART_BAUD_2000000				2000000
 #endif
+
+#define LOWER_BYTE			0
+#define UPPER_BYTE			1
 
 //I2C instances
 
