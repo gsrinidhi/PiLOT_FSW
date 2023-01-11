@@ -182,6 +182,7 @@ void GPIO_Init() {
 	MSS_GPIO_config(EN_UART,MSS_GPIO_OUTPUT_MODE);
 	MSS_GPIO_config(RESET_GPIO,MSS_GPIO_OUTPUT_MODE);
 	MSS_GPIO_config( SD_CARD_GPIO , MSS_GPIO_OUTPUT_MODE );
+	MSS_GPIO_config( INV_EN , MSS_GPIO_OUTPUT_MODE );
 }
 
 void SPI_Init() {
@@ -196,7 +197,7 @@ void Uart_Init() {
 	UART_init(&uart2,COREUARTAPB_2_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
 	UART_init(&uart3,COREUARTAPB_3_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
 	SYSREG->WDOG_CR = 0;
-	MSS_UART_init(&g_mss_uart1,2000000,MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT);
+	MSS_UART_init(&g_mss_uart1,2000000,MSS_UART_DATA_8_BITS | MSS_UART_STICK_PARITY_0 | MSS_UART_ONE_STOP_BIT);
 }
 
 uint8_t Pilot_Peripherals_Init() {
@@ -218,6 +219,7 @@ uint8_t Pilot_Init() {
 	ADC_Init(&i2c_3,ADC_I2CU2_ADDR);
 	ADC_Init(&i2c_5,ADC_I2CU1_ADDR);
 	ADC_Init(&i2c_5,ADC_I2CU2_ADDR);
+	MSS_GPIO_set_output(INV_EN,0);
 	res = res | (vc_init(VC1) << 1);
 	return res;
 }

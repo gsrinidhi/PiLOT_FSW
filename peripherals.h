@@ -60,6 +60,7 @@
  #define EN_COMMS					MSS_GPIO_14
  #define RESET_GPIO					MSS_GPIO_17
  #define SD_CARD_GPIO				MSS_GPIO_10
+#define INV_EN						MSS_GPIO_8
 
 #define TIMER_COUNT_PER_MS 100000
 #define FULL_SCALE_TIME_MS 42949
