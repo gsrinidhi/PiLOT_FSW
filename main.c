@@ -9,17 +9,26 @@ log_packet_t *log_packet;
 cmd_packet_t *cmd;
 aris_pkt_t *aris_packet;
 uint8_t packet_data[512];
+uint8_t downlink_data[512];
 uint8_t log_data[512];
 uint32_t current_time_lower,current_time_upper;
 uint32_t payload_period_L,payload_period_H,hk_period_H,hk_period_L,sd_hk_period_L,sd_hk_period_H,aris_period_L,aris_period_H;
 uint32_t payload_last_count_L,payload_last_count_H,hk_last_count_H,hk_last_count_L,sd_hk_last_count_L,sd_hk_last_count_H,aris_last_count_L,aris_last_count_H;
-uint16_t thermistor_seq_no,logs_seq_no,hk_seq_no,sd_hk_seq_no,aris_seq_no;
-uint8_t log_count,result_global,api_id,sd_state;
+uint16_t thermistor_seq_no,logs_seq_no,hk_seq_no,sd_hk_seq_no,aris_seq_no,downlink_data_count;
+uint8_t log_count,result_global,api_id,sd_state,downlink_flag,downlink_packet_size,uart_state;
 
 void uart1_rx_handler(mss_uart_instance_t * this_uart) {
 	uint8_t rx_buffer[3],size;
 	size = MSS_UART_get_rx(this_uart,rx_buffer,1);
 	if(rx_buffer[0] == PSLV_ADDR) {
+		if(read_bit_reg8((&(&g_mss_uart1)->hw_reg->LSR),PE)){
+			//If we have to send data
+			if(downlink_data_count < (downlink_packet_size-1)) {
+				rx_buffer[LOWER_BYTE] = downlink_data[downlink_data_count];
+				rx_buffer[UPPER_BYTE] = downlink_data[downlink_data_count+1];
+				MSS_UART_polled_tx(&g_mss_uart1,rx_buffer,2);
+			}
+		}
 
 	}else {
 
