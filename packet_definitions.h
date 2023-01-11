@@ -55,6 +55,12 @@ typedef struct {
     uint16_t Fletcher_Code;
 }__attribute__((packed)) thermistor_pkt_t;
 
+typedef struct {
+	uint16_t collect_time;
+	uint16_t collect_location;
+	uint16_t aris_data[3];
+}__attribute__((packed)) aris_sample_t;
+
 typedef struct{
     uint16_t ccsds_p1;
     uint16_t ccsds_p2;
@@ -63,7 +69,9 @@ typedef struct{
     uint32_t ccsds_s1;
     uint16_t ccsds_s2;
 
-    uint16_t aris[8];
+    uint32_t start_time;
+
+    aris_sample_t aris_samples[20];
 
     uint16_t Fletcher_Code;
 

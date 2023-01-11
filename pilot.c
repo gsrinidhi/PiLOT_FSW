@@ -63,23 +63,35 @@ uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no){
     return loss_count;
 }
 
-uint8_t get_aris_vals(aris_pkt_t *pkt, uint16_t seq_no){
-    pkt->ccsds_p1 = PILOT_REVERSE_BYTE_ORDER((ccsds_p1(tlm_pkt_type, ARIS_API_ID)));
-    pkt->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER((ccsds_p2(seq_no)));
-    pkt->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER((ccsds_p3(ARIS_PKT_LENGTH-7)));
-
-    uint8_t i = 0,flag;
-    uint8_t loss_count = 0;
-
-    for(;i<8;i++){
-        pkt->aris[i] = get_ADC_value(&i2c_5, ADC_I2CU4_ADDR, i,&flag);
-        loss_count+=flag;
-
-    }
-    pkt->Fletcher_Code  = ARIS_FLETCHER_CODE;
-
-    return loss_count;
+uint8_t get_aris_sample(aris_pkt_t *pkt,uint16_t *time,uint16_t *location,uint8_t sample_no) {
+	uint8_t flag,loss_count = 0;
+	pkt->aris_samples[sample_no].collect_time = *time;
+	pkt->aris_samples[sample_no].collect_location = *location;
+	pkt->aris_samples[sample_no].aris_data[0] = get_ADC_value(&i2c_5, ADC_I2CU4_ADDR, 0,&flag);
+	loss_count+=flag;
+	pkt->aris_samples[sample_no].aris_data[1] = get_ADC_value(&i2c_5, ADC_I2CU4_ADDR, 1,&flag);
+	loss_count+=flag;
+	pkt->aris_samples[sample_no].aris_data[2] = get_ADC_value(&i2c_5, ADC_I2CU4_ADDR, 2,&flag);
+	loss_count+=flag;
+	return loss_count;
 }
+//uint8_t get_aris_vals(aris_pkt_t *pkt, uint16_t seq_no){
+//    pkt->ccsds_p1 = PILOT_REVERSE_BYTE_ORDER((ccsds_p1(tlm_pkt_type, ARIS_API_ID)));
+//    pkt->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER((ccsds_p2(seq_no)));
+//    pkt->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER((ccsds_p3(ARIS_PKT_LENGTH-7)));
+//
+//    uint8_t i = 0,flag;
+//    uint8_t loss_count = 0;
+//
+//    for(;i<8;i++){
+//        pkt->aris[i] = get_ADC_value(&i2c_5, ADC_I2CU4_ADDR, i,&flag);
+//        loss_count+=flag;
+//
+//    }
+//    pkt->Fletcher_Code  = ARIS_FLETCHER_CODE;
+//
+//    return loss_count;
+//}
 
 // Function below will generate the HK Packet containing ___ items;
 

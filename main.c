@@ -1,7 +1,7 @@
 #define DEBUG_ON 		0
 #include "memory.h"
 #include "pilot.h"
-partition_t payload_p,hk_p,log_p, sd_hk_p;
+partition_t payload_p,hk_p,log_p, sd_hk_p,aris_p;
 thermistor_pkt_t *thermistor_packet;
 hk_pkt_t *hk_packet;
 SD_HK_pkt_t *sd_hk_packet;
@@ -11,28 +11,45 @@ aris_pkt_t *aris_packet;
 uint8_t packet_data[512];
 uint8_t downlink_data[512];
 uint8_t log_data[512];
+uint8_t aris_packet_data[512];
 uint32_t current_time_lower,current_time_upper;
 uint32_t payload_period_L,payload_period_H,hk_period_H,hk_period_L,sd_hk_period_L,sd_hk_period_H,aris_period_L,aris_period_H;
 uint32_t payload_last_count_L,payload_last_count_H,hk_last_count_H,hk_last_count_L,sd_hk_last_count_L,sd_hk_last_count_H,aris_last_count_L,aris_last_count_H;
-uint16_t thermistor_seq_no,logs_seq_no,hk_seq_no,sd_hk_seq_no,aris_seq_no,downlink_data_count;
-uint8_t log_count,result_global,api_id,sd_state,downlink_flag,downlink_packet_size,uart_state;
+uint16_t thermistor_seq_no,logs_seq_no,hk_seq_no,sd_hk_seq_no,aris_seq_no,downlink_data_count,current_location;
+uint8_t log_count,result_global,api_id,sd_state,downlink_flag,downlink_packet_size,uart_state,aris_sample_no;
+//volatile uint8_t addr_flag = ((&g_mss_uart1)->hw_reg->LSR);
+uint8_t uart_irq_rx_buffer[3];
+uint8_t uart_irq_size;
+volatile uint8_t uart_irq_addr_flag;
 
+uint8_t downlink(uint8_t *data,uint8_t size) {
+		MSS_GPIO_set_output(EN_UART,LOGIC_HIGH);
+		MSS_UART_polled_tx(&g_mss_uart1,data,size);
+		MSS_GPIO_set_output(EN_UART,LOGIC_LOW);
+		return 0;
+}
 void uart1_rx_handler(mss_uart_instance_t * this_uart) {
-	uint8_t rx_buffer[3],size;
-	size = MSS_UART_get_rx(this_uart,rx_buffer,1);
-	if(rx_buffer[0] == PSLV_ADDR) {
-		if(read_bit_reg8((&(&g_mss_uart1)->hw_reg->LSR),PE)){
+	uart_irq_size = MSS_UART_get_rx(this_uart,uart_irq_rx_buffer,1);
+	uart_irq_addr_flag = (&g_mss_uart1)->hw_reg->LSR;
+	if(read_bit_reg8(&uart_irq_addr_flag,PE)) {
+		if(uart_irq_rx_buffer[0] == PSLV_TO_PILOT_ADDR) {
 			//If we have to send data
 			if(downlink_data_count < (downlink_packet_size-1)) {
-				rx_buffer[LOWER_BYTE] = downlink_data[downlink_data_count];
-				rx_buffer[UPPER_BYTE] = downlink_data[downlink_data_count+1];
-				MSS_UART_polled_tx(&g_mss_uart1,rx_buffer,2);
+				uart_irq_rx_buffer[LOWER_BYTE] = downlink_data[downlink_data_count];
+				uart_irq_rx_buffer[UPPER_BYTE] = downlink_data[downlink_data_count+1];
+				downlink(uart_irq_rx_buffer,2);
+				downlink_data_count+=2;
+			}else {
+				//Reset downlink flag
+				downlink_flag = 0;
 			}
 		}
 
-	}else {
+		else {
 
+		}
 	}
+
 }
 
 uint8_t downlink_sd(partition_t *p,uint8_t size) {
@@ -42,13 +59,6 @@ uint8_t downlink_sd(partition_t *p,uint8_t size) {
 	MSS_UART_polled_tx(&g_mss_uart1,packet_data,size);
 	MSS_GPIO_set_output(EN_UART,LOGIC_LOW);
 	return result;
-}
-
-uint8_t downlink(uint8_t *data,uint8_t size) {
-		MSS_GPIO_set_output(EN_UART,LOGIC_HIGH);
-		MSS_UART_polled_tx(&g_mss_uart1,data,size);
-		MSS_GPIO_set_output(EN_UART,LOGIC_LOW);
-		return 0;
 }
 
 uint8_t command() {
@@ -317,16 +327,33 @@ int main()
 			log_count = 0;
 		}
 
+		if(aris_sample_no >= 20) {
+			//Form Aris packet and store in sd card
+			aris_packet = (aris_pkt_t*)aris_packet_data;
+			aris_packet->ccsds_p1 = ccsds_p1(tlm_pkt_type,ARIS_API_ID);
+			aris_packet->ccsds_p2 = ccsds_p2(aris_seq_no);
+			aris_packet->ccsds_p3 = ccsds_p3(ARIS_PKT_LENGTH);
+			aris_packet->Fletcher_Code = ARIS_FLETCHER_CODE;
+			store_data(&aris_p,aris_packet_data);
+			//Reset sample count
+			aris_sample_no = 0;
+		}
+
 		if((aris_last_count_H - current_time_upper >= aris_period_H) && (aris_last_count_L - current_time_lower >= aris_period_L)) {
 			log_packet->logs[log_count].task_id = ARIS_TASK_ID;
 			log_packet->logs[log_count].time_H = current_time_upper;
 			log_packet->logs[log_count].time_L = current_time_lower;
-			aris_packet = (aris_pkt_t*)packet_data;
-			result_global = get_aris_vals(aris_packet,aris_seq_no);
+			aris_packet = (aris_pkt_t*)aris_packet_data;
+			if(aris_sample_no == 0) {
+				aris_packet->start_time = current_time_lower;
+			}
+//			result_global = get_aris_vals(aris_packet,aris_seq_no);
+			result_global = get_aris_sample(aris_packet,(current_time_lower & 0xFFFF),current_location,aris_sample_no);
 			log_packet->logs[log_count].task_status = result_global;
-			downlink(packet_data,ARIS_PKT_LENGTH);
+//			downlink(packet_data,ARIS_PKT_LENGTH);
 			uint8_t ka = sizeof(aris_pkt_t);
-			aris_seq_no++;
+//			aris_seq_no++;
+			aris_sample_no++;
 			log_count++;
 			aris_last_count_H = current_time_upper;
 			aris_last_count_L = current_time_lower;

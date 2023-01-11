@@ -50,7 +50,8 @@
 #define ARIS_TASK_ID		4
 
 //PSLV address
-#define PSLV_ADDR			0x50
+#define PSLV_TO_PILOT_ADDR			0x50
+#define PILOT_TO_PSLV_ADDR			0x60
 
 #define PILOT_REVERSE_BYTE_ORDER(var)	(((var) << 8) | ((var) >> 8))
 
@@ -137,4 +138,6 @@ void time_to_count(uint32_t ms,uint32_t *upper_count,uint32_t *lower_count);
 uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no,uint8_t *sd_s);
 
 uint8_t get_aris_vals(aris_pkt_t *pkt, uint16_t seq_no);
+
+uint8_t get_aris_sample(aris_pkt_t *pkt,uint16_t *time,uint16_t *location,uint8_t sample_no);
 #endif
