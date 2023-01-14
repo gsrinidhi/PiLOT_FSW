@@ -100,6 +100,8 @@ void GPIO_Init();
  */
 void Uart_Init();
 
+void SPI_Init();
+
 uint8_t Pilot_Peripherals_Init();
 
 /**

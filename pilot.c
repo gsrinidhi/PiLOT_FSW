@@ -12,9 +12,9 @@ uint8_t ADC_Init(i2c_instance_t *i2c_chx,uint8_t address){
 	for(;channel <= 3;channel++) {
 		DATA_HIGH[0] = DATA_HIGH_REG(channel);
 		DATA_LOW[0] = DATA_LOW_REG(channel);
-		I2C_write(i2c_chx,address,DATA_HIGH,sizeof(DATA_HIGH),I2C_RELEASE_BUS);
-		status = I2C_wait_complete(i2c_chx, I2C_NO_TIMEOUT);
-		I2C_write(i2c_chx,address,DATA_LOW,sizeof(DATA_LOW),I2C_RELEASE_BUS);
+		I2C_write(&g_core_i2c4,address,DATA_HIGH,3,I2C_RELEASE_BUS);
+		status = I2C_wait_complete(&g_core_i2c4, I2C_NO_TIMEOUT);
+		I2C_write(&g_core_i2c4,address,DATA_LOW,3,I2C_RELEASE_BUS);
 		status = I2C_wait_complete(i2c_chx, I2C_NO_TIMEOUT);
 		return_value |= (status << channel);
 	}
@@ -50,11 +50,11 @@ uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no){
    uint8_t i = 0,flag;
    uint8_t loss_count = 0;
    for(;i<8;i++){
-        pkt->thermistor_set_A[i] = get_ADC_value(&i2c_3, ADC_I2CU1_ADDR, i,&flag);
+        pkt->thermistor_set_A[i] = get_ADC_value(&i2c_3, ADC_I2C_ADDR, i,&flag);
         loss_count+=flag;
-        pkt->thermistor_set_B[i] = get_ADC_value(&i2c_3, ADC_I2CU2_ADDR, i,&flag);
+        pkt->thermistor_set_B[i] = get_ADC_value(&i2c_3, ADC_I2C_ADDR, i,&flag);
         loss_count+=flag;
-        pkt->thermistor_set_C[i] = get_ADC_value(&i2c_5, ADC_I2CU3_ADDR, i,&flag);
+        pkt->thermistor_set_C[i] = get_ADC_value(&i2c_5, ADC_I2C_ADDR, i,&flag);
         loss_count+=flag;
      }
 
@@ -67,11 +67,11 @@ uint8_t get_aris_sample(aris_pkt_t *pkt,uint16_t *time,uint16_t *location,uint8_
 	uint8_t flag,loss_count = 0;
 	pkt->aris_samples[sample_no].collect_time = *time;
 	pkt->aris_samples[sample_no].collect_location = *location;
-	pkt->aris_samples[sample_no].aris_data[0] = get_ADC_value(&i2c_5, ADC_I2CU4_ADDR, 0,&flag);
+	pkt->aris_samples[sample_no].aris_data[0] = get_ADC_value(&i2c_5, ADC_I2C_ADDR, 0,&flag);
 	loss_count+=flag;
-	pkt->aris_samples[sample_no].aris_data[1] = get_ADC_value(&i2c_5, ADC_I2CU4_ADDR, 1,&flag);
+	pkt->aris_samples[sample_no].aris_data[1] = get_ADC_value(&i2c_5, ADC_I2C_ADDR, 1,&flag);
 	loss_count+=flag;
-	pkt->aris_samples[sample_no].aris_data[2] = get_ADC_value(&i2c_5, ADC_I2CU4_ADDR, 2,&flag);
+	pkt->aris_samples[sample_no].aris_data[2] = get_ADC_value(&i2c_5, ADC_I2C_ADDR, 2,&flag);
 	loss_count+=flag;
 	return loss_count;
 }
@@ -168,9 +168,8 @@ void test_sd(){
 }
 
 void I2C_Init() {
-	MSS_I2C_init( &g_mss_i2c0, DUMMY_I2C_ADDR, MSS_I2C_PCLK_DIV_960 );
-	MSS_I2C_init(&g_mss_i2c1,DUMMY_I2C_ADDR,MSS_I2C_PCLK_DIV_960);
-	I2C_init(&g_core_i2c0, COREI2C_0_0, DUMMY_I2C_ADDR, I2C_PCLK_DIV_960);
+//	MSS_I2C_init( &g_mss_i2c0, DUMMY_I2C_ADDR, MSS_I2C_PCLK_DIV_960 );
+//	MSS_I2C_init(&g_mss_i2c1,DUMMY_I2C_ADDR,MSS_I2C_PCLK_DIV_960);
 	I2C_init(&g_core_i2c1, COREI2C_1_0, DUMMY_I2C_ADDR, I2C_PCLK_DIV_960);
 	I2C_init(&g_core_i2c2, COREI2C_2_0, DUMMY_I2C_ADDR, I2C_PCLK_DIV_960);
 	I2C_init(&g_core_i2c3, COREI2C_3_0, DUMMY_I2C_ADDR, I2C_PCLK_DIV_960);
@@ -181,15 +180,6 @@ void I2C_Init() {
 
 void GPIO_Init() {
 	MSS_GPIO_init();
-	gpio1_irq_cnt = gpio2_irq_cnt = gpio3_irq_cnt = gpio4_irq_cnt = 0;
-	MSS_GPIO_config(MSS_GPIO_19,MSS_GPIO_INPUT_MODE | MSS_GPIO_IRQ_EDGE_POSITIVE);
-	MSS_GPIO_enable_irq(MSS_GPIO_19);
-	MSS_GPIO_config(MSS_GPIO_20,MSS_GPIO_INPUT_MODE | MSS_GPIO_IRQ_EDGE_POSITIVE);
-	MSS_GPIO_enable_irq(MSS_GPIO_20);
-	MSS_GPIO_config(MSS_GPIO_4,MSS_GPIO_INPUT_MODE | MSS_GPIO_IRQ_EDGE_POSITIVE);
-	MSS_GPIO_enable_irq(MSS_GPIO_4);
-	MSS_GPIO_config(MSS_GPIO_26,MSS_GPIO_INPUT_MODE | MSS_GPIO_IRQ_EDGE_POSITIVE);
-	MSS_GPIO_enable_irq(MSS_GPIO_26);
 	MSS_GPIO_config(EN_COMMS,MSS_GPIO_OUTPUT_MODE);
 	MSS_GPIO_config(EN_UART,MSS_GPIO_OUTPUT_MODE);
 	MSS_GPIO_config(RESET_GPIO,MSS_GPIO_OUTPUT_MODE);
@@ -203,16 +193,15 @@ void SPI_Init() {
 }
 
 void Uart_Init() {
-	
 	UART_init(&uart0,COREUARTAPB_0_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
-	UART_init(&uart1,COREUARTAPB_1_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
-	UART_init(&uart2,COREUARTAPB_2_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
-	UART_init(&uart3,COREUARTAPB_3_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
+//	UART_init(&uart1,COREUARTAPB_1_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
+//	UART_init(&uart2,COREUARTAPB_2_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
+//	UART_init(&uart3,COREUARTAPB_3_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
 	MSS_UART_init(&g_mss_uart1,2000000,MSS_UART_DATA_8_BITS | MSS_UART_STICK_PARITY_0 | MSS_UART_ONE_STOP_BIT);
 }
 
 uint8_t Pilot_Peripherals_Init() {
-	uint8_t res;
+	uint8_t res = 0;
 	GPIO_Init();
 	I2C_Init();
 	Uart_Init();
@@ -226,7 +215,7 @@ uint8_t Pilot_Peripherals_Init() {
 uint8_t Pilot_Init() {
 	uint8_t res;
 	res = Pilot_Peripherals_Init();
-	ADC_Init(&i2c_3,ADC_I2CU1_ADDR);
+	ADC_Init(&i2c_3,ADC_I2C_ADDR);
 	ADC_Init(&i2c_3,ADC_I2CU2_ADDR);
 	ADC_Init(&i2c_5,ADC_I2CU1_ADDR);
 	ADC_Init(&i2c_5,ADC_I2CU2_ADDR);

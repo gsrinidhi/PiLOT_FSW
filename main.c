@@ -1,6 +1,7 @@
 #define DEBUG_ON 		0
 #include "memory.h"
 #include "pilot.h"
+#include "peripherals.h"
 partition_t payload_p,hk_p,log_p, sd_hk_p,aris_p;
 thermistor_pkt_t *thermistor_packet;
 hk_pkt_t *hk_packet;
@@ -12,16 +13,17 @@ uint8_t packet_data[512];
 uint8_t downlink_data[512];
 uint8_t log_data[512];
 uint8_t aris_packet_data[512];
+uint8_t pslv_queue[1024];
 uint32_t current_time_lower,current_time_upper;
 uint32_t payload_period_L,payload_period_H,hk_period_H,hk_period_L,sd_hk_period_L,sd_hk_period_H,aris_period_L,aris_period_H;
 uint32_t payload_last_count_L,payload_last_count_H,hk_last_count_H,hk_last_count_L,sd_hk_last_count_L,sd_hk_last_count_H,aris_last_count_L,aris_last_count_H;
-uint16_t thermistor_seq_no,logs_seq_no,hk_seq_no,sd_hk_seq_no,aris_seq_no,downlink_data_count,current_location;
+uint16_t thermistor_seq_no,logs_seq_no,hk_seq_no,sd_hk_seq_no,aris_seq_no,downlink_data_count,current_location,q_head,q_tail,q_in_i;
 uint8_t log_count,result_global,api_id,sd_state,downlink_flag,downlink_packet_size,uart_state,aris_sample_no;
 //volatile uint8_t addr_flag = ((&g_mss_uart1)->hw_reg->LSR);
 uint8_t uart_irq_rx_buffer[3],uart_irq_tx_buffer[2];
 uint8_t uart_irq_size;
-pslv_queue_t pslv_queue;
-uint8_t queue_head,queue_tail;
+//pslv_queue_t pslv_queue;
+uint8_t queue_head,queue_tail,q_empty;
 volatile uint8_t uart_irq_addr_flag;
 
 uint8_t downlink(uint8_t *data,uint8_t size) {
@@ -30,12 +32,13 @@ uint8_t downlink(uint8_t *data,uint8_t size) {
 		MSS_GPIO_set_output(EN_UART,LOGIC_LOW);
 		return 0;
 }
+
 void uart1_rx_handler(mss_uart_instance_t * this_uart) {
 	uart_irq_addr_flag = (&g_mss_uart1)->hw_reg->LSR;
 	uart_irq_size = MSS_UART_get_rx(this_uart,uart_irq_rx_buffer,1);
 
 	if(read_bit_reg8(&uart_irq_addr_flag,PE)) {
-		if(uart_irq_rx_buffer[0] == PSLV_TO_PILOT_ADDR) {
+		if(!(uart_irq_rx_buffer[0] ^ PSLV_TO_PILOT_ADDR)) {
 			MSS_GPIO_set_output(EN_UART,LOGIC_HIGH);
 			//If we have to send data
 //			if(downlink_data_count < (downlink_packet_size-1)) {
@@ -47,12 +50,22 @@ void uart1_rx_handler(mss_uart_instance_t * this_uart) {
 //				//Reset downlink flag
 //				downlink_flag = 0;
 //			}
-			MSS_UART_polled_tx(&g_mss_uart1,uart_irq_tx_buffer,2);
+			if(q_empty) {
+				MSS_UART_polled_tx(&g_mss_uart1,uart_irq_tx_buffer,2);
+			} else {
+				MSS_UART_polled_tx(&g_mss_uart1,&pslv_queue[q_tail],2);
+				q_tail+=2;
+
+			}
+
 		    while(!(MSS_UART_TEMT & MSS_UART_get_tx_status(&g_mss_uart1)))
 		    {
 		        ;
 		    }
 			MSS_GPIO_set_output(EN_UART,LOGIC_LOW);
+			if(q_tail > 1023) {
+				q_tail = 0;
+			}
 
 		}
 
@@ -181,8 +194,10 @@ uint8_t Flags_Init() {
                             MSS_UART_FIFO_SINGLE_BYTE);
     uart_irq_rx_buffer[1] = 0x44;
     uart_irq_rx_buffer[2] = 0x44;
-    uart_irq_tx_buffer[0] = 0x88;
-    uart_irq_tx_buffer[1] = 0x44;
+    uart_irq_tx_buffer[0] = 0xFF;
+    uart_irq_tx_buffer[1] = 0xFF;
+    q_head = 1;
+    q_tail = 0;
 	return 0;
 }
 
@@ -252,27 +267,47 @@ int main()
 	sd_state = result_global & 0x1;
 	Flags_Init();
 	log_packet = (log_packet_t*)log_data;
-	timer_instance_t time_count;
+	timer_instance_t timer;
 	NVIC_EnableIRQ(FabricIrq10_IRQn);
-	TMR_init(&time_count, CORETIMER_0_0, TMR_CONTINUOUS_MODE, PRESCALER_DIV_2, 0xEE6B280);
-	TMR_enable_int(&time_count);
+	TMR_init(&timer, CORETIMER_0_0, TMR_CONTINUOUS_MODE, PRESCALER_DIV_2, 0xEE6B280);
+	TMR_enable_int(&timer);
 //	TMR_start(&time_count);
-	uint32_t curr_val;
-	while(1){
-		curr_val = TMR_current_value(&time_count);
-	}
+	uint32_t before_count,after_count,time;
+	before_count = 0xffffffff;
 
 	while(1) {
 		//result_global = command();
 		MSS_TIM64_get_current_value(&current_time_upper,&current_time_lower);
 		//Checking if it is time to take thermistor readings (must be verified)
 		if((payload_last_count_H - current_time_upper >= payload_period_H) && (payload_last_count_L - current_time_lower >= payload_period_L)) {
-
+			TMR_init(&timer, CORETIMER_0_0, TMR_CONTINUOUS_MODE, PRESCALER_DIV_2, 0xFFFFFFFF);
+			TMR_start(&timer);
 			log_packet->logs[log_count].task_id = THERMISTOR_TASK_ID;
 			log_packet->logs[log_count].time_H = current_time_upper;
 			log_packet->logs[log_count].time_L = current_time_lower;
 			thermistor_packet = (thermistor_pkt_t*)packet_data;
 			result_global = get_thermistor_vals(thermistor_packet,thermistor_seq_no);
+			q_in_i = 0;
+			for(;q_in_i<THERMISTOR_PKT_LENGTH;q_in_i++) {
+				if(q_head != q_tail) {
+					pslv_queue[q_head] = packet_data[q_in_i];
+					q_head++;
+					if(q_head == 1024) {
+						//q_head reached limit
+						q_head = 0;
+						if(q_tail > q_head) {
+							continue;
+						} else {
+							store_data(&payload_p,packet_data);
+						}
+					}
+				}
+			}
+			if(q_tail == (q_head - 1)) {
+				q_empty = 1;
+			} else {
+				q_empty = 0;
+			}
 			log_packet->logs[log_count].task_status = result_global;
 //			if(sd_state == 0) {
 //				store_data(&payload_p,packet_data);
@@ -285,7 +320,10 @@ int main()
 			log_count++;
 			payload_last_count_H = current_time_upper;
 			payload_last_count_L = current_time_lower;
-
+			TMR_stop(&timer);
+			after_count = TMR_current_value(&timer);
+			time = (before_count - after_count)/50;
+			uint8_t dummy = 10;
 		}
 
 		//If 10 log entries have been recorded, write the logs to the SD card and reset the log counter
@@ -301,27 +339,49 @@ int main()
 		// For HK Packet
 
 		if((hk_last_count_H - current_time_upper >= hk_period_H) && (hk_last_count_L - current_time_lower >= hk_period_L)) {
-			TMR_start(&time_count);
+			TMR_init(&timer, CORETIMER_0_0, TMR_CONTINUOUS_MODE, PRESCALER_DIV_2, 0xFFFFFFFF);
+			TMR_start(&timer);
             log_packet->logs[log_count].task_id = HK_TASK_ID;
             log_packet->logs[log_count].time_H = current_time_upper;
             log_packet->logs[log_count].time_L = current_time_lower;
             hk_packet = (hk_pkt_t*)packet_data;
             result_global = get_hk(hk_packet,hk_seq_no,&sd_state);
             log_packet->logs[log_count].task_status = result_global;
-            if(sd_state == 0) {
-            	store_data(&hk_p,packet_data);
-            	downlink_sd(&hk_p,HK_PKT_LENGTH);
-            }else {
-            	downlink(packet_data,HK_PKT_LENGTH);
-            }
+			q_in_i = 0;
+			for(;q_in_i<HK_PKT_LENGTH;q_in_i++) {
+				if(q_head != q_tail) {
+					pslv_queue[q_head] = packet_data[q_in_i];
+					q_head++;
+					if(q_head == 1024) {
+						//q_head reached limit
+						q_head = 0;
+						if(q_tail > q_head) {
+							continue;
+						} else {
+							store_data(&payload_p,packet_data);
+						}
+					}
+				}
+			}
+			if(q_tail == (q_head - 1)) {
+				q_empty = 1;
+			} else {
+				q_empty = 0;
+			}
+//            if(sd_state == 0) {
+//            	store_data(&hk_p,packet_data);
+//            	downlink_sd(&hk_p,HK_PKT_LENGTH);
+//            }else {
+//            	downlink(packet_data,HK_PKT_LENGTH);
+//            }
             hk_seq_no++;
             log_count++;
             hk_last_count_H = current_time_upper;
             hk_last_count_L = current_time_lower;
 
-            TMR_stop(&time_count);
-
-			curr_val = TMR_current_value(&time_count);
+            TMR_stop(&timer);
+			after_count = TMR_current_value(&timer);
+			time = (before_count - after_count)/50;
 			uint8_t dummy = 10;
 		 }
 
@@ -337,12 +397,35 @@ int main()
 
 		//For SD_HK Packet
 		if((sd_hk_last_count_H - current_time_upper >= sd_hk_period_H) && (sd_hk_last_count_L - current_time_lower >= sd_hk_period_L)) {
+			TMR_init(&timer, CORETIMER_0_0, TMR_CONTINUOUS_MODE, PRESCALER_DIV_2, 0xFFFFFFFF);
+			TMR_start(&timer);
             log_packet->logs[log_count].task_id = SD_HK_TASK_ID;
             log_packet->logs[log_count].time_H = current_time_upper;
             log_packet->logs[log_count].time_L = current_time_lower;
             sd_hk_packet = (SD_HK_pkt_t*)packet_data;
             result_global = get_sd_hk(sd_hk_packet,sd_hk_seq_no);
             log_packet->logs[log_count].task_status = result_global;
+			q_in_i = 0;
+			for(;q_in_i<SD_HK_PKT_LENGTH;q_in_i++) {
+				if(q_head != q_tail) {
+					pslv_queue[q_head] = packet_data[q_in_i];
+					q_head++;
+					if(q_head == 1024) {
+						//q_head reached limit
+						q_head = 0;
+						if(q_tail > q_head) {
+							continue;
+						} else {
+							store_data(&payload_p,packet_data);
+						}
+					}
+				}
+			}
+			if(q_tail == (q_head - 1)) {
+				q_empty = 1;
+			} else {
+				q_empty = 0;
+			}
 //            if(sd_state == 0) {
 //                store_data(&sd_hk_p,packet_data);
 //                result_global = downlink_sd(&sd_hk_p,SD_HK_PKT_LENGTH);
@@ -354,6 +437,9 @@ int main()
             log_count++;
             sd_hk_last_count_H = current_time_upper;
             sd_hk_last_count_L = current_time_lower;
+			after_count = TMR_current_value(&timer);
+			time = (before_count - after_count)/50;
+			uint8_t dummy = 10;
 		 }
 
 
@@ -374,12 +460,30 @@ int main()
 			aris_packet->ccsds_p2 = ccsds_p2(aris_seq_no);
 			aris_packet->ccsds_p3 = ccsds_p3(ARIS_PKT_LENGTH);
 			aris_packet->Fletcher_Code = ARIS_FLETCHER_CODE;
-			store_data(&aris_p,aris_packet_data);
+			q_in_i = 0;
+			for(;q_in_i<THERMISTOR_PKT_LENGTH;q_in_i++) {
+				if(q_head != q_tail) {
+					pslv_queue[q_head] = packet_data[q_in_i];
+					q_head++;
+					if(q_head == 1024) {
+						//q_head reached limit
+						q_head = 0;
+						if(q_tail > q_head) {
+							continue;
+						} else {
+							store_data(&payload_p,packet_data);
+						}
+					}
+				}
+			}
+			//store_data(&aris_p,aris_packet_data);
 			//Reset sample count
 			aris_sample_no = 0;
 		}
 
 		if((aris_last_count_H - current_time_upper >= aris_period_H) && (aris_last_count_L - current_time_lower >= aris_period_L)) {
+			TMR_init(&timer, CORETIMER_0_0, TMR_CONTINUOUS_MODE, PRESCALER_DIV_2, 0xFFFFFFFF);
+			TMR_start(&timer);
 			log_packet->logs[log_count].task_id = ARIS_TASK_ID;
 			log_packet->logs[log_count].time_H = current_time_upper;
 			log_packet->logs[log_count].time_L = current_time_lower;
@@ -397,6 +501,15 @@ int main()
 			log_count++;
 			aris_last_count_H = current_time_upper;
 			aris_last_count_L = current_time_lower;
+			TMR_stop(&timer);
+			after_count = TMR_current_value(&timer);
+			time = (before_count - after_count)/50;
+			uint8_t dummy = 10;
+		}
+		if(q_tail == (q_head - 1)) {
+			q_empty = 1;
+		} else {
+			q_empty = 0;
 		}
 	}
 
@@ -404,4 +517,106 @@ int main()
 //		uint8_t tx[] = {0x03};
 //		MSS_UART_polled_tx(&g_mss_uart1,tx,1);
 //	}
+
+	//Code to time all the function
+//	timer_instance_t timer;
+//	uint8_t sd = 0;
+//	uint32_t before_count,after_count,time;
+//	before_count = 0xffffffff;
+//	uint16_t i = 0;
+//	uint8_t buff[512];
+//	for(;i<512;i++) {
+//		buff[i] = i;
+//	}
+//	//For GPIO_init()
+//	TMR_init(&timer,CORETIMER_0_0,TMR_ONE_SHOT_MODE,PRESCALER_DIV_2,0xFFFFFFFF);
+//	TMR_start(&timer);
+//	GPIO_Init();
+//	TMR_stop(&timer);
+//	after_count = TMR_current_value(&timer);
+//	time = (before_count - after_count)/50;
+//	//For I2C_Init()
+//	TMR_init(&timer,CORETIMER_0_0,TMR_ONE_SHOT_MODE,PRESCALER_DIV_2,0xFFFFFFFF);
+//	TMR_start(&timer);
+//	I2C_Init();
+//	TMR_stop(&timer);
+//	after_count = TMR_current_value(&timer);
+//	time = (before_count - after_count)/50;
+//	//For Uart_Init()
+//	TMR_init(&timer,CORETIMER_0_0,TMR_ONE_SHOT_MODE,PRESCALER_DIV_2,0xFFFFFFFF);
+//	TMR_start(&timer);
+//	Uart_Init();
+//	TMR_stop(&timer);
+//	after_count = TMR_current_value(&timer);
+//	time = (before_count - after_count)/50;
+//	//For SPI_Init()
+//	TMR_init(&timer,CORETIMER_0_0,TMR_ONE_SHOT_MODE,PRESCALER_DIV_2,0xFFFFFFFF);
+//	TMR_start(&timer);
+//	SPI_Init();
+//	TMR_stop(&timer);
+//	after_count = TMR_current_value(&timer);
+//	time = (before_count - after_count)/50;
+//	//For SD_Init()
+//	TMR_init(&timer,CORETIMER_0_0,TMR_ONE_SHOT_MODE,PRESCALER_DIV_2,0xFFFFFFFF);
+//	TMR_start(&timer);
+//	result_global = SD_Init();
+//	TMR_stop(&timer);
+//	after_count = TMR_current_value(&timer);
+//	time = (before_count - after_count)/50;
+//	//For SD_write()
+//	TMR_init(&timer,CORETIMER_0_0,TMR_ONE_SHOT_MODE,PRESCALER_DIV_2,0xFFFFFFFF);
+//	TMR_start(&timer);
+//	result_global = SD_Write(512,buff);
+//	TMR_stop(&timer);
+//	after_count = TMR_current_value(&timer);
+//	time = (before_count - after_count)/50;
+//	//For SD_read()
+//	TMR_init(&timer,CORETIMER_0_0,TMR_ONE_SHOT_MODE,PRESCALER_DIV_2,0xFFFFFFFF);
+//	TMR_start(&timer);
+//	result_global = SD_Read(512,buff);
+//	TMR_stop(&timer);
+//	after_count = TMR_current_value(&timer);
+//	time = (before_count - after_count)/50;
+//	//For Pilot_Peripherals_init()
+//	TMR_init(&timer,CORETIMER_0_0,TMR_ONE_SHOT_MODE,PRESCALER_DIV_2,0xFFFFFFFF);
+//	TMR_start(&timer);
+//	result_global = Pilot_Peripherals_Init();
+//	TMR_stop(&timer);
+//	after_count = TMR_current_value(&timer);
+//	time = (before_count - after_count)/50;
+//	//For Pilot_init()
+//	TMR_init(&timer,CORETIMER_0_0,TMR_ONE_SHOT_MODE,PRESCALER_DIV_2,0xFFFFFFFF);
+//	TMR_start(&timer);
+//	result_global = Pilot_Init();
+//	TMR_stop(&timer);
+//	after_count = TMR_current_value(&timer);
+//	time = (before_count - after_count) /50;
+//	//For get_thermistor_vals
+//	TMR_init(&timer,CORETIMER_0_0,TMR_ONE_SHOT_MODE,PRESCALER_DIV_2,0xFFFFFFFF);
+//	TMR_start(&timer);
+//	result_global = get_thermistor_vals(thermistor_packet,0);
+//	TMR_stop(&timer);
+//	after_count = TMR_current_value(&timer);
+//	time = (before_count - after_count) /50;
+//	//For get_hk
+//	TMR_init(&timer,CORETIMER_0_0,TMR_ONE_SHOT_MODE,PRESCALER_DIV_2,0xFFFFFFFF);
+//	TMR_start(&timer);
+//	result_global = get_hk(hk_packet,0,&sd);
+//	TMR_stop(&timer);
+//	after_count = TMR_current_value(&timer);
+//	time = (before_count - after_count) /50;
+//	//For get_hk
+//	uint16_t ax, ay, az;
+//	TMR_init(&timer,CORETIMER_0_0,TMR_ONE_SHOT_MODE,PRESCALER_DIV_2,0xFFFFFFFF);
+//	TMR_start(&timer);
+//	result_global = get_IMU_acc(&ax, &ay, &az);
+//	TMR_stop(&timer);
+//	after_count = TMR_current_value(&timer);
+//	time = (before_count - after_count) /50;
+//	while(1) {
+//
+//	}
+
+
+
 }
