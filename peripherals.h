@@ -12,6 +12,7 @@
 #include <drivers/mss_i2c/mss_i2c.h>
 #include <drivers/mss_uart/mss_uart.h>
 #include <drivers_config/sys_config/sys_config_mss_clocks.h>
+#include <drivers/CoreTimer/core_timer.h>
 
 //Logic Levels
 #define LOGIC_HIGH					1
@@ -19,6 +20,7 @@
 //UART
 //defining PE bit of LSR register for MSS_UART
 #define PE							2u
+#define TEMT						6u
 //UART instances
  UART_instance_t uart0;
  UART_instance_t uart1;

@@ -33,6 +33,8 @@
 #define CMD_PKT_LENGTH		sizeof(cmd_packet_t)
 #define CMD_FLETCHER_CODE	0x00
 
+#define PSLV_PACKET_REQUEST_SIZE		26
+
 
 
 typedef struct {
@@ -160,5 +162,12 @@ typedef struct {
 
     uint16_t Fletcher_Code;
 }__attribute__((packed)) cmd_packet_t;
+
+typedef struct {
+	uint8_t header1;
+	uint8_t header2;
+
+	uint8_t data[PSLV_PACKET_REQUEST_SIZE-2];
+}__attribute__((packed)) pslv_queue_t;
 
 #endif

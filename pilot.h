@@ -50,7 +50,7 @@
 #define ARIS_TASK_ID		4
 
 //PSLV address
-#define PSLV_TO_PILOT_ADDR			0x50
+#define PSLV_TO_PILOT_ADDR			0x01
 #define PILOT_TO_PSLV_ADDR			0x60
 
 #define PILOT_REVERSE_BYTE_ORDER(var)	(((var) << 8) | ((var) >> 8))
