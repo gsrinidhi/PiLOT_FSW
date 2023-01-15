@@ -50,21 +50,25 @@ void uart1_rx_handler(mss_uart_instance_t * this_uart) {
 //				//Reset downlink flag
 //				downlink_flag = 0;
 //			}
-			if(q_empty) {
-				MSS_UART_polled_tx(&g_mss_uart1,uart_irq_tx_buffer,2);
-			} else {
-				MSS_UART_polled_tx(&g_mss_uart1,&pslv_queue[q_tail],2);
-				q_tail+=2;
+//			if(q_empty) {
+//				MSS_UART_polled_tx(&g_mss_uart1,uart_irq_tx_buffer,2);
+//			} else {
+//				MSS_UART_polled_tx(&g_mss_uart1,&pslv_queue[q_tail],2);
+//				q_tail+=2;
+//
+//			}
 
-			}
-
+			MSS_UART_polled_tx(&g_mss_uart1,&pslv_queue[q_tail],2);
 		    while(!(MSS_UART_TEMT & MSS_UART_get_tx_status(&g_mss_uart1)))
 		    {
 		        ;
 		    }
 			MSS_GPIO_set_output(EN_UART,LOGIC_LOW);
-			if(q_tail > 1023) {
-				q_tail = 0;
+			if(((q_tail+2)%1024) == q_head) {
+				pslv_queue[q_tail] = 0xFF;
+				pslv_queue[q_tail+1] = 0xFF;
+			} else {
+				q_tail = ((q_tail+2)%1024);
 			}
 
 		}
@@ -196,7 +200,7 @@ uint8_t Flags_Init() {
     uart_irq_rx_buffer[2] = 0x44;
     uart_irq_tx_buffer[0] = 0xFF;
     uart_irq_tx_buffer[1] = 0xFF;
-    q_head = 1;
+    q_head = 2;
     q_tail = 0;
 	return 0;
 }
@@ -288,10 +292,12 @@ int main()
 			thermistor_packet = (thermistor_pkt_t*)packet_data;
 			result_global = get_thermistor_vals(thermistor_packet,thermistor_seq_no);
 			q_in_i = 0;
-			for(;q_in_i<THERMISTOR_PKT_LENGTH;q_in_i++) {
+			for(;q_in_i<THERMISTOR_PKT_LENGTH;q_in_i+=2) {
+				MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 				if(q_head != q_tail) {
 					pslv_queue[q_head] = packet_data[q_in_i];
-					q_head++;
+					pslv_queue[q_head+1] = packet_data[q_in_i+1];
+					q_head+=2;
 					if(q_head == 1024) {
 						//q_head reached limit
 						q_head = 0;
@@ -308,6 +314,7 @@ int main()
 			} else {
 				q_empty = 0;
 			}
+			MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 			log_packet->logs[log_count].task_status = result_global;
 //			if(sd_state == 0) {
 //				store_data(&payload_p,packet_data);
@@ -348,6 +355,7 @@ int main()
             result_global = get_hk(hk_packet,hk_seq_no,&sd_state);
             log_packet->logs[log_count].task_status = result_global;
 			q_in_i = 0;
+			MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 			for(;q_in_i<HK_PKT_LENGTH;q_in_i++) {
 				if(q_head != q_tail) {
 					pslv_queue[q_head] = packet_data[q_in_i];
@@ -368,6 +376,7 @@ int main()
 			} else {
 				q_empty = 0;
 			}
+			MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 //            if(sd_state == 0) {
 //            	store_data(&hk_p,packet_data);
 //            	downlink_sd(&hk_p,HK_PKT_LENGTH);
@@ -406,6 +415,7 @@ int main()
             result_global = get_sd_hk(sd_hk_packet,sd_hk_seq_no);
             log_packet->logs[log_count].task_status = result_global;
 			q_in_i = 0;
+			MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 			for(;q_in_i<SD_HK_PKT_LENGTH;q_in_i++) {
 				if(q_head != q_tail) {
 					pslv_queue[q_head] = packet_data[q_in_i];
@@ -426,6 +436,7 @@ int main()
 			} else {
 				q_empty = 0;
 			}
+			MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 //            if(sd_state == 0) {
 //                store_data(&sd_hk_p,packet_data);
 //                result_global = downlink_sd(&sd_hk_p,SD_HK_PKT_LENGTH);
@@ -461,6 +472,7 @@ int main()
 			aris_packet->ccsds_p3 = ccsds_p3(ARIS_PKT_LENGTH);
 			aris_packet->Fletcher_Code = ARIS_FLETCHER_CODE;
 			q_in_i = 0;
+			MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 			for(;q_in_i<THERMISTOR_PKT_LENGTH;q_in_i++) {
 				if(q_head != q_tail) {
 					pslv_queue[q_head] = packet_data[q_in_i];
@@ -476,6 +488,7 @@ int main()
 					}
 				}
 			}
+			MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 			//store_data(&aris_p,aris_packet_data);
 			//Reset sample count
 			aris_sample_no = 0;
@@ -505,11 +518,6 @@ int main()
 			after_count = TMR_current_value(&timer);
 			time = (before_count - after_count)/50;
 			uint8_t dummy = 10;
-		}
-		if(q_tail == (q_head - 1)) {
-			q_empty = 1;
-		} else {
-			q_empty = 0;
 		}
 	}
 
