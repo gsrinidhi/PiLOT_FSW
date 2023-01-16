@@ -100,12 +100,21 @@ void GPIO_Init();
  */
 void Uart_Init();
 
+/**
+ * @brief Initialises the SPI interface in Pilot
+ * 
+ */
 void SPI_Init();
 
+/**
+ * @brief Calls the GPIO, UART, I2C and SPI initialisation functions. Initialises the SD card and starts the 64 bit timer
+ * 
+ * @return uint8_t: returns 0 on successful initialisation, 1 otherwise
+ */
 uint8_t Pilot_Peripherals_Init();
 
 /**
- * @brief Initialisation of Pilot CDH board
+ * @brief Initialises the sensor board ADCs and pslv interface board vc sensors
  *
  */
 uint8_t Pilot_Init();
@@ -131,15 +140,55 @@ uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no);
  */
 uint8_t test_peripherals(uint8_t *sd);
 
+/**
+ * @brief Get the three axis acceleration values from the IMU
+ * 
+ * @param a_x 			: pointer to store the value of x axis acceleration
+ * @param a_y 			: pointer to store the value of y axis acceleration
+ * @param a_z 			: pointer to store the value of z axis acceleration
+ * @return uint8_t 		: returns zero if successful, non zero otherwise
+ */
 uint8_t get_IMU_acc(uint16_t *a_x,uint16_t *a_y,uint16_t *a_z);
 
+/**
+ * @brief Get the gyroscope values from the IMU
+ * 
+ * @param roll_rate 	: pointer to store the roll rate 
+ * @param pitch_rate 	: pointer to store the pitch rate
+ * @param yaw_rate 		: pointer to store the yaw rate
+ * @return uint8_t 		: returns zero if successful, non zero otherwise
+ */
 uint8_t get_IMU_gyro(uint16_t *roll_rate, uint16_t *pitch_rate,uint16_t *yaw_rate);
 
+/**
+ * @brief This function converts time in milli seconds to a 64 bit count value
+ * 
+ * @param ms 			: The time required in milliseconds
+ * @param upper_count 	: pointer to store the upper 32 bits of counter
+ * @param lower_count 	: pointer to store the lower 32 bits of counter
+ */
 void time_to_count(uint32_t ms,uint32_t *upper_count,uint32_t *lower_count);
 
+/**
+ * @brief Function to get the health of Pilot
+ * 
+ * @param hk_pkt 	: pointer to the hk packet structure where the data is stored
+ * @param seq_no 	: the sequence number of the packet
+ * @param sd_s 		: the state of the sd card needed to decide if or not to operate the sd card
+ * @return uint8_t 	: returns 0 if successful, non-zero otherwise
+ */
 uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no,uint8_t *sd_s);
 
-uint8_t get_aris_vals(aris_pkt_t *pkt, uint16_t seq_no);
+//uint8_t get_aris_vals(aris_pkt_t *pkt, uint16_t seq_no);
 
+/**
+ * @brief Get a sample of aris data
+ * 
+ * @param pkt 		: pointer to aris packet structure to store the data
+ * @param time 		: the time of collecting the data
+ * @param location 	: the location of collecting the data
+ * @param sample_no : the sample number of the sample
+ * @return uint8_t 	: returns 0 if successful, non-zero otherwise
+ */
 uint8_t get_aris_sample(aris_pkt_t *pkt,uint16_t *time,uint16_t *location,uint8_t sample_no);
 #endif
