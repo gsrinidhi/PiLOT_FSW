@@ -193,7 +193,7 @@ void SPI_Init() {
 }
 
 void Uart_Init() {
-	UART_init(&uart0,COREUARTAPB_0_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
+//	UART_init(&uart0,COREUARTAPB_0_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
 //	UART_init(&uart1,COREUARTAPB_1_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
 //	UART_init(&uart2,COREUARTAPB_2_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
 //	UART_init(&uart3,COREUARTAPB_3_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
@@ -202,6 +202,7 @@ void Uart_Init() {
 
 uint8_t Pilot_Peripherals_Init() {
 	uint8_t res = 0;
+	MSS_WD_init();
 	GPIO_Init();
 	I2C_Init();
 	Uart_Init();
@@ -220,6 +221,7 @@ uint8_t Pilot_Init() {
 	ADC_Init(&i2c_5,ADC_I2CU1_ADDR);
 	ADC_Init(&i2c_5,ADC_I2CU2_ADDR);
 	MSS_GPIO_set_output(INV_EN,0);
+	MSS_GPIO_set_output(MSS_GPIO_7,0);
 	res = res | (vc_init(VC1) << 1);
 	return res;
 }

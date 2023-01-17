@@ -13,6 +13,7 @@
 #include <drivers/mss_uart/mss_uart.h>
 #include <drivers_config/sys_config/sys_config_mss_clocks.h>
 #include <drivers/CoreTimer/core_timer.h>
+#include <drivers/mss_watchdog/mss_watchdog.h>
 
 //Logic Levels
 #define LOGIC_HIGH					1

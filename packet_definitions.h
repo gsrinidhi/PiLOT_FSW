@@ -89,6 +89,8 @@ typedef struct {
     uint32_t ccsds_s1;
     uint16_t ccsds_s2;
 
+    uint16_t q_head;
+    uint16_t q_tail;
     uint8_t CDH_Periph_Status; //For all the 8 flags
     uint16_t Acc[3];  // X,Y,Z Axis
     uint16_t Angular_Rate[3]; //Pitch, Roll, Yaw
