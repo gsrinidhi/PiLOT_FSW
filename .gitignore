@@ -42,3 +42,6 @@ Debug/subdir.mk
 Debug/testbench/subdir.mk
 Debug/testbench/test_gmc.d
 Debug/
+*.d
+Release/makefile
+*.mk
