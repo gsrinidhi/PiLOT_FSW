@@ -28,6 +28,10 @@
 #define SD_HK_PKT_LENGTH  sizeof(SD_HK_pkt_t)
 #define SD_HK_FLETCHER_CODE 0x01
 
+#define SD_HK_TEST_API_ID        60
+#define SD_HK_TEST_PKT_LENGTH  sizeof(SD_HK_Test)
+#define SD_HK_TEST_FLETCHER_CODE 0x01
+
 //Command packet parameters
 #define CMD_API_ID			0x20
 #define CMD_PKT_LENGTH		sizeof(cmd_packet_t)
@@ -146,6 +150,22 @@ typedef struct {
 
     uint16_t Fletcher_Code;
 }__attribute__((packed)) SD_HK_pkt_t;
+
+typedef struct {
+    //CCSDS
+
+    uint16_t ccsds_p1;
+    uint16_t ccsds_p2;
+    uint16_t ccsds_p3;
+
+    uint32_t ccsds_s1;
+    uint16_t ccsds_s2;
+
+    uint16_t SD_Test_count[5];
+    uint16_t SD_Test_time[5];
+
+    uint16_t Fletcher_Code;
+}__attribute__((packed)) SD_HK_Test;
 
 typedef struct {
     //CCSDS
