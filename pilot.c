@@ -147,6 +147,22 @@ uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no,uint8_t *sd_s) {
     	}
 	}
 
+	hk_pkt->ccsds_p1 = PILOT_REVERSE_BYTE_ORDER(ccsds_p1(tlm_pkt_type, SD_HK_API_ID));
+    hk_pkt->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(ccsds_p2(seq_no));
+    hk_pkt->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(ccsds_p3(SD_HK_PKT_LENGTH-7));
+
+    hk_pkt->Thermistor_Read_Pointer = payload_p.read_pointer;
+    hk_pkt->Thermistor_Write_Pointer = payload_p.write_pointer;
+
+    hk_pkt->HK_Read_Pointer = hk_p.read_pointer;
+    hk_pkt->HK_Write_Pointer = hk_p.write_pointer;
+
+    hk_pkt->Logs_Read_Pointer = log_p.read_pointer;
+    hk_pkt->Logs_Write_Pointer = log_p.write_pointer;
+
+    hk_pkt->SD_Test_Read_Pointer = sd_hk_p.read_pointer;
+    hk_pkt->SD_Test_Write_Pointer = sd_hk_p.write_pointer;
+
     hk_pkt->Fletcher_Code  = HK_FLETCHER_CODE;
 
     return loss_count;
@@ -162,11 +178,7 @@ void get_sd_hk_test(SD_HK_Test *sd_hk_test, uint16_t seq_no){
    sd_hk_test->ccsds_s1 = 1;
    sd_hk_test->ccsds_s2 = 1;
 
-   for(;i<5;i++){
 
-       SD_HK_Test->SD_Test_count[i] = ;
-       SD_HK_Test->SD_Test_time[i] =;
-   }
 
 
 }

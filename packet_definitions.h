@@ -24,18 +24,12 @@
 #define HK_PKT_LENGTH		sizeof(hk_pkt_t)
 #define HK_FLETCHER_CODE	0x01
 
-#define SD_HK_API_ID    	40
-#define SD_HK_PKT_LENGTH  sizeof(SD_HK_pkt_t)
-#define SD_HK_FLETCHER_CODE 0x01
 
-#define SD_HK_TEST_API_ID        60
+#define SD_HK_TEST_API_ID        40
 #define SD_HK_TEST_PKT_LENGTH  sizeof(SD_HK_Test)
 #define SD_HK_TEST_FLETCHER_CODE 0x01
 
 //Command packet parameters
-#define CMD_API_ID			0x20
-#define CMD_PKT_LENGTH		sizeof(cmd_packet_t)
-#define CMD_FLETCHER_CODE	0x00
 
 #define PSLV_PACKET_REQUEST_SIZE		26
 
@@ -99,6 +93,16 @@ typedef struct {
     uint16_t Sensor_Board_VC[2];
     uint16_t CDH_VC[2];
     uint16_t Comms_VC[2];
+
+    uint32_t HK_Read_Pointer;
+    uint32_t HK_Write_Pointer;
+    uint32_t Thermistor_Read_Pointer;
+    uint32_t Thermistor_Write_Pointer;
+    uint32_t Logs_Read_Pointer;
+    uint32_t Logs_Write_Pointer;
+    uint32_t SD_Test_Read_Pointer;
+    uint32_t SD_Test_Write_Pointer;
+
 //
     uint16_t Fletcher_Code;
 }__attribute__((packed)) hk_pkt_t;
@@ -129,27 +133,6 @@ typedef struct {
     uint16_t Fletcher_Code;
 }__attribute__((packed)) log_packet_t;
 
-typedef struct {
-    //CCSDS
-
-    uint16_t ccsds_p1;
-    uint16_t ccsds_p2;
-    uint16_t ccsds_p3;
-
-    uint32_t ccsds_s1;
-    uint16_t ccsds_s2;
-
-    uint32_t HK_Read_Pointer;
-    uint32_t HK_Write_Pointer;
-    uint32_t Thermistor_Read_Pointer;
-    uint32_t Thermistor_Write_Pointer;
-    uint32_t Logs_Read_Pointer;
-    uint32_t Logs_Write_Pointer;
-    uint32_t SD_Test_Read_Pointer;
-    uint32_t SD_Test_Write_Pointer;
-
-    uint16_t Fletcher_Code;
-}__attribute__((packed)) SD_HK_pkt_t;
 
 typedef struct {
     //CCSDS
@@ -167,21 +150,6 @@ typedef struct {
     uint16_t Fletcher_Code;
 }__attribute__((packed)) SD_HK_Test;
 
-typedef struct {
-    //CCSDS
-
-    uint16_t ccsds_p1;
-    uint16_t ccsds_p2;
-    uint16_t ccsds_p3;
-
-    uint32_t ccsds_s1;
-    uint16_t ccsds_s2;
-
-    uint8_t cmd_opcaode;
-    uint8_t cmd_arg[4];
-
-    uint16_t Fletcher_Code;
-}__attribute__((packed)) cmd_packet_t;
 
 typedef struct {
 	uint8_t header1;

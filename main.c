@@ -65,95 +65,6 @@ void uart1_rx_handler(mss_uart_instance_t * this_uart) {
 
 
 
-uint8_t downlink_sd(partition_t *p,uint8_t size) {
-	uint8_t result;
-	result = read_data(p,packet_data);
-	MSS_GPIO_set_output(EN_UART,LOGIC_HIGH);
-	MSS_UART_polled_tx(&g_mss_uart1,packet_data,size);
-	MSS_GPIO_set_output(EN_UART,LOGIC_LOW);
-	return result;
-}
-
-uint8_t command() {
-	uint8_t size = 0,opcode = 0,result;
-	MSS_GPIO_set_output(EN_UART,0);
-	uint32_t *period_L,*period_H,rate,rate2;
-	partition_t *part;
-	size = MSS_UART_get_rx(&g_mss_uart1,packet_data,CMD_PKT_LENGTH);
-	if(size == 0) {
-		return 0;
-	} else {
-		cmd = (cmd_packet_t*)packet_data;
-		opcode = cmd->cmd_opcaode;
-
-		switch(opcode){
-		case 0x01:
-			break;
-		case 0x02:
-			break;
-		case 0x03:
-			if(cmd->cmd_arg[0] == THERMISTOR_API_ID) {
-				period_L = &payload_period_L;
-				period_H = &payload_period_H;
-			}else if(cmd->cmd_arg[0] == HK_API_ID) {
-				period_L = &hk_period_L;
-				period_H = &hk_period_H;
-			}
-			if(cmd->cmd_arg[1] == RATE_ONE_SPP) {
-				rate = ONE_SPP_RATE;
-				result = 1;
-			}else if(cmd->cmd_arg[1] == RATE_TWO_SPP) {
-				rate = TWO_SPP_RATE;
-				result = 1;
-			}else if(cmd->cmd_arg[1] == RATE_FIVE_SPP) {
-				rate = FIVE_SPP_RATE;
-				result = 1;
-			}else if(cmd->cmd_arg[1] == RATE_TEN_SPP) {
-				rate = TEN_SPP_RATE;
-				result = 1;
-			}else {
-				rate = DEFAULT_PAYLOAD_PERIOD;
-				result = 2;
-			}
-			time_to_count(rate,period_H,period_L);
-			break;
-		case 0x04:
-			break;
-		case 0x05:
-			if(cmd->cmd_arg[0] == HK_PARTITION) {
-				part = &hk_p;
-				rate = HK_BLOCK_INIT;
-				rate2 = HK_BLOCK_END;
-				result = 1;
-			}else if(cmd->cmd_arg[0] == PAYLOAD_PARTITION) {
-				part = &payload_p;
-				rate = PAYLOAD_BLOCK_INIT;
-				rate2 = PAYLOAD_BLOCK_END;
-				result = 1;
-			}else if(cmd->cmd_arg[0] == SD_PARTITION) {
-				part = &sd_hk_p;
-				rate = SD_BLOCK_INIT;
-				rate2 = SD_BLOCK_END;
-				result = 1;
-			}else if(cmd->cmd_arg[0] == LOGS_PARTITION) {
-				part = &log_p;
-				rate = LOGS_BLOCK_INIT;
-				rate2 = LOGS_BLOCK_END;
-				result = 1;
-			}else {
-				result = 2;
-			}
-			initialise_partition(part,rate,rate2);
-			break;
-		case 0x06:
-			break;
-		default:
-			result = 2;
-		}
-	}
-	return result;
-
-}
 uint8_t Flags_Init() {
 	time_to_count(DEFAULT_HK_PERIOD,&hk_period_H,&hk_period_L);
 	time_to_count(DEFAULT_PAYLOAD_PERIOD,&payload_period_H,&payload_period_L);
@@ -186,28 +97,6 @@ uint8_t Flags_Init() {
 	return 0;
 }
 
-uint8_t get_sd_hk(SD_HK_pkt_t *sd_hk_pkt, uint16_t seq_no){
-
-   sd_hk_pkt->ccsds_p1 = PILOT_REVERSE_BYTE_ORDER(ccsds_p1(tlm_pkt_type, SD_HK_API_ID));
-   sd_hk_pkt->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(ccsds_p2(seq_no));
-   sd_hk_pkt->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(ccsds_p3(SD_HK_PKT_LENGTH-7));
-
-   sd_hk_pkt->Thermistor_Read_Pointer = payload_p.read_pointer;
-   sd_hk_pkt->Thermistor_Write_Pointer = payload_p.write_pointer;
-
-   sd_hk_pkt->HK_Read_Pointer = hk_p.read_pointer;
-   sd_hk_pkt->HK_Write_Pointer = hk_p.write_pointer;
-
-   sd_hk_pkt->Logs_Read_Pointer = log_p.read_pointer;
-   sd_hk_pkt->Logs_Write_Pointer = log_p.write_pointer;
-
-   sd_hk_pkt->SD_Test_Read_Pointer = sd_hk_p.read_pointer;
-   sd_hk_pkt->SD_Test_Write_Pointer = sd_hk_p.write_pointer;
-
-   sd_hk_pkt->Fletcher_Code = SD_HK_FLETCHER_CODE;
-
-   return 0;
-}
 
 #if DEBUG_ON == 1
 #define DEBUG_UART                  &g_mss_uart1
