@@ -14,6 +14,7 @@ uint8_t downlink_data[512];
 uint8_t log_data[512];
 uint8_t aris_packet_data[512];
 uint8_t pslv_queue[1024];
+uint32_t wd_value;
 uint32_t current_time_lower,current_time_upper;
 uint32_t payload_period_L,payload_period_H,hk_period_H,hk_period_L,sd_hk_period_L,sd_hk_period_H,aris_period_L,aris_period_H;
 uint32_t payload_last_count_L,payload_last_count_H,hk_last_count_H,hk_last_count_L,sd_hk_last_count_L,sd_hk_last_count_H,aris_last_count_L,aris_last_count_H;
@@ -37,26 +38,20 @@ void uart1_rx_handler(mss_uart_instance_t * this_uart) {
 	uart_irq_addr_flag = (&g_mss_uart1)->hw_reg->LSR;
 	uart_irq_size = MSS_UART_get_rx(this_uart,uart_irq_rx_buffer,1);
 
-	if(read_bit_reg8(&uart_irq_addr_flag,PE)) {
-		if(!(uart_irq_rx_buffer[0] ^ PSLV_TO_PILOT_ADDR)) {
-			MSS_GPIO_set_output(EN_UART,LOGIC_HIGH);
-			MSS_UART_polled_tx(&g_mss_uart1,&pslv_queue[q_tail],2);
-		    while(!(MSS_UART_TEMT & MSS_UART_get_tx_status(&g_mss_uart1)))
-		    {
-		        ;
-		    }
-			MSS_GPIO_set_output(EN_UART,LOGIC_LOW);
-			if(((q_tail+2)%1024) == q_head) {
-				pslv_queue[q_tail] = 0xFF;
-				pslv_queue[q_tail+1] = 0xFF;
-			} else {
-				q_tail = ((q_tail+2)%1024);
-			}
+	if(read_bit_reg8(&uart_irq_addr_flag,PE) && uart_irq_rx_buffer[0] == PSLV_TO_PILOT_ADDR) {
 
+		MSS_GPIO_set_output(EN_UART,1);
+		MSS_UART_polled_tx(&g_mss_uart1,&pslv_queue[q_tail],2);
+		while(!(MSS_UART_TEMT & MSS_UART_get_tx_status(&g_mss_uart1)))
+		{
+			;
 		}
-
-		else {
-
+		MSS_GPIO_set_output(EN_UART,0);
+		if(((q_tail+2)%1024) == q_head) {
+			pslv_queue[q_tail] = 0xFF;
+			pslv_queue[q_tail+1] = 0xFF;
+		} else {
+			q_tail = ((q_tail+2)%1024);
 		}
 	}
 
@@ -245,9 +240,9 @@ void disp_hk_pkt(hk_pkt_t *pkt) {
 void add_to_queue(uint8_t size) {
 	q_in_i = 0;
 	if((q_head > q_tail && (1024 - q_head + q_tail) >= size) || (q_head < q_tail && (q_tail - q_head) >= size)) {
-		for(;q_in_i<size;q_in_i+=2) {
+		for(;q_in_i<size;q_in_i+=1) {
 			pslv_queue[q_head] = packet_data[q_in_i];
-			pslv_queue[q_head+1] = packet_data[q_in_i+1];
+			pslv_queue[q_head+1] = packet_data[q_in_i];
 			q_head+=2;
 			if(q_head >= 1024) {
 				//q_head reached limit
@@ -274,7 +269,8 @@ int main()
 	before_count = 0xffffffff;
 
 	while(1) {
-		MSS_WD_reload();
+		//wd_value = MSS_WD_current_value();
+		//MSS_WD_reload();
 		//result_global = command();
 		MSS_TIM64_get_current_value(&current_time_upper,&current_time_lower);
 		//Checking if it is time to take thermistor readings (must be verified)
@@ -328,6 +324,7 @@ int main()
             hk_packet = (hk_pkt_t*)packet_data;
             result_global = get_hk(hk_packet,hk_seq_no,&sd_state);
             log_packet->logs[log_count].task_status = result_global;
+
 			MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 			add_to_queue(HK_PKT_LENGTH);
 			hk_packet->q_head = q_head;

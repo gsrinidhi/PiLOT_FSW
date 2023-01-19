@@ -7,7 +7,7 @@
 #include "ccsds.h"
 
 //ADC Macros
-#define ADC_I2C_ADDR 0x21
+#define ADC_I2C_ADDR 0x20
 #define ADC_I2CU1_ADDR 0x24
 #define ADC_I2CU2_ADDR 0x23
 #define ADC_I2CU3_ADDR 0x24
@@ -50,7 +50,7 @@
 #define ARIS_TASK_ID		4
 
 //PSLV address
-#define PSLV_TO_PILOT_ADDR			0x01
+#define PSLV_TO_PILOT_ADDR			119
 #define PILOT_TO_PSLV_ADDR			0x60
 
 #define PILOT_REVERSE_BYTE_ORDER(var)	(((var) << 8) | ((var) >> 8))

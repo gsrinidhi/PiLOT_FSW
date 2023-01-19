@@ -14,7 +14,7 @@
 #include <drivers_config/sys_config/sys_config_mss_clocks.h>
 #include <drivers/CoreTimer/core_timer.h>
 #include <drivers/mss_watchdog/mss_watchdog.h>
-
+#define WDOG_SYSREG_CR_ENABLE_MASK      0x00000001u
 //Logic Levels
 #define LOGIC_HIGH					1
 #define LOGIC_LOW					0
@@ -69,7 +69,8 @@
  #define EN_COMMS					MSS_GPIO_14
  #define RESET_GPIO					MSS_GPIO_17
  #define SD_CARD_GPIO				MSS_GPIO_10
-#define INV_EN						MSS_GPIO_8
+#define TX_INV_EN					MSS_GPIO_8
+#define RX_INV_EN					MSS_GPIO_7
 
 #define TIMER_COUNT_PER_MS 100000
 #define FULL_SCALE_TIME_MS 42949

@@ -3,7 +3,7 @@
 
 
 uint8_t ADC_Init(i2c_instance_t *i2c_chx,uint8_t address){
-	uint8_t status;
+	i2c_status_t status;
 	uint8_t channel = 0;
 	uint8_t return_value = 0;
 	//Write max and min values to DATA HIGH and DATA LOW registers respectively for all channels
@@ -12,10 +12,10 @@ uint8_t ADC_Init(i2c_instance_t *i2c_chx,uint8_t address){
 	for(;channel <= 3;channel++) {
 		DATA_HIGH[0] = DATA_HIGH_REG(channel);
 		DATA_LOW[0] = DATA_LOW_REG(channel);
-		I2C_write(&g_core_i2c4,address,DATA_HIGH,3,I2C_RELEASE_BUS);
+		I2C_write(&g_core_i2c4,ADC_I2C_ADDR,DATA_HIGH,3,I2C_RELEASE_BUS);
 		status = I2C_wait_complete(&g_core_i2c4, I2C_NO_TIMEOUT);
-		I2C_write(&g_core_i2c4,address,DATA_LOW,3,I2C_RELEASE_BUS);
-		status = I2C_wait_complete(i2c_chx, I2C_NO_TIMEOUT);
+		I2C_write(&g_core_i2c4,ADC_I2C_ADDR,DATA_LOW,3,I2C_RELEASE_BUS);
+		status = I2C_wait_complete(&g_core_i2c4, I2C_NO_TIMEOUT);
 		return_value |= (status << channel);
 	}
 	
@@ -184,7 +184,8 @@ void GPIO_Init() {
 	MSS_GPIO_config(EN_UART,MSS_GPIO_OUTPUT_MODE);
 	MSS_GPIO_config(RESET_GPIO,MSS_GPIO_OUTPUT_MODE);
 	MSS_GPIO_config( SD_CARD_GPIO , MSS_GPIO_OUTPUT_MODE );
-	MSS_GPIO_config( INV_EN , MSS_GPIO_OUTPUT_MODE );
+	MSS_GPIO_config( TX_INV_EN , MSS_GPIO_OUTPUT_MODE );
+	MSS_GPIO_config( RX_INV_EN , MSS_GPIO_OUTPUT_MODE );
 }
 
 void SPI_Init() {
@@ -202,7 +203,13 @@ void Uart_Init() {
 
 uint8_t Pilot_Peripherals_Init() {
 	uint8_t res = 0;
+	//SYSREG->WDOG_CR = WDOG_SYSREG_CR_ENABLE_MASK;
 	MSS_WD_init();
+//	uint8_t wdg_reset = MSS_WD_timeout_occured();
+//    if(wdg_reset)
+//    {
+//        MSS_WD_clear_timeout_event();
+//    }
 	GPIO_Init();
 	I2C_Init();
 	Uart_Init();
@@ -220,8 +227,9 @@ uint8_t Pilot_Init() {
 	ADC_Init(&i2c_3,ADC_I2CU2_ADDR);
 	ADC_Init(&i2c_5,ADC_I2CU1_ADDR);
 	ADC_Init(&i2c_5,ADC_I2CU2_ADDR);
-	MSS_GPIO_set_output(INV_EN,0);
-	MSS_GPIO_set_output(MSS_GPIO_7,0);
+	MSS_GPIO_set_output(TX_INV_EN,1);
+	MSS_GPIO_set_output(RX_INV_EN,1);
+	MSS_GPIO_set_output(EN_UART,0);
 	res = res | (vc_init(VC1) << 1);
 	return res;
 }

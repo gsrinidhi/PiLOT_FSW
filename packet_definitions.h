@@ -10,7 +10,7 @@
 
 #define THERMISTOR_API_ID			20
 #define THERMISTOR_PKT_LENGTH		sizeof(thermistor_pkt_t)
-#define THERMISTOR_FLETCHER_CODE	0x01
+#define THERMISTOR_FLETCHER_CODE	0xCDCD
 
 #define ARIS_API_ID           50
 #define ARIS_PKT_LENGTH       sizeof(aris_pkt_t)
@@ -22,16 +22,16 @@
 
 #define HK_API_ID			10
 #define HK_PKT_LENGTH		sizeof(hk_pkt_t)
-#define HK_FLETCHER_CODE	0x01
+#define HK_FLETCHER_CODE	0xCDCD
 
 #define SD_HK_API_ID    	40
 #define SD_HK_PKT_LENGTH  sizeof(SD_HK_pkt_t)
-#define SD_HK_FLETCHER_CODE 0x01
+#define SD_HK_FLETCHER_CODE 0xCDCD
 
 //Command packet parameters
 #define CMD_API_ID			0x20
 #define CMD_PKT_LENGTH		sizeof(cmd_packet_t)
-#define CMD_FLETCHER_CODE	0x00
+#define CMD_FLETCHER_CODE	0xCDCD
 
 #define PSLV_PACKET_REQUEST_SIZE		26
 
