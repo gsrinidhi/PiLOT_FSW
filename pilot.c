@@ -12,10 +12,10 @@ uint8_t ADC_Init(i2c_instance_t *i2c_chx,uint8_t address){
 	for(;channel <= 3;channel++) {
 		DATA_HIGH[0] = DATA_HIGH_REG(channel);
 		DATA_LOW[0] = DATA_LOW_REG(channel);
-		I2C_write(&g_core_i2c4,ADC_I2C_ADDR,DATA_HIGH,3,I2C_RELEASE_BUS);
-		status = I2C_wait_complete(&g_core_i2c4, I2C_NO_TIMEOUT);
-		I2C_write(&g_core_i2c4,ADC_I2C_ADDR,DATA_LOW,3,I2C_RELEASE_BUS);
-		status = I2C_wait_complete(&g_core_i2c4, I2C_NO_TIMEOUT);
+		I2C_write(i2c_chx,address,DATA_HIGH,3,I2C_RELEASE_BUS);
+		status = I2C_wait_complete(i2c_chx, I2C_NO_TIMEOUT);
+		I2C_write(i2c_chx,address,DATA_LOW,3,I2C_RELEASE_BUS);
+		status = I2C_wait_complete(i2c_chx, I2C_NO_TIMEOUT);
 		return_value |= (status << channel);
 	}
 	
@@ -50,11 +50,11 @@ uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no){
    uint8_t i = 0,flag;
    uint8_t loss_count = 0;
    for(;i<8;i++){
-        pkt->thermistor_set_A[i] = get_ADC_value(&i2c_3, ADC_I2C_ADDR, i,&flag);
+        pkt->thermistor_set_A[i] = get_ADC_value(&i2c_3, ADC_I2CU1_ADDR, i,&flag);
         loss_count+=flag;
-        pkt->thermistor_set_B[i] = get_ADC_value(&i2c_3, ADC_I2C_ADDR, i,&flag);
+        pkt->thermistor_set_B[i] = get_ADC_value(&i2c_3, ADC_I2CU2_ADDR, i,&flag);
         loss_count+=flag;
-        pkt->thermistor_set_C[i] = get_ADC_value(&i2c_5, ADC_I2C_ADDR, i,&flag);
+        pkt->thermistor_set_C[i] = get_ADC_value(&i2c_5, ADC_I2CU1_ADDR, i,&flag);
         loss_count+=flag;
      }
 
@@ -67,11 +67,11 @@ uint8_t get_aris_sample(aris_pkt_t *pkt,uint16_t *time,uint16_t *location,uint8_
 	uint8_t flag,loss_count = 0;
 	pkt->aris_samples[sample_no].collect_time = *time;
 	pkt->aris_samples[sample_no].collect_location = *location;
-	pkt->aris_samples[sample_no].aris_data[0] = get_ADC_value(&i2c_5, ADC_I2C_ADDR, 0,&flag);
+	pkt->aris_samples[sample_no].aris_data[0] = get_ADC_value(&i2c_5, ADC_I2CU2_ADDR, 0,&flag);
 	loss_count+=flag;
-	pkt->aris_samples[sample_no].aris_data[1] = get_ADC_value(&i2c_5, ADC_I2C_ADDR, 1,&flag);
+	pkt->aris_samples[sample_no].aris_data[1] = get_ADC_value(&i2c_5, ADC_I2CU2_ADDR, 1,&flag);
 	loss_count+=flag;
-	pkt->aris_samples[sample_no].aris_data[2] = get_ADC_value(&i2c_5, ADC_I2C_ADDR, 2,&flag);
+	pkt->aris_samples[sample_no].aris_data[2] = get_ADC_value(&i2c_5, ADC_I2CU2_ADDR, 2,&flag);
 	loss_count+=flag;
 	return loss_count;
 }
@@ -199,6 +199,7 @@ void Uart_Init() {
 //	UART_init(&uart2,COREUARTAPB_2_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
 //	UART_init(&uart3,COREUARTAPB_3_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
 	MSS_UART_init(&g_mss_uart1,2000000,MSS_UART_DATA_8_BITS | MSS_UART_STICK_PARITY_0 | MSS_UART_ONE_STOP_BIT);
+//	MSS_UART_init(&g_mss_uart1,115200,MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT);
 }
 
 uint8_t Pilot_Peripherals_Init() {
@@ -227,8 +228,8 @@ uint8_t Pilot_Init() {
 	ADC_Init(&i2c_3,ADC_I2CU2_ADDR);
 	ADC_Init(&i2c_5,ADC_I2CU1_ADDR);
 	ADC_Init(&i2c_5,ADC_I2CU2_ADDR);
-	MSS_GPIO_set_output(TX_INV_EN,1);
-	MSS_GPIO_set_output(RX_INV_EN,1);
+	MSS_GPIO_set_output(TX_INV_EN,0);
+	MSS_GPIO_set_output(RX_INV_EN,0);
 	MSS_GPIO_set_output(EN_UART,0);
 	res = res | (vc_init(VC1) << 1);
 	return res;
@@ -305,6 +306,18 @@ uint8_t test_peripherals(uint8_t *sd) {
 			count++;
 		}
 	}
+   count = 0;
+   while(count < 10) {
+       I2C_write(VC_SENSOR_I2C,VC1,tx,1,I2C_RELEASE_BUS);
+       status = I2C_wait_complete(VC_SENSOR_I2C,I2C_NO_TIMEOUT);
+       if(status == I2C_SUCCESS) {
+           break;
+       }
+       count++;
+   }
+   if(count < 10) {
+	   result |= 0x40;
+   }
 
 	return result;
 }
@@ -390,7 +403,7 @@ uint8_t get_IMU_gyro(uint16_t *roll_rate, uint16_t *pitch_rate,uint16_t *yaw_rat
 		uint8_t read_ACC_out_X_H[] = {0x19};
 		uint8_t read_ACC_out_Y_H[] = {0x1B};
 		uint8_t read_ACC_out_Z_H[] = {0x1D};
-		uint8_t IMU_slave_addr = 0x6b;
+		uint8_t IMU_slave_addr = 0x6a;
 		uint8_t rx_buffer[1],rx_buffer_2[1];
 		uint8_t result = 0,status;
 
