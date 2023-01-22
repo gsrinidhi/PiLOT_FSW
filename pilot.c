@@ -190,8 +190,8 @@ uint8_t Pilot_Init() {
 	ADC_Init(&i2c_3,ADC_I2CU2_ADDR);
 	ADC_Init(&i2c_5,ADC_I2CU1_ADDR);
 	ADC_Init(&i2c_5,ADC_I2CU2_ADDR);
-	MSS_GPIO_set_output(TX_INV_EN,0);
-	MSS_GPIO_set_output(RX_INV_EN,0);
+	MSS_GPIO_set_output(TX_INV_EN,1);
+	MSS_GPIO_set_output(RX_INV_EN,1);
 	MSS_GPIO_set_output(EN_UART,0);
 	res = res | (vc_init(VC1) << 1);
 	return res;
@@ -254,6 +254,10 @@ uint8_t test_peripherals(uint8_t *sd) {
 	}
 	if(count < 10) {
 		result |= 0x08;
+	}
+
+	if(*sd == 0) {
+		result |= 0x10;
 	}
 
 	return result;
@@ -393,6 +397,27 @@ uint8_t get_IMU_gyro(uint16_t *roll_rate, uint16_t *pitch_rate,uint16_t *yaw_rat
 		*yaw_rate = ((rx_buffer_2[0] << 8) | rx_buffer[0]);
 
 		return status;
+}
+
+uint8_t sd_status(uint8_t *sd) {
+	uint8_t res = 0;
+	if(*sd == 1) {
+		MSS_GPIO_set_output(SD_CARD_GPIO,1);
+		res = SD_Init();
+		if(res == 0) {
+			*sd = 0;
+		}else {
+			MSS_GPIO_set_output(SD_CARD_GPIO,0);
+		}
+	}else {
+		res = SD_Init();
+		if(res == 0) {
+			*sd = 0;
+		}else {
+			MSS_GPIO_set_output(SD_CARD_GPIO,0);
+			*sd = 1;
+		}
+	}
 }
 
 void time_to_count(uint32_t ms,uint32_t *upper_count,uint32_t *lower_count) {
