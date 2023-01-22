@@ -6,14 +6,14 @@
 #define INIT_BLOCK 512
 #define CURRENT_BLOCK 1024
 
-#define PAYLOAD_BLOCK_INIT        	100
-#define HK_BLOCK_INIT        		300
-#define LOGS_BLOCK_INIT          	500
+#define PAYLOAD_BLOCK_INIT        	0x4F1A6E
+#define HK_BLOCK_INIT        		0xA
+#define LOGS_BLOCK_INIT          	0x5703D2
 #define SD_BLOCK_INIT				700
 
-#define PAYLOAD_BLOCK_END			200
-#define HK_BLOCK_END				400
-#define LOGS_BLOCK_END				600
+#define PAYLOAD_BLOCK_END			0x57036E
+#define HK_BLOCK_END				0x4F1A0A
+#define LOGS_BLOCK_END				0x57CE52
 #define SD_BLOCK_END				800
 
 //All the Partitions used

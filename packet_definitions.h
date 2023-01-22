@@ -28,15 +28,6 @@
 #define SD_HK_PKT_LENGTH  sizeof(SD_HK_pkt_t)
 #define SD_HK_FLETCHER_CODE 0xCDCD
 
-//Command packet parameters
-#define CMD_API_ID			0x20
-#define CMD_PKT_LENGTH		sizeof(cmd_packet_t)
-#define CMD_FLETCHER_CODE	0xCDCD
-
-#define PSLV_PACKET_REQUEST_SIZE		26
-
-
-
 typedef struct {
     //CCSDS
 
@@ -58,8 +49,7 @@ typedef struct {
 }__attribute__((packed)) thermistor_pkt_t;
 
 typedef struct {
-	uint16_t collect_time;
-	uint16_t collect_location;
+	uint32_t collect_time;
 	uint16_t aris_data[3];
 }__attribute__((packed)) aris_sample_t;
 
@@ -153,13 +143,5 @@ typedef struct {
 
     uint16_t Fletcher_Code;
 }__attribute__((packed)) SD_HK_Test;
-
-
-typedef struct {
-	uint8_t header1;
-	uint8_t header2;
-
-	uint8_t data[PSLV_PACKET_REQUEST_SIZE-2];
-}__attribute__((packed)) pslv_queue_t;
 
 #endif

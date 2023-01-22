@@ -51,7 +51,6 @@
 
 //PSLV address
 #define PSLV_TO_PILOT_ADDR			119
-#define PILOT_TO_PSLV_ADDR			0x60
 
 #define PILOT_REVERSE_BYTE_ORDER(var)	(((var) << 8) | ((var) >> 8))
 
@@ -186,9 +185,8 @@ uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no,uint8_t *sd_s);
  * 
  * @param pkt 		: pointer to aris packet structure to store the data
  * @param time 		: the time of collecting the data
- * @param location 	: the location of collecting the data
  * @param sample_no : the sample number of the sample
  * @return uint8_t 	: returns 0 if successful, non-zero otherwise
  */
-uint8_t get_aris_sample(aris_pkt_t *pkt,uint16_t *time,uint16_t *location,uint8_t sample_no);
+uint8_t get_aris_sample(aris_pkt_t *pkt,uint32_t time,uint8_t sample_no);
 #endif

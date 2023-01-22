@@ -2,9 +2,6 @@
 #define SD_H_
 
 #include "peripherals.h"
-//#include<stdint.h>
-//#include<drivers/mss_spi/mss_spi.h>
-//#include<drivers/mss_gpio/mss_gpio.h>
 /**
  * @brief Initialises the SD card
  * 

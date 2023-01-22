@@ -63,10 +63,9 @@ uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no){
     return loss_count;
 }
 
-uint8_t get_aris_sample(aris_pkt_t *pkt,uint16_t *time,uint16_t *location,uint8_t sample_no) {
+uint8_t get_aris_sample(aris_pkt_t *pkt,uint32_t time,uint8_t sample_no) {
 	uint8_t flag,loss_count = 0;
-	pkt->aris_samples[sample_no].collect_time = *time;
-	pkt->aris_samples[sample_no].collect_location = *location;
+	pkt->aris_samples[sample_no].collect_time = time;
 	pkt->aris_samples[sample_no].aris_data[0] = get_ADC_value(&i2c_5, ADC_I2CU2_ADDR, 0,&flag);
 	loss_count+=flag;
 	pkt->aris_samples[sample_no].aris_data[1] = get_ADC_value(&i2c_5, ADC_I2CU2_ADDR, 1,&flag);
@@ -75,23 +74,6 @@ uint8_t get_aris_sample(aris_pkt_t *pkt,uint16_t *time,uint16_t *location,uint8_
 	loss_count+=flag;
 	return loss_count;
 }
-//uint8_t get_aris_vals(aris_pkt_t *pkt, uint16_t seq_no){
-//    pkt->ccsds_p1 = PILOT_REVERSE_BYTE_ORDER((ccsds_p1(tlm_pkt_type, ARIS_API_ID)));
-//    pkt->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER((ccsds_p2(seq_no)));
-//    pkt->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER((ccsds_p3(ARIS_PKT_LENGTH-7)));
-//
-//    uint8_t i = 0,flag;
-//    uint8_t loss_count = 0;
-//
-//    for(;i<8;i++){
-//        pkt->aris[i] = get_ADC_value(&i2c_5, ADC_I2CU4_ADDR, i,&flag);
-//        loss_count+=flag;
-//
-//    }
-//    pkt->Fletcher_Code  = ARIS_FLETCHER_CODE;
-//
-//    return loss_count;
-//}
 
 // Function below will generate the HK Packet containing ___ items;
 
@@ -147,45 +129,13 @@ uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no,uint8_t *sd_s) {
     	}
 	}
 
-	hk_pkt->ccsds_p1 = PILOT_REVERSE_BYTE_ORDER(ccsds_p1(tlm_pkt_type, SD_HK_API_ID));
-    hk_pkt->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(ccsds_p2(seq_no));
-    hk_pkt->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(ccsds_p3(SD_HK_PKT_LENGTH-7));
-
-    hk_pkt->Thermistor_Read_Pointer = payload_p.read_pointer;
-    hk_pkt->Thermistor_Write_Pointer = payload_p.write_pointer;
-
-    hk_pkt->HK_Read_Pointer = hk_p.read_pointer;
-    hk_pkt->HK_Write_Pointer = hk_p.write_pointer;
-
-    hk_pkt->Logs_Read_Pointer = log_p.read_pointer;
-    hk_pkt->Logs_Write_Pointer = log_p.write_pointer;
-
-    hk_pkt->SD_Test_Read_Pointer = sd_hk_p.read_pointer;
-    hk_pkt->SD_Test_Write_Pointer = sd_hk_p.write_pointer;
-
     hk_pkt->Fletcher_Code  = HK_FLETCHER_CODE;
 
     return loss_count;
 }
 
-void get_sd_hk_test(SD_HK_Test *sd_hk_test, uint16_t seq_no){
-    uint16_t loss_count, flag;
-    uint8_t i;
-
-   sd_hk_test->ccsds_p1 = PILOT_REVERSE_BYTE_ORDER(((ccsds_p1(tlm_pkt_type, SD_HK_Test_APID))));
-   sd_hk_test->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(((ccsds_p2(seq_no))));
-   sd_hk_test->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(((ccsds_p3(SD_HK_TEST_PKT_LENGTH-7))));
-   sd_hk_test->ccsds_s1 = 1;
-   sd_hk_test->ccsds_s2 = 1;
-
-
-
-
-}
-
 void I2C_Init() {
-//	MSS_I2C_init( &g_mss_i2c0, DUMMY_I2C_ADDR, MSS_I2C_PCLK_DIV_960 );
-//	MSS_I2C_init(&g_mss_i2c1,DUMMY_I2C_ADDR,MSS_I2C_PCLK_DIV_960);
+	MSS_I2C_init( &g_mss_i2c0, DUMMY_I2C_ADDR, MSS_I2C_PCLK_DIV_960 );
 	I2C_init(&g_core_i2c1, COREI2C_1_0, DUMMY_I2C_ADDR, I2C_PCLK_DIV_960);
 	I2C_init(&g_core_i2c2, COREI2C_2_0, DUMMY_I2C_ADDR, I2C_PCLK_DIV_960);
 	I2C_init(&g_core_i2c3, COREI2C_3_0, DUMMY_I2C_ADDR, I2C_PCLK_DIV_960);
@@ -210,23 +160,19 @@ void SPI_Init() {
 }
 
 void Uart_Init() {
-//	UART_init(&uart0,COREUARTAPB_0_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
-//	UART_init(&uart1,COREUARTAPB_1_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
-//	UART_init(&uart2,COREUARTAPB_2_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
-//	UART_init(&uart3,COREUARTAPB_3_0,UART_BAUD_115200,(DATA_8_BITS | NO_PARITY));
-	MSS_UART_init(&g_mss_uart1,2000000,MSS_UART_DATA_8_BITS | MSS_UART_STICK_PARITY_0 | MSS_UART_ONE_STOP_BIT);
+	MSS_UART_init(&g_mss_uart1,MSS_UART_BAUD_2000000,MSS_UART_DATA_8_BITS | MSS_UART_STICK_PARITY_0 | MSS_UART_ONE_STOP_BIT);
 //	MSS_UART_init(&g_mss_uart1,115200,MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT);
 }
 
 uint8_t Pilot_Peripherals_Init() {
 	uint8_t res = 0;
-	//SYSREG->WDOG_CR = WDOG_SYSREG_CR_ENABLE_MASK;
+	SYSREG->WDOG_CR = WDOG_SYSREG_CR_ENABLE_MASK;
 	MSS_WD_init();
-//	uint8_t wdg_reset = MSS_WD_timeout_occured();
-//    if(wdg_reset)
-//    {
-//        MSS_WD_clear_timeout_event();
-//    }
+	uint8_t wdg_reset = MSS_WD_timeout_occured();
+    if(wdg_reset)
+    {
+        MSS_WD_clear_timeout_event();
+    }
 	GPIO_Init();
 	I2C_Init();
 	Uart_Init();
@@ -255,7 +201,7 @@ uint8_t test_peripherals(uint8_t *sd) {
 	uint16_t count = 0;
 	uint8_t ch_read[] = {0x80};
 	uint8_t adc_read_value[2];
-	uint8_t result = 0x00,temp_result = 1;
+	uint8_t result = 0x00;
 	uint8_t tx[] = {IMU_WHO_AM_I_REG};
 	uint8_t sd_test[512];
 	for(;count<512;count++) {
@@ -296,44 +242,19 @@ uint8_t test_peripherals(uint8_t *sd) {
 		count++;
 	}
 
+	//Testing VC sensor I2C
 	count = 0;
-	*sd = SD_Init();
-	if(*sd == 0) {
-		result |= 0x20;
-		//SD card write test
-		while(count < 10) {
-			temp_result = SD_Write(SD_BLOCK_END+10,sd_test);
-			if(temp_result == 0) {
-				result |= 0x08;
-				temp_result = 1;
-				break;
-			}
-			count++;
+	while(count < 10) {
+		I2C_write(VC_SENSOR_I2C,VC1,tx,1,I2C_RELEASE_BUS);
+		status = I2C_wait_complete(VC_SENSOR_I2C,I2C_NO_TIMEOUT);
+		if(status == I2C_SUCCESS) {
+			break;
 		}
-		//SD card read test
-		count = 0;
-		while(count < 10) {
-			temp_result = SD_Read(SD_BLOCK_END+10,sd_test);
-			if(temp_result == 0) {
-				result |= 0x10;
-				temp_result = 1;
-				break;
-			}
-			count++;
-		}
+		count++;
 	}
-   count = 0;
-   while(count < 10) {
-       I2C_write(VC_SENSOR_I2C,VC1,tx,1,I2C_RELEASE_BUS);
-       status = I2C_wait_complete(VC_SENSOR_I2C,I2C_NO_TIMEOUT);
-       if(status == I2C_SUCCESS) {
-           break;
-       }
-       count++;
-   }
-   if(count < 10) {
-	   result |= 0x40;
-   }
+	if(count < 10) {
+		result |= 0x08;
+	}
 
 	return result;
 }
@@ -507,24 +428,4 @@ void FabricIrq4_IRQHandler(void)
 void FabricIrq5_IRQHandler(void)
 {
     I2C_isr(&g_core_i2c5);
-}
-
-void GPIO19_IRQHandler(void) {
-	gpio1_irq_cnt++;
-	MSS_GPIO_clear_irq( MSS_GPIO_19 );
-}
-
-void GPIO20_IRQHandler(void) {
-	MSS_GPIO_clear_irq( MSS_GPIO_20 );
-	gpio2_irq_cnt++;
-}
-
-void GPIO4_IRQHandler(void) {
-	MSS_GPIO_clear_irq( MSS_GPIO_4 );
-	gpio3_irq_cnt++;
-}
-
-void GPIO26_IRQHandler(void) {
-	MSS_GPIO_clear_irq( MSS_GPIO_26 );
-	gpio4_irq_cnt++;
 }

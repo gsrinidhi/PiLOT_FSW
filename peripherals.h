@@ -31,11 +31,7 @@
 
 #define UART_BAUD_9600                  (((MSS_SYS_M3_CLK_FREQ)/(9600 * 16))  - 1)
 #define UART_BAUD_115200                (((MSS_SYS_M3_CLK_FREQ)/(115200 * 16))  - 1)
-#if DEBUG_ON == 1
-#define MSS_UART_BAUD_2000000				MSS_UART_9600_BAUD
-#else
-#define MSS_UART_BAUD_2000000				2000000
-#endif
+#define MSS_UART_BAUD_2000000			2000000
 
 #define LOWER_BYTE			0
 #define UPPER_BYTE			1
