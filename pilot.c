@@ -147,23 +147,39 @@ uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no,uint8_t *sd_s) {
     	}
 	}
 
+	hk_pkt->ccsds_p1 = PILOT_REVERSE_BYTE_ORDER(ccsds_p1(tlm_pkt_type, SD_HK_API_ID));
+    hk_pkt->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(ccsds_p2(seq_no));
+    hk_pkt->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(ccsds_p3(SD_HK_PKT_LENGTH-7));
+
+    hk_pkt->Thermistor_Read_Pointer = payload_p.read_pointer;
+    hk_pkt->Thermistor_Write_Pointer = payload_p.write_pointer;
+
+    hk_pkt->HK_Read_Pointer = hk_p.read_pointer;
+    hk_pkt->HK_Write_Pointer = hk_p.write_pointer;
+
+    hk_pkt->Logs_Read_Pointer = log_p.read_pointer;
+    hk_pkt->Logs_Write_Pointer = log_p.write_pointer;
+
+    hk_pkt->SD_Test_Read_Pointer = sd_hk_p.read_pointer;
+    hk_pkt->SD_Test_Write_Pointer = sd_hk_p.write_pointer;
+
     hk_pkt->Fletcher_Code  = HK_FLETCHER_CODE;
 
     return loss_count;
 }
 
+void get_sd_hk_test(SD_HK_Test *sd_hk_test, uint16_t seq_no){
+    uint16_t loss_count, flag;
+    uint8_t i;
+
+   sd_hk_test->ccsds_p1 = PILOT_REVERSE_BYTE_ORDER(((ccsds_p1(tlm_pkt_type, SD_HK_Test_APID))));
+   sd_hk_test->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(((ccsds_p2(seq_no))));
+   sd_hk_test->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(((ccsds_p3(SD_HK_TEST_PKT_LENGTH-7))));
+   sd_hk_test->ccsds_s1 = 1;
+   sd_hk_test->ccsds_s2 = 1;
 
 
-void test_sd(){
 
-   //As the above function would write the data into the sd-card, so for testing the sd_card
-   //we can downlink at a certain interval from the same pointer values as define above.
-
-   // NOTE: - We can downlink the following 3 pkts of data : -
-   // 1) thermistor_pkt
-   // 2) HK_pkt
-   // 3) SD_pkt (Will contain the same data as sent by thermistor OR HK but it will be read
-   //            from SD_CARD.)
 
 }
 
