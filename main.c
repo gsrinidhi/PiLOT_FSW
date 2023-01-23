@@ -20,6 +20,7 @@ uint8_t log_count,result_global,api_id,sd_state,downlink_flag,downlink_packet_si
 uint8_t uart_irq_rx_buffer[3],uart_irq_tx_buffer[2];
 uint8_t uart_irq_size;
 uint8_t queue_head,queue_tail,q_empty;
+uint8_t sd_count;
 volatile uint8_t uart_irq_addr_flag;
 
 uint8_t downlink(uint8_t *data,uint8_t size) {
@@ -65,6 +66,9 @@ uint8_t get_sd_hk(hk_pkt_t *hk_pkt) {
     hk_pkt->SD_Test_Read_Pointer = sd_hk_p.read_pointer;
     hk_pkt->SD_Test_Write_Pointer = sd_hk_p.write_pointer;
 
+    hk_pkt->ARIS_Read_Pointer = aris_p.read_pointer;
+    hk_pkt->ARIS_Write_Pointer = aris_p.write_pointer;
+
     return 0;
 }
 
@@ -79,10 +83,12 @@ uint8_t Flags_Init() {
 	logs_seq_no = 1;
 	log_count = 0;
 	sd_hk_seq_no = 1;
+	aris_seq_no = 1;
 	initialise_partition(&payload_p,PAYLOAD_BLOCK_INIT,PAYLOAD_BLOCK_END);
 	initialise_partition(&hk_p,HK_BLOCK_INIT,HK_BLOCK_END);
 	initialise_partition(&log_p,LOGS_BLOCK_INIT,LOGS_BLOCK_END);
 	initialise_partition(&sd_hk_p,SD_BLOCK_INIT,SD_BLOCK_END);
+	initialise_partition(&aris_p,ARIS_BLOCK_INIT,ARIS_BLOCK_END);
 	hk_last_count_H = 0xFFFFFFFF;
 	hk_last_count_L = 0xFFFFFFFF;
 	payload_last_count_H = 0xFFFFFFFF;
@@ -100,40 +106,24 @@ uint8_t Flags_Init() {
     uart_irq_tx_buffer[1] = 0xFF;
     q_head = 2;
     q_tail = 0;
+    sd_count = 14;
 	return 0;
 }
 
-void add_to_queue(uint8_t size,partition_t *p) {
+void add_to_queue(uint8_t size,partition_t *p,uint8_t *data) {
 	q_in_i = 0;
 	if((q_head > q_tail && (1024 - q_head + q_tail) >= size) || (q_head < q_tail && (q_tail - q_head) >= size)) {
 		for(;q_in_i<size;q_in_i+=2) {
-			pslv_queue[q_head] = packet_data[q_in_i];
-			pslv_queue[q_head+1] = packet_data[q_in_i+1];
+			pslv_queue[q_head] = data[q_in_i];
+			pslv_queue[q_head+1] = data[q_in_i+1];
 			q_head+=2;
 			if(q_head >= 1024) {
 				//q_head reached limit
 				q_head = 0;
 			}
 		}
-	} else if(sd_state == 0) {
-		store_data(p,packet_data);
-	}
-}
-
-void add_logs_to_queue(uint8_t size,partition_t *p) {
-	q_in_i = 0;
-	if((q_head > q_tail && (1024 - q_head + q_tail) >= size) || (q_head < q_tail && (q_tail - q_head) >= size)) {
-		for(;q_in_i<size;q_in_i+=2) {
-			pslv_queue[q_head] = log_data[q_in_i];
-			pslv_queue[q_head+1] = log_data[q_in_i+1];
-			q_head+=2;
-			if(q_head >= 1024) {
-				//q_head reached limit
-				q_head = 0;
-			}
-		}
-	} else if(sd_state == 0){
-		store_data(p,log_data);
+	} else if(sd_state != 0) {
+		store_data(p,data);
 	}
 }
 
@@ -141,9 +131,9 @@ int main()
 {
 	result_global = Pilot_Init();
 	sd_state = result_global & 0x1;
+	sd_state = !sd_state;
 	Flags_Init();
 	log_packet = (log_packet_t*)log_data;
-
 	while(1) {
 		MSS_WD_reload();
 		MSS_TIM64_get_current_value(&current_time_upper,&current_time_lower);
@@ -155,7 +145,7 @@ int main()
 			thermistor_packet = (thermistor_pkt_t*)packet_data;
 			result_global = get_thermistor_vals(thermistor_packet,thermistor_seq_no);
 			//MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
-			add_to_queue(THERMISTOR_PKT_LENGTH,&payload_p);
+			add_to_queue(THERMISTOR_PKT_LENGTH,&payload_p,packet_data);
 			//MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 			log_packet->logs[log_count].task_status = result_global;
 			thermistor_seq_no++;
@@ -170,7 +160,9 @@ int main()
 			log_packet->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(ccsds_p2((logs_seq_no)));
 			log_packet->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(ccsds_p3(LOGS_PKT_LENGTH));
 			log_packet->Fletcher_Code = LOGS_FLETCHER_CODE;
-			add_logs_to_queue(LOGS_PKT_LENGTH,&log_p);
+			//MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
+			add_to_queue(LOGS_PKT_LENGTH,&log_p,log_data);
+			//MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 			log_count = 0;
 		}
 
@@ -185,7 +177,7 @@ int main()
 			result_global = get_sd_hk(hk_packet);
             log_packet->logs[log_count].task_status = result_global;
 			//MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
-			add_to_queue(HK_PKT_LENGTH,&hk_p);
+			add_to_queue(HK_PKT_LENGTH,&hk_p,packet_data);
 			hk_packet->q_head = q_head;
 			hk_packet->q_tail = q_tail;
 			//MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
@@ -201,22 +193,25 @@ int main()
 			log_packet->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(ccsds_p2((logs_seq_no)));
 			log_packet->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(ccsds_p3(LOGS_PKT_LENGTH));
 			log_packet->Fletcher_Code = LOGS_FLETCHER_CODE;
-			add_logs_to_queue(LOGS_PKT_LENGTH,&log_p);
+			//MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
+			add_to_queue(LOGS_PKT_LENGTH,&log_p,log_data);
+			//MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 			log_count = 0;
 		}
 
 		if(aris_sample_no >= 20) {
 			//Form Aris packet and add to queue
 			aris_packet = (aris_pkt_t*)aris_packet_data;
-			aris_packet->ccsds_p1 = ccsds_p1(tlm_pkt_type,ARIS_API_ID);
-			aris_packet->ccsds_p2 = ccsds_p2(aris_seq_no);
-			aris_packet->ccsds_p3 = ccsds_p3(ARIS_PKT_LENGTH);
+			aris_packet->ccsds_p1 = PILOT_REVERSE_BYTE_ORDER(ccsds_p1(tlm_pkt_type,ARIS_API_ID));
+			aris_packet->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(ccsds_p2(aris_seq_no));
+			aris_packet->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(ccsds_p3(ARIS_PKT_LENGTH));
 			aris_packet->Fletcher_Code = ARIS_FLETCHER_CODE;
 			//MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
-			add_to_queue(ARIS_PKT_LENGTH,&aris_p);
+			add_to_queue(ARIS_PKT_LENGTH,&aris_p,aris_packet_data);
 			//MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 			//Reset sample count
 			aris_sample_no = 0;
+			aris_seq_no++;
 		}
 
 		if((aris_last_count_H - current_time_upper >= aris_period_H) && (aris_last_count_L - current_time_lower >= aris_period_L)) {
@@ -240,14 +235,26 @@ int main()
 			log_packet->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(ccsds_p2((logs_seq_no)));
 			log_packet->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(ccsds_p3(LOGS_PKT_LENGTH));
 			log_packet->Fletcher_Code = LOGS_FLETCHER_CODE;
-			add_logs_to_queue(LOGS_PKT_LENGTH,&log_p);
+			//MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
+			add_to_queue(LOGS_PKT_LENGTH,&log_p,log_data);
+			//MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 			log_count = 0;
 		}
 
 		if((sd_hk_last_count_H - current_time_upper >= sd_hk_period_H) && (sd_hk_last_count_L - current_time_lower >= sd_hk_period_L)) {
-			result_global = sd_status(&sd_state);
+			result_global = sd_status(&sd_state,packet_data);
 			sd_hk_last_count_H = current_time_upper;
 			sd_hk_last_count_L = current_time_lower;
+			if(sd_state == 0x8 && sd_count == 14) {
+				sd_count = 13;
+			}
+			if(sd_count > 0 && sd_state == 0x8) {
+				sd_count--;
+			}else if(sd_state == 0x8){
+				sd_state = 0;
+				sd_count = 14;
+			}
+
 		}
 	}
 }

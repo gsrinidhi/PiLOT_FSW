@@ -255,10 +255,7 @@ uint8_t test_peripherals(uint8_t *sd) {
 	if(count < 10) {
 		result |= 0x08;
 	}
-
-	if(*sd == 0) {
-		result |= 0x10;
-	}
+	result |= (*sd << 4);
 
 	return result;
 }
@@ -399,25 +396,62 @@ uint8_t get_IMU_gyro(uint16_t *roll_rate, uint16_t *pitch_rate,uint16_t *yaw_rat
 		return status;
 }
 
-uint8_t sd_status(uint8_t *sd) {
+uint8_t sd_status(uint8_t *sd,uint8_t *data) {
 	uint8_t res = 0;
-	if(*sd == 1) {
-		MSS_GPIO_set_output(SD_CARD_GPIO,1);
-		res = SD_Init();
+	if(*sd == 0x8) {
+		return 0;
+	}
+	res = SD_Init();
+	if(res == 0) {
+		*sd |= 0x1;
+		res = SD_Write(512,data);
 		if(res == 0) {
-			*sd = 0;
-		}else {
-			MSS_GPIO_set_output(SD_CARD_GPIO,0);
+			*sd |= 0x2;
 		}
-	}else {
-		res = SD_Init();
+		res = SD_Read(512,data);
 		if(res == 0) {
-			*sd = 0;
-		}else {
-			MSS_GPIO_set_output(SD_CARD_GPIO,0);
-			*sd = 1;
+			*sd |= 0x4;
 		}
 	}
+	if(res == 1) {
+		MSS_GPIO_set_output(SD_CARD_GPIO,0);
+		*sd = 0x8;
+	}
+//	if(*sd == 0) {
+//		res = SD_Init();
+//		if(res == 0) {
+//			*sd |= 0x1;
+//			res = SD_Write(512,data);
+//			if(res == 0) {
+//				*sd |= 0x2;
+//			}
+//			res = SD_Read(512,data);
+//			if(res == 0) {
+//				*sd |= 0x4;
+//			}
+//		}
+//		if(res == 1) {
+//			MSS_GPIO_set_output(SD_CARD_GPIO,0);
+//			*sd = 0x8;
+//		}
+//	}else {
+//		res = SD_Init();
+//		if(res == 0) {
+//			*sd |= 0x1;
+//			res = SD_Write(512,data);
+//			if(res == 0) {
+//				*sd |= 0x2;
+//			}
+//			res = SD_Read(512,data);
+//			if(res == 0) {
+//				*sd |= 0x4;
+//			}
+//		}else {
+//			MSS_GPIO_set_output(SD_CARD_GPIO,0);
+//			*sd = 0x8;
+//		}
+//	}
+	return 0;
 }
 
 void time_to_count(uint32_t ms,uint32_t *upper_count,uint32_t *lower_count) {

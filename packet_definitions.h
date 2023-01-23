@@ -96,6 +96,8 @@ typedef struct {
     uint32_t Logs_Write_Pointer;
     uint32_t SD_Test_Read_Pointer;
     uint32_t SD_Test_Write_Pointer;
+    uint32_t ARIS_Read_Pointer;
+    uint32_t ARIS_Write_Pointer;
 
 //
     uint16_t Fletcher_Code;

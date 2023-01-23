@@ -10,11 +10,13 @@
 #define HK_BLOCK_INIT        		0xA
 #define LOGS_BLOCK_INIT          	0x5703D2
 #define SD_BLOCK_INIT				700
+#define ARIS_BLOCK_INIT				0x59647E
 
 #define PAYLOAD_BLOCK_END			0x57036E
 #define HK_BLOCK_END				0x4F1A0A
 #define LOGS_BLOCK_END				0x57CE52
 #define SD_BLOCK_END				800
+#define ARIS_BLOCK_END				0x7A59FE
 
 //All the Partitions used
 #define HK_PARTITION 				0x01

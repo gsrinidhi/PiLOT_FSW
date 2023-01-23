@@ -46,7 +46,7 @@ uint8_t SD_Init() {
 	} while( i < 255);
 	if(i >= 255) {
 		MSS_SPI_clear_slave_select(&g_mss_spi1, MSS_SPI_SLAVE_0);
-		return -1;
+		return 1;
 	}
 
 
@@ -74,7 +74,7 @@ uint8_t SD_Init() {
 	} while( i < 255);
 	if(i >= 255) {
 		MSS_SPI_clear_slave_select(&g_mss_spi1, MSS_SPI_SLAVE_0);
-		return -1;
+		return 1;
 	}
 
 
@@ -108,7 +108,7 @@ uint8_t SD_Init() {
 	} while( i <2550);
 	if(flag == 0) {
 		MSS_SPI_clear_slave_select(&g_mss_spi1, MSS_SPI_SLAVE_0);
-		return -1;
+		return 1;
 	}
 
 	rx_buffer[0] = 0x00;
@@ -136,7 +136,7 @@ uint8_t SD_Init() {
 
 	if(i >= 255) {
 		MSS_SPI_clear_slave_select(&g_mss_spi1, MSS_SPI_SLAVE_0);
-		return -1;
+		return 1;
 	}
 
 	if(flag == 1) {
@@ -144,7 +144,7 @@ uint8_t SD_Init() {
 		return 0;
 	}
 	MSS_SPI_clear_slave_select(&g_mss_spi1, MSS_SPI_SLAVE_0);
-	return -1;
+	return 1;
 }
 
 uint8_t SD_Write(uint32_t addr,uint8_t *buff) {
@@ -166,7 +166,7 @@ uint8_t SD_Write(uint32_t addr,uint8_t *buff) {
 		if(rx_buffer[0] == 0x00) {
 			MSS_SPI_transfer_block(&g_mss_spi1, &start_flag, 1, rx_buffer, 1);
 			MSS_SPI_transfer_block(&g_mss_spi1, buff, 512, rx_buffer, 0);
-			while(1){
+			while(j<100){
 				rx_buffer[0] = MSS_SPI_transfer_frame(&g_mss_spi1, 0xff);
 				if((rx_buffer[0]&0x1F) == 0x05) {
 					flag = 1;
@@ -176,7 +176,8 @@ uint8_t SD_Write(uint32_t addr,uint8_t *buff) {
 			}
 			if(flag == 1) {
 				flag = 0;
-				while(1) {
+				j = 0;
+				while(j<100) {
 					rx_buffer[0] = MSS_SPI_transfer_frame(&g_mss_spi1, 0xff);
 					if(rx_buffer[0]!=0x00) {
 						flag = 1;
@@ -185,6 +186,7 @@ uint8_t SD_Write(uint32_t addr,uint8_t *buff) {
 						MSS_SPI_transfer_frame(&g_mss_spi1, 0xff);
 						return 0;
 					}
+					j++;
 				}
 			}
 			break;
@@ -193,9 +195,13 @@ uint8_t SD_Write(uint32_t addr,uint8_t *buff) {
 	} while( i < 255);
 
 	if(i >= 255) {
-		return -1;
+		MSS_SPI_clear_slave_select(&g_mss_spi1, MSS_SPI_SLAVE_0);
+		MSS_SPI_transfer_frame(&g_mss_spi1, 0xff);
+		return 1;
 	}
-	return -1;
+	MSS_SPI_clear_slave_select(&g_mss_spi1, MSS_SPI_SLAVE_0);
+	MSS_SPI_transfer_frame(&g_mss_spi1, 0xff);
+	return 1;
 }
 
 uint8_t SD_Read(const uint32_t addr,uint8_t *buff) {
@@ -211,7 +217,7 @@ uint8_t SD_Read(const uint32_t addr,uint8_t *buff) {
 		MSS_SPI_set_slave_select(&g_mss_spi1, MSS_SPI_SLAVE_0);
 		MSS_SPI_transfer_frame(&g_mss_spi1, 0xff);
 		MSS_SPI_transfer_block(&g_mss_spi1, CMD17, 7, rx_buffer, 1);
-		while(1) {
+		while(c<100) {
 			rx_buffer[0] = MSS_SPI_transfer_frame(&g_mss_spi1, 0xff);
 			c++;
 			if(rx_buffer[0] == 0xFE) {
@@ -228,5 +234,9 @@ uint8_t SD_Read(const uint32_t addr,uint8_t *buff) {
 			}
 		}
 		i++;
-	}while(1);
+	}while(i<100);
+
+	MSS_SPI_clear_slave_select(&g_mss_spi1, MSS_SPI_SLAVE_0);
+	MSS_SPI_transfer_frame(&g_mss_spi1, 0xff);
+	return 1;
 }
