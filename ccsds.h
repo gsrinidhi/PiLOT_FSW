@@ -1,4 +1,13 @@
-
+/**
+ * @file    :   ccsds.h
+ * @author  :   Pratik Aher
+ * @brief   :   This file contains the macros to be used for the CCSDS header
+ * @version :   1.0
+ * @date    :   2023-01-24
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
 
 #ifndef _CCSDS_H
 #define _CCSDS_H

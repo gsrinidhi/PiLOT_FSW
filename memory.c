@@ -1,3 +1,14 @@
+/**
+ * @file 	:	memory.c
+ * @author 	:	Srinidhi G
+ * @brief 	:	This file implements all the functions in memory.h
+ * @version	:	1.0
+ * @date 	:	2023-01-24
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
+
 #include "memory.h"
 
 void initialise_partition(partition_t *partition, uint32_t start_b,uint32_t end_b) {
