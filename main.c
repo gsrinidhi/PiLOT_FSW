@@ -13,8 +13,8 @@ uint8_t aris_packet_data[512];
 uint8_t pslv_queue[1024];
 uint32_t wd_value;
 uint32_t current_time_lower,current_time_upper;
-uint32_t payload_period_L,payload_period_H,hk_period_H,hk_period_L,sd_hk_period_L,sd_hk_period_H,aris_period_L,aris_period_H;
-uint32_t payload_last_count_L,payload_last_count_H,hk_last_count_H,hk_last_count_L,sd_hk_last_count_L,sd_hk_last_count_H,aris_last_count_L,aris_last_count_H;
+uint32_t payload_period_L,payload_period_H,hk_period_H,hk_period_L,sd_hk_period_L,sd_hk_period_H,aris_period_L,aris_period_H,sd_dump_period_L,sd_dump_period_H;
+uint32_t payload_last_count_L,payload_last_count_H,hk_last_count_H,hk_last_count_L,sd_hk_last_count_L,sd_hk_last_count_H,aris_last_count_L,aris_last_count_H,sd_dump_last_count_L,sd_dump_last_count_H;
 uint16_t thermistor_seq_no,logs_seq_no,hk_seq_no,sd_hk_seq_no,aris_seq_no,downlink_data_count,current_location,q_head,q_tail,q_in_i;
 uint8_t log_count,result_global,api_id,sd_state,downlink_flag,downlink_packet_size,uart_state,aris_sample_no;
 uint8_t uart_irq_rx_buffer[3],uart_irq_tx_buffer[2];
@@ -78,6 +78,7 @@ uint8_t Flags_Init() {
 	time_to_count(DEFAULT_PAYLOAD_PERIOD,&payload_period_H,&payload_period_L);
 	time_to_count(FIVE_SPP_RATE,&sd_hk_period_H,&sd_hk_period_L);
 	time_to_count(10,&aris_period_H,&aris_period_L);
+	time_to_count(1000,&sd_dump_period_H,&sd_dump_period_L);
 	thermistor_seq_no = 1;
 	hk_seq_no = 1;
 	logs_seq_no = 1;
@@ -97,6 +98,8 @@ uint8_t Flags_Init() {
 	sd_hk_last_count_L = 0xFFFFFFFF;
 	aris_last_count_H = 0xFFFFFFFF;
 	aris_last_count_L = 0xFFFFFFFF;
+	sd_dump_last_count_H = 0xFFFFFFFF;
+	sd_dump_last_count_L = 0xFFFFFFFF;
     MSS_UART_set_rx_handler(&g_mss_uart1,
                             uart1_rx_handler,
                             MSS_UART_FIFO_SINGLE_BYTE);
@@ -127,6 +130,22 @@ void add_to_queue(uint8_t size,partition_t *p,uint8_t *data) {
 	}
 }
 
+void add_to_queue_from_sd(uint8_t size,partition_t *p,uint8_t *data) {
+	q_in_i = 0;
+	result_global = read_data(p,data);
+	while(!((q_head > q_tail && (1024 - q_head + q_tail) >= size) || (q_head < q_tail && (q_tail - q_head) >= size)));
+	if((q_head > q_tail && (1024 - q_head + q_tail) >= size) || (q_head < q_tail && (q_tail - q_head) >= size)) {
+		for(;q_in_i<size;q_in_i+=2) {
+			pslv_queue[q_head] = data[q_in_i];
+			pslv_queue[q_head+1] = data[q_in_i+1];
+			q_head+=2;
+			if(q_head >= 1024) {
+				//q_head reached limit
+				q_head = 0;
+			}
+		}
+	}
+}
 int main()
 {
 	result_global = Pilot_Init();
@@ -255,6 +274,14 @@ int main()
 				sd_count = 14;
 			}
 
+		}
+
+		if((sd_dump_last_count_H - current_time_upper >= sd_dump_period_H) && (sd_dump_last_count_L - current_time_lower >= sd_dump_period_L)) {
+			if(aris_p.read_pointer != aris_p.write_pointer) {
+				add_to_queue_from_sd(ARIS_PKT_LENGTH,&aris_p,aris_packet_data);
+			}
+			sd_dump_last_count_H = current_time_upper;
+			sd_dump_last_count_L = current_time_lower;
 		}
 	}
 }

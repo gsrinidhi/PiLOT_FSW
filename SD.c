@@ -217,7 +217,7 @@ uint8_t SD_Read(const uint32_t addr,uint8_t *buff) {
 		MSS_SPI_set_slave_select(&g_mss_spi1, MSS_SPI_SLAVE_0);
 		MSS_SPI_transfer_frame(&g_mss_spi1, 0xff);
 		MSS_SPI_transfer_block(&g_mss_spi1, CMD17, 7, rx_buffer, 1);
-		while(c<100) {
+		while(c<250) {
 			rx_buffer[0] = MSS_SPI_transfer_frame(&g_mss_spi1, 0xff);
 			c++;
 			if(rx_buffer[0] == 0xFE) {
