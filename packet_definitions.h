@@ -1,8 +1,12 @@
-/*
- * packet_definitions.h
- *
- *  Created on: 30-Dec-2022
- *      Author: gonah
+/**
+ * @file    :   packet_definitions.h
+ * @author  :   Srinidhi G, Pratik Aher
+ * @brief   :   This file contains the definitions of all the packet types used
+ * @version :   1.0
+ * @date    :   2023-01-24
+ * 
+ * @copyright Copyright (c) 2023
+ * 
  */
 
 #ifndef _PACKET_DEFINITIONS_

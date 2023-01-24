@@ -1,3 +1,14 @@
+/**
+ * @file 	:	pilot.c
+ * @author 	:	Srinidhi G, Pratik Aher
+ * @brief 	:	This file implements all the functions defined in pilot.h
+ * @version :	1.0
+ * @date 	:	2023-01-24
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
+
 #include"pilot.h"
 #include "memory.h"
 
@@ -255,6 +266,8 @@ uint8_t test_peripherals(uint8_t *sd) {
 	if(count < 10) {
 		result |= 0x08;
 	}
+
+	//Appending the state of the sd card to result
 	result |= (*sd << 4);
 
 	return result;
@@ -417,40 +430,6 @@ uint8_t sd_status(uint8_t *sd,uint8_t *data) {
 		MSS_GPIO_set_output(SD_CARD_GPIO,0);
 		*sd = 0x8;
 	}
-//	if(*sd == 0) {
-//		res = SD_Init();
-//		if(res == 0) {
-//			*sd |= 0x1;
-//			res = SD_Write(512,data);
-//			if(res == 0) {
-//				*sd |= 0x2;
-//			}
-//			res = SD_Read(512,data);
-//			if(res == 0) {
-//				*sd |= 0x4;
-//			}
-//		}
-//		if(res == 1) {
-//			MSS_GPIO_set_output(SD_CARD_GPIO,0);
-//			*sd = 0x8;
-//		}
-//	}else {
-//		res = SD_Init();
-//		if(res == 0) {
-//			*sd |= 0x1;
-//			res = SD_Write(512,data);
-//			if(res == 0) {
-//				*sd |= 0x2;
-//			}
-//			res = SD_Read(512,data);
-//			if(res == 0) {
-//				*sd |= 0x4;
-//			}
-//		}else {
-//			MSS_GPIO_set_output(SD_CARD_GPIO,0);
-//			*sd = 0x8;
-//		}
-//	}
 	return 0;
 }
 

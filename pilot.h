@@ -1,3 +1,14 @@
+/**
+ * @file 	:	pilot.h
+ * @author 	:	Srinidhi G, Pratik Aher
+ * @brief 	:	This file contains the functions used to gather data in PiLOT
+ * @version :	1
+ * @date 	:	2023-01-24
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
+
 #ifndef _PILOT_H_
 #define _PILOT_H_
 #include"peripherals.h"
@@ -134,8 +145,11 @@ uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no);
  * Bit 1(LSB)   : i2c_3
  * Bit 2        : i2c_5
  * Bit 3        : IMU
- * Bit 4        : SD card write
- * Bit 5        : SD card read
+ * Bit 4        : VC Sensor I2C
+ * Bit 5        : SD working
+ * Bit 6		: SD card can be written to
+ * Bit 7		: SD card can be read from
+ * Bit 8		: The SD card is off
  */
 uint8_t test_peripherals(uint8_t *sd);
 
@@ -190,5 +204,17 @@ uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no,uint8_t *sd_s);
  */
 uint8_t get_aris_sample(aris_pkt_t *pkt,uint32_t time,uint8_t sample_no);
 
+/**
+ * @brief Obtain the status of the SD card
+ * 
+ * @param sd 		: Pointer to the current state of the SD card. On the completion of this function, the state of the SD card is as follows:
+ * Bit 1 (LSb)		: Initialised properly
+ * Bit 2			: Write function working
+ * Bit 3			: Read function working
+ * Bit 4			: SD card is off
+ * @param data 		: Testing data to be written to the SD card
+ * @return uint8_t 	: returns 0
+ * 0x7				: SD card can be initialised,
+ */
 uint8_t sd_status(uint8_t *sd,uint8_t *data);
 #endif

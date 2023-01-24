@@ -1,7 +1,17 @@
+/**
+ * @file    :   pslv_interface.h
+ * @author  :   Srinidhi G
+ * @brief   :   This function contains drivers for the VC sensor on the pslv interface board
+ * @version :   1.0
+ * @date    :   2023-01-24
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
+
 #ifndef _PSLV_INTERFACE_
 #define _PSLV_INTERFACE_
 
-#include <drivers/CoreI2C/core_i2c.h>
 #include "peripherals.h"
 
 #define VC1 0x40

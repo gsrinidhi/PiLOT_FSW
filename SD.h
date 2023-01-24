@@ -1,3 +1,14 @@
+/**
+ * @file    :   SD.h
+* @author   :   Srinidhi G
+ * @brief   :   This file contains the drivers to interface with the SD card
+ * @version :   1.0
+ * @date    :   2023-01-24
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
+
 #ifndef SD_H_
 #define SD_H_
 

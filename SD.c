@@ -1,3 +1,14 @@
+/**
+ * @file 	:	SD.c
+ * @author 	:	Srinidhi G
+ * @brief 	:	This function implements the functions defined in SD.h
+ * @version :	1.0
+ * @date 	:	2023-01-24
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
+
 #include"SD.h"
 uint8_t flag;
 uint8_t CMD0[] = {0x40, 0x00,0x00, 0x00,0x00, 0x95,0xff};

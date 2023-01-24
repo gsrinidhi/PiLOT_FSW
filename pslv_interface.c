@@ -1,3 +1,14 @@
+/**
+ * @file    :   pslv_interface.c
+ * @author  :   Srinidhi G
+ * @brief   :   This file provides the implementations of the functions in pslv_interface.h
+ * @version :   1.0
+ * @date    :   2023-01-24
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
+
 #include"pslv_interface.h"
 uint8_t count;
 uint8_t vc_write(uint8_t addr, uint8_t *tx, uint8_t tx_size) {
