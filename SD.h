@@ -13,6 +13,8 @@
 #define SD_H_
 
 #include "peripherals.h"
+
+#define SD_TIMEOUT	2
 /**
  * @brief Initialises the SD card
  * 

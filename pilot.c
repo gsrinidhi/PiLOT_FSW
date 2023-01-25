@@ -269,6 +269,9 @@ uint8_t test_peripherals(uint8_t *sd) {
 
 	//Appending the state of the sd card to result
 	result |= (*sd << 4);
+	if(*sd == 0x8) {
+		*sd = 0x9;
+	}
 
 	return result;
 }
@@ -411,7 +414,7 @@ uint8_t get_IMU_gyro(uint16_t *roll_rate, uint16_t *pitch_rate,uint16_t *yaw_rat
 
 uint8_t sd_status(uint8_t *sd,uint8_t *data) {
 	uint8_t res = 0;
-	if(*sd == 0x8) {
+	if(*sd == 0x9) {
 		return 0;
 	}
 	res = SD_Init();
@@ -435,7 +438,7 @@ uint8_t sd_status(uint8_t *sd,uint8_t *data) {
 
 void time_to_count(uint32_t ms,uint32_t *upper_count,uint32_t *lower_count) {
     *lower_count = (ms%FULL_SCALE_TIME_MS) * TIMER_COUNT_PER_MS;
-    *upper_count = (ms/FULL_SCALE_TIME_MS) * TIMER_COUNT_PER_MS;
+    *upper_count = (ms/FULL_SCALE_TIME_MS);
 }
 
 void FabricIrq0_IRQHandler(void)

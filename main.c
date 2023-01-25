@@ -44,7 +44,7 @@ uint8_t aris_packet_data[512];
  * @brief The pslv_queue is the queue from which data is provided to the pslv stage 4 data processing unit
  * 
  */
-uint8_t pslv_queue[1024];
+uint8_t pslv_queue[2048];
 
 /**
  * @brief A pointer to the thermistor packet type. Payload data is stored in packet_data using this pointer
@@ -141,11 +141,11 @@ void uart1_rx_handler(mss_uart_instance_t * this_uart) {
 			;
 		}
 		MSS_GPIO_set_output(EN_UART,0);
-		if(((q_tail+2)%1024) == q_head) {
+		if(((q_tail+2)%2048) == q_head) {
 			pslv_queue[q_tail] = 0xFF;
 			pslv_queue[q_tail+1] = 0xFF;
 		} else {
-			q_tail = ((q_tail+2)%1024);
+			q_tail = ((q_tail+2)%2048);
 		}
 	}
 
@@ -188,9 +188,9 @@ uint8_t Flags_Init() {
 	 */
 	time_to_count(DEFAULT_HK_PERIOD,&hk_period_H,&hk_period_L);
 	time_to_count(DEFAULT_PAYLOAD_PERIOD,&payload_period_H,&payload_period_L);
-	time_to_count(FIVE_SPP_RATE,&sd_hk_period_H,&sd_hk_period_L);
+	time_to_count(600000,&sd_hk_period_H,&sd_hk_period_L);
 	time_to_count(10,&aris_period_H,&aris_period_L);
-	time_to_count(1000,&sd_dump_period_H,&sd_dump_period_L);
+	time_to_count(300000,&sd_dump_period_H,&sd_dump_period_L);
 	/**
 	 * @brief Initialise all sequence numbers to one
 	 * 
@@ -239,7 +239,7 @@ uint8_t Flags_Init() {
 	 */
     q_head = 2;
     q_tail = 0;
-    sd_count = 14;
+    sd_count = SD_TIMEOUT;
 	return 0;
 }
 
@@ -252,36 +252,43 @@ uint8_t Flags_Init() {
  */
 void add_to_queue(uint8_t size,partition_t *p,uint8_t *data) {
 	q_in_i = 0;
-	if((q_head > q_tail && (1024 - q_head + q_tail) >= size) || (q_head < q_tail && (q_tail - q_head) >= size)) {
+	if((q_head > q_tail && (2048 - q_head + q_tail) >= size) || (q_head < q_tail && (q_tail - q_head) >= size)) {
 		for(;q_in_i<size;q_in_i+=2) {
 			pslv_queue[q_head] = data[q_in_i];
 			pslv_queue[q_head+1] = data[q_in_i+1];
 			q_head+=2;
-			if(q_head >= 1024) {
+			if(q_head >= 2048) {
 				//q_head reached limit
 				q_head = 0;
 			}
 		}
-	} else if(sd_state != 0) {
-		store_data(p,data);
+	} else if(sd_state == 0x7) {
+		result_global = store_data(p,data);
+		if(result_global == 1) {
+			sd_state = 0x0;
+		}
 	}
 }
 
 void add_to_queue_from_sd(uint8_t size,partition_t *p,uint8_t *data) {
 	q_in_i = 0;
-	result_global = read_data(p,data);
-	while(!((q_head > q_tail && (1024 - q_head + q_tail) >= size) || (q_head < q_tail && (q_tail - q_head) >= size)));
-	if((q_head > q_tail && (1024 - q_head + q_tail) >= size) || (q_head < q_tail && (q_tail - q_head) >= size)) {
-		for(;q_in_i<size;q_in_i+=2) {
-			pslv_queue[q_head] = data[q_in_i];
-			pslv_queue[q_head+1] = data[q_in_i+1];
-			q_head+=2;
-			if(q_head >= 1024) {
-				//q_head reached limit
-				q_head = 0;
+	if(sd_state == 0x7) {
+		result_global = read_data(p,data);
+		while(!((q_head > q_tail && (2048 - q_head + q_tail) >= size) || (q_head < q_tail && (q_tail - q_head) >= size)));
+		if((q_head > q_tail && (2048 - q_head + q_tail) >= size) || (q_head < q_tail && (q_tail - q_head) >= size)) {
+			for(;q_in_i<size;q_in_i+=2) {
+				pslv_queue[q_head] = data[q_in_i];
+				pslv_queue[q_head+1] = data[q_in_i+1];
+				q_head+=2;
+				if(q_head >= 2048) {
+					//q_head reached limit
+					q_head = 0;
+				}
 			}
 		}
 	}
+
+
 }
 int main()
 {
@@ -289,6 +296,9 @@ int main()
 	result_global = Pilot_Init();
 	sd_state = result_global & 0x1;
 	sd_state = !sd_state;
+	if(sd_state == 1){
+		sd_state = 0x7;
+	}
 	//Initialise all the global variables in main.c
 	Flags_Init();
 	log_packet = (log_packet_t*)log_data;
@@ -324,6 +334,7 @@ int main()
 			add_to_queue(LOGS_PKT_LENGTH,&log_p,log_data);
 			//MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 			log_count = 0;
+			logs_seq_no++;
 		}
 
 		// For HK Packet
@@ -357,6 +368,7 @@ int main()
 			add_to_queue(LOGS_PKT_LENGTH,&log_p,log_data);
 			//MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 			log_count = 0;
+			logs_seq_no++;
 		}
 
 		if(aris_sample_no >= 20) {
@@ -399,20 +411,21 @@ int main()
 			add_to_queue(LOGS_PKT_LENGTH,&log_p,log_data);
 			//MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 			log_count = 0;
+			logs_seq_no++;
 		}
 
 		if((sd_hk_last_count_H - current_time_upper >= sd_hk_period_H) && (sd_hk_last_count_L - current_time_lower >= sd_hk_period_L)) {
 			result_global = sd_status(&sd_state,packet_data);
 			sd_hk_last_count_H = current_time_upper;
 			sd_hk_last_count_L = current_time_lower;
-			if(sd_state == 0x8 && sd_count == 14) {
-				sd_count = 13;
+			if(sd_state == 0x8 && sd_count == SD_TIMEOUT) {
+				sd_count = SD_TIMEOUT - 1;
 			}
-			if(sd_count > 0 && sd_state == 0x8) {
+			if(sd_count > 0 && sd_state == 0x9) {
 				sd_count--;
-			}else if(sd_state == 0x8){
+			}else if(sd_state == 0x9){
 				sd_state = 0;
-				sd_count = 14;
+				sd_count = SD_TIMEOUT;
 			}
 
 		}
