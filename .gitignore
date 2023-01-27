@@ -1,2 +1,8 @@
 .metadata/.lock
 .metadata/
+*.mk
+*.o
+*.a
+*.d
+*/Debug
+*/Release
