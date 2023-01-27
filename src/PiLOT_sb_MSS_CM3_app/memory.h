@@ -63,7 +63,7 @@ void initialise_partition(partition_t *partition, uint32_t start_b,uint32_t end_
  * 
  * @param partition 	: The partition to which data has to be written
  * @param data 			: The data to be written
- * @return uint8_t 		: Returns 0 if successful, 1 otherwise
+ * @return uint8_t 		: Returns 0 if successful, 1 if SD card operation failed, 2 if pointers are not valid
  */
 uint8_t store_data(partition_t *partition,uint8_t *data);
 
@@ -72,7 +72,7 @@ uint8_t store_data(partition_t *partition,uint8_t *data);
  * 
  * @param partition 	: The partition from which data has to be read
  * @param data 			: Buffer to store the read data
- * @return uint8_t 		: Returns 0 if successful, 1 otherwise
+ * @return uint8_t 		: Returns 0 if successful, 1 if SD card operation failed, 2 if pointers are not valid
  */
 uint8_t read_data(partition_t *partition,uint8_t *data);
 #endif

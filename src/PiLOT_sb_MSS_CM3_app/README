@@ -28,7 +28,17 @@ Data generated belong to one of the following classes:
 3. Housekeeping data
 4. Log data
 5. SD card testing data
-Each class has a number of blocks in the SD card alloted to it. These allocations are referred to as partitions. Each partition has a start block, end block, write pointer and read pointer.
+Each class has a number of blocks in the SD card alloted to it. These allocations are referred to as partitions. Each partition has a start block, end block, write pointer and read pointer. Each class of data is assigned a partition.
+
+Note:
+1. The pslv interface board converts uart from OBC to the RS485 standard required for the PSLV. This mechanism inverts the rx line, but does not invert the tx and EN_TX lines. To take this into account the uart tx, rx and EN_TX lines are connected to three separate XOR gates. Each XOR gate has two inputs: A and B. The tx,rx and EN_TX lines are connected to the A inputs of their XOR gates. The EN_TX_INV is connected to the B input of the tx and EN_TX XOR gates. The EN_RX_INV is connected to the B input of the rx XOR gate. We can change the inverting configuration of the tx,rx and EN_TX lines by setting the EN_TX_INV and EN_RX_INV appropriately
+2. The data collected from the ADC, IMU and VC sensors is directly downlinked to the ground station. The conversion from the raw data to the required values are done by the ground software.
+3. SD card states:
+a) 0x7: the SD card is working properly
+b) 0x8: the SD card has been switched off recently
+c) 0x9: the SD card is not operational
+d) 0x0: failed regular operation. waiting to be tested
+Any SD card operation takes comparitively longer duration than other tasks. Hence the SD card operations including checking for operational status have large time periods. The state 0x8 indicates that an SD card operation has been performed recently. Once a failure is detected, the SD card is switched off and restarted after a certain time period. 
 
 
 

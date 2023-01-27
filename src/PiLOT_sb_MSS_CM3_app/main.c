@@ -117,9 +117,9 @@ volatile uint8_t uart_irq_addr_flag;
  * @return uint8_t returns 0
  */
 uint8_t downlink(uint8_t *data,uint8_t size) {
-		MSS_GPIO_set_output(EN_UART,LOGIC_HIGH);
+		MSS_GPIO_set_output(EN_UART,1);
 		MSS_UART_polled_tx(&g_mss_uart1,data,size);
-		MSS_GPIO_set_output(EN_UART,LOGIC_LOW);
+		MSS_GPIO_set_output(EN_UART,0);
 		return 0;
 }
 
@@ -262,17 +262,24 @@ void add_to_queue(uint8_t size,partition_t *p,uint8_t *data) {
 				q_head = 0;
 			}
 		}
-	} else if(sd_state == 0x7) {
+	} else if(sd_state == 0x7) {//If sd card is working
 		result_global = store_data(p,data);
-		if(result_global == 1) {
-			sd_state = 0x0;
+		if(result_global == 1) {//
+			sd_state = 0x0;//so that no furhther operations are done on the SD card until its functionality has been checked again
 		}
 	}
 }
 
+/**
+ * @brief This function reads from the SD card and puts the data in the queue
+ * 
+ * @param size 	:	The size of data to be read from SD card
+ * @param p 	:	The partition in the SD card to be read from
+ * @param data 	:	Buffer to store the data from the SD card 
+ */
 void add_to_queue_from_sd(uint8_t size,partition_t *p,uint8_t *data) {
 	q_in_i = 0;
-	if(sd_state == 0x7) {
+	if(sd_state == 0x7) {//read from the SD card only if it is operational
 		result_global = read_data(p,data);
 		while(!((q_head > q_tail && (2048 - q_head + q_tail) >= size) || (q_head < q_tail && (q_tail - q_head) >= size)));
 		if((q_head > q_tail && (2048 - q_head + q_tail) >= size) || (q_head < q_tail && (q_tail - q_head) >= size)) {

@@ -157,9 +157,8 @@ void I2C_Init() {
 
 void GPIO_Init() {
 	MSS_GPIO_init();
-	MSS_GPIO_config(EN_COMMS,MSS_GPIO_OUTPUT_MODE);
+	MSS_GPIO_config(EN_SENSOR_BOARD,MSS_GPIO_OUTPUT_MODE);
 	MSS_GPIO_config(EN_UART,MSS_GPIO_OUTPUT_MODE);
-	MSS_GPIO_config(RESET_GPIO,MSS_GPIO_OUTPUT_MODE);
 	MSS_GPIO_config( SD_CARD_GPIO , MSS_GPIO_OUTPUT_MODE );
 	MSS_GPIO_config( TX_INV_EN , MSS_GPIO_OUTPUT_MODE );
 	MSS_GPIO_config( RX_INV_EN , MSS_GPIO_OUTPUT_MODE );
@@ -418,7 +417,7 @@ uint8_t sd_status(uint8_t *sd,uint8_t *data) {
 		return 0;
 	}
 	res = SD_Init();
-	if(res == 0) {
+	if(res == 0) {//If initialisation successful
 		*sd |= 0x1;
 		res = SD_Write(512,data);
 		if(res == 0) {
@@ -429,7 +428,7 @@ uint8_t sd_status(uint8_t *sd,uint8_t *data) {
 			*sd |= 0x4;
 		}
 	}
-	if(res == 1) {
+	if(res == 1) {//If initialisation failed, switch off SD card
 		MSS_GPIO_set_output(SD_CARD_GPIO,0);
 		*sd = 0x8;
 	}
