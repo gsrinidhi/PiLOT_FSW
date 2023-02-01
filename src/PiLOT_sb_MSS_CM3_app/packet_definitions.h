@@ -32,6 +32,9 @@
 #define SD_HK_PKT_LENGTH  sizeof(SD_HK_pkt_t)
 #define SD_HK_FLETCHER_CODE 0xCDCD
 
+#define TIME_API_ID			50
+#define TIME_PKT_LENGTH		sizeof(timer_pkt)
+
 typedef struct {
     //CCSDS
 
@@ -40,7 +43,7 @@ typedef struct {
 	uint16_t ccsds_p3;
 
     uint32_t ccsds_s1;
-    uint16_t ccsds_s2;
+    uint32_t ccsds_s2;
 
     uint16_t collection_time;
     uint16_t collection_location;
@@ -63,7 +66,7 @@ typedef struct{
     uint16_t ccsds_p3;
 
     uint32_t ccsds_s1;
-    uint16_t ccsds_s2;
+    uint32_t ccsds_s2;
 
     uint32_t start_time;
 
@@ -81,7 +84,7 @@ typedef struct {
     uint16_t ccsds_p3;
 
     uint32_t ccsds_s1;
-    uint16_t ccsds_s2;
+    uint32_t ccsds_s2;
 
     uint16_t q_head;
     uint16_t q_tail;
@@ -102,6 +105,10 @@ typedef struct {
     uint32_t SD_Test_Write_Pointer;
     uint32_t ARIS_Read_Pointer;
     uint32_t ARIS_Write_Pointer;
+
+    uint16_t aris_miss;
+    uint16_t hk_miss;
+    uint16_t payload_miss;
 
 //
     uint16_t Fletcher_Code;
@@ -126,7 +133,7 @@ typedef struct {
     uint16_t ccsds_p3;
 
     uint32_t ccsds_s1;
-    uint16_t ccsds_s2;
+    uint32_t ccsds_s2;
 
     log_entry_t logs[10];
 
@@ -142,12 +149,22 @@ typedef struct {
     uint16_t ccsds_p3;
 
     uint32_t ccsds_s1;
-    uint16_t ccsds_s2;
+    uint32_t ccsds_s2;
 
     uint16_t SD_Test_count[5];
     uint16_t SD_Test_time[5];
 
     uint16_t Fletcher_Code;
 }__attribute__((packed)) SD_HK_Test;
+
+typedef struct {
+	uint32_t sync;
+    uint16_t ccsds_p1;
+    uint16_t ccsds_p2;
+    uint16_t ccsds_p3;
+	uint32_t lower_count;
+	uint32_t upper_count;
+	uint16_t tail;
+}__attribute__((packed)) timer_pkt;
 
 #endif

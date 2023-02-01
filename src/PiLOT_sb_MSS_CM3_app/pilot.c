@@ -183,14 +183,14 @@ uint8_t Pilot_Peripherals_Init() {
     {
         MSS_WD_clear_timeout_event();
     }
+	MSS_TIM64_init(MSS_TIMER_ONE_SHOT_MODE);
+	MSS_TIM64_load_immediate(0xFFFFFFFF,0xFFFFFFFF);
+	MSS_TIM64_start();
 	GPIO_Init();
 	I2C_Init();
 	Uart_Init();
 	SPI_Init();
 	res = SD_Init();
-	MSS_TIM64_init(MSS_TIMER_ONE_SHOT_MODE);
-	MSS_TIM64_load_immediate(0xFFFFFFFF,0xFFFFFFFF);
-	MSS_TIM64_start();
 	return res;
 }
 uint8_t Pilot_Init() {
@@ -203,6 +203,7 @@ uint8_t Pilot_Init() {
 	MSS_GPIO_set_output(TX_INV_EN,1);
 	MSS_GPIO_set_output(RX_INV_EN,1);
 	MSS_GPIO_set_output(EN_UART,0);
+	MSS_GPIO_set_output(EN_SENSOR_BOARD,1);
 	res = res | (vc_init(VC1) << 1);
 	return res;
 }
@@ -221,7 +222,7 @@ uint8_t test_peripherals(uint8_t *sd) {
 	i2c_status_t status;
 	//Testing i2c_3 in cdh
 	while(count < 10) {
-		I2C_write_read(&g_core_i2c1,ADC_I2CU1_ADDR,ch_read,1,adc_read_value,2,I2C_RELEASE_BUS);
+		I2C_write(&g_core_i2c1,ADC_I2CU1_ADDR,adc_read_value,2,I2C_RELEASE_BUS);
 		status = I2C_wait_complete(&g_core_i2c1, I2C_NO_TIMEOUT);
 		if(status == I2C_SUCCESS) {
 			result |= 0x01;
@@ -232,7 +233,7 @@ uint8_t test_peripherals(uint8_t *sd) {
 	//Testing i2c_5 in cdh
 	count = 0;
 	while(count < 10) {
-		I2C_write_read(&g_core_i2c3,ADC_I2CU1_ADDR,ch_read,1,adc_read_value,2,I2C_RELEASE_BUS);
+		I2C_write(&g_core_i2c3,ADC_I2CU1_ADDR,adc_read_value,2,I2C_RELEASE_BUS);
 		status = I2C_wait_complete(&g_core_i2c3, I2C_NO_TIMEOUT);
 		if(status == I2C_SUCCESS) {
 			result |= 0x02;
