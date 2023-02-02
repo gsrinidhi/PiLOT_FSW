@@ -14,8 +14,9 @@
 #include "peripherals.h"
 #include "testing.h"
 #define MAX_COUNT		0xFFFFFFFF
-#define DEBUG 		0
-#if DEBUG == 0
+#define DEBUG 		1
+#define TESTING		0
+#if TESTING == 0
 /**
  * @brief All the required partitions are declared below
  * payload_p	:		partition for thermistor data
@@ -255,6 +256,9 @@ uint8_t Flags_Init() {
     q_tail = 0;
     initialise_partition(&timer_p,0,0);
     add_to_queue(TIME_PKT_LENGTH,&timer_p,(uint8_t*)&sync_time);
+#if DEBUG == 1
+			downlink((uint8_t*)&sync_time,TIME_PKT_LENGTH);
+#endif
 	/**
 	 * @brief Initialise the period upper and lower counters for all tasks
 	 * 
@@ -303,14 +307,16 @@ uint8_t Flags_Init() {
 	timer_last_count_H = 0xFFFFFFFF;
 	timer_last_count_L = 0xFFFFFFFF;
 	hk_last_count = 0xFFFFFFFFFFFFFFFF;
-	packet_data = 0xFFFFFFFFFFFFFFFF;
+	//packet_data = 0xFFFFFFFFFFFFFFFF;
 	/**
 	 * @brief Set the MSS UART 1 interrupt handler to the one defined above
 	 * 
 	 */
+#if DEBUG == 0
     MSS_UART_set_rx_handler(&g_mss_uart1,
                             uart1_rx_handler,
                             MSS_UART_FIFO_SINGLE_BYTE);
+#endif
 
 	/**
 	 * @brief Initialise the queue variables. The queue is empty when the q_tail is two units behind the q_head. The queue is full when the q_head and q_tail are equal
@@ -362,6 +368,9 @@ int main()
 			log_count++;
 			payload_last_count_H = current_time_upper;
 			payload_last_count_L = current_time_lower;
+#if DEBUG == 1
+			downlink(packet_data,THERMISTOR_PKT_LENGTH);
+#endif
 			time_us = get_time_in_us();
 			dummy = 8;
 		}
@@ -378,6 +387,9 @@ int main()
 			MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 			add_to_queue(LOGS_PKT_LENGTH,&log_p,log_data);
 			MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
+#if DEBUG == 1
+			downlink(packet_data,LOGS_PKT_LENGTH);
+#endif
 			log_count = 0;
 			logs_seq_no++;
 			time_us = get_time_in_us();
@@ -406,6 +418,9 @@ int main()
             log_count++;
             hk_last_count_H = current_time_upper;
             hk_last_count_L = current_time_lower;
+#if DEBUG == 1
+			downlink(packet_data,HK_PKT_LENGTH);
+#endif
 			time_us = get_time_in_us();
 			dummy = 8;
 		 }
@@ -424,6 +439,9 @@ int main()
 			MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 			log_count = 0;
 			logs_seq_no++;
+#if DEBUG == 1
+			downlink(packet_data,LOGS_PKT_LENGTH);
+#endif
 			time_us = get_time_in_us();
 			dummy = 8;
 		}
@@ -442,6 +460,9 @@ int main()
 			//Reset sample count
 			aris_sample_no = 0;
 			aris_seq_no++;
+#if DEBUG == 1
+			downlink(aris_packet_data,ARIS_PKT_LENGTH);
+#endif
 			time_us = get_time_in_us();
 			dummy = 8;
 		}
@@ -480,6 +501,9 @@ int main()
 			MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 			log_count = 0;
 			logs_seq_no++;
+#if DEBUG == 1
+			downlink(packet_data,LOGS_PKT_LENGTH);
+#endif
 			time_us = get_time_in_us();
 			dummy = 8;
 		}
@@ -522,6 +546,10 @@ int main()
 			MSS_TIM64_get_current_value(&sync_time.upper_count,&sync_time.lower_count);
 			add_to_queue(TIME_PKT_LENGTH,&timer_p,(uint8_t*)&sync_time);
 			MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
+#if DEBUG == 1
+			downlink((uint8_t*)&sync_time,TIME_PKT_LENGTH);
+#endif
+
 			timer_seq_no++;
 		}
 	}

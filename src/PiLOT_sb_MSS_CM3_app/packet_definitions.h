@@ -32,7 +32,7 @@
 #define SD_HK_PKT_LENGTH  sizeof(SD_HK_pkt_t)
 #define SD_HK_FLETCHER_CODE 0xCDCD
 
-#define TIME_API_ID			50
+#define TIME_API_ID			60
 #define TIME_PKT_LENGTH		sizeof(timer_pkt)
 
 typedef struct {
@@ -44,9 +44,6 @@ typedef struct {
 
     uint32_t ccsds_s1;
     uint32_t ccsds_s2;
-
-    uint16_t collection_time;
-    uint16_t collection_location;
 
     uint16_t thermistor_set_A[8];
     uint16_t thermistor_set_B[8];
