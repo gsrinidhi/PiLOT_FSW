@@ -11,7 +11,7 @@
 
 #ifndef PERIPH_H
 #define PERIPH_H
-
+#define DEBUG		0
 #include<CMSIS/hw_reg_io.h>
 #include<drivers/CoreUARTapb/core_uart_apb.h>
 #include<drivers/CoreI2C/core_i2c.h>

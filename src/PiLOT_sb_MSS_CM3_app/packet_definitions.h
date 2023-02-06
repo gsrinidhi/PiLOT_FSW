@@ -45,6 +45,7 @@ typedef struct {
     uint32_t ccsds_s1;
     uint32_t ccsds_s2;
 
+    uint32_t data_valid;
     uint16_t thermistor_set_A[8];
     uint16_t thermistor_set_B[8];
     uint16_t thermistor_set_C[8];
@@ -54,6 +55,7 @@ typedef struct {
 
 typedef struct {
 	uint32_t collect_time;
+	uint8_t data_valid;
 	uint16_t aris_data[3];
 }__attribute__((packed)) aris_sample_t;
 
@@ -155,10 +157,13 @@ typedef struct {
 }__attribute__((packed)) SD_HK_Test;
 
 typedef struct {
-	uint32_t sync;
+//	uint32_t sync;
     uint16_t ccsds_p1;
     uint16_t ccsds_p2;
     uint16_t ccsds_p3;
+
+    uint32_t ccsds_s1;
+    uint32_t ccsds_s2;
 	uint32_t lower_count;
 	uint32_t upper_count;
 	uint16_t tail;
