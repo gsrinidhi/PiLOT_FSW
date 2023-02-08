@@ -48,13 +48,14 @@ void get_aris_time() {
 }
 
 void timer_start() {
-	before_time = 0xFFFFFFFF;
-	TMR_init(&timer,CORETIMER_0_0,TMR_ONE_SHOT_MODE,PRESCALER_DIV_2,0xFFFFFFFF);
-	TMR_start(&timer);
+//	before_time = 0xFFFFFFFF;
+//	TMR_init(&timer,CORETIMER_0_0,TMR_ONE_SHOT_MODE,PRESCALER_DIV_2,0xFFFFFFFF);
+//	TMR_start(&timer);
 }
 
 uint32_t get_time_in_us() {
-	TMR_stop(&timer);
-	after_time = TMR_current_value(&timer);
-	return (before_time - after_time) / 50;
+//	TMR_stop(&timer);
+//	after_time = TMR_current_value(&timer);
+//	return (before_time - after_time) / 50;
+	return 0;
 }

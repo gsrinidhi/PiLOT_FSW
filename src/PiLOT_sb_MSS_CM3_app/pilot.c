@@ -447,6 +447,14 @@ uint8_t sd_status(uint8_t *sd,uint8_t *data) {
 	return 0;
 }
 
+uint8_t sd_hk_test(sd_test *sd,uint8_t *data,uint32_t addr) {
+	sd->sd_result = !(SD_Init());
+	sd->sd_result |= (!(SD_Write(addr*512,data))) << 1;
+	sd->sd_result |= (!(SD_Read(addr*512,data))) << 2;
+	//MSS_GPIO_set_output(SD_CARD_GPIO,0);
+	return 0;
+}
+
 void time_to_count(uint32_t ms,uint32_t *upper_count,uint32_t *lower_count) {
     *lower_count = (ms%FULL_SCALE_TIME_MS) * TIMER_COUNT_PER_MS;
     *upper_count = (ms/FULL_SCALE_TIME_MS);

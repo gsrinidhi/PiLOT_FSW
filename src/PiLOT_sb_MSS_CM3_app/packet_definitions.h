@@ -29,7 +29,7 @@
 #define HK_FLETCHER_CODE	0xCDCD
 
 #define SD_HK_API_ID    	40
-#define SD_HK_PKT_LENGTH  sizeof(SD_HK_pkt_t)
+#define SD_HK_PKT_LENGTH  sizeof(sd_test)
 #define SD_HK_FLETCHER_CODE 0xCDCD
 
 #define TIME_API_ID			60
@@ -150,11 +150,13 @@ typedef struct {
     uint32_t ccsds_s1;
     uint32_t ccsds_s2;
 
-    uint16_t SD_Test_count[5];
-    uint16_t SD_Test_time[5];
+//    uint16_t SD_Test_count[5];
+//    uint16_t SD_Test_time[5];
+    uint8_t sd_result;
+    uint16_t time;
 
     uint16_t Fletcher_Code;
-}__attribute__((packed)) SD_HK_Test;
+}__attribute__((packed)) sd_test;
 
 typedef struct {
 //	uint32_t sync;
@@ -164,6 +166,7 @@ typedef struct {
 
     uint32_t ccsds_s1;
     uint32_t ccsds_s2;
+    uint8_t reset;
 	uint32_t lower_count;
 	uint32_t upper_count;
 	uint16_t tail;
