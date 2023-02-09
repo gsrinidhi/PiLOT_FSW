@@ -108,7 +108,7 @@ typedef struct {
     uint16_t aris_miss;
     uint16_t hk_miss;
     uint16_t payload_miss;
-
+    uint8_t sd_dump;
 //
     uint16_t Fletcher_Code;
 }__attribute__((packed)) hk_pkt_t;
