@@ -43,7 +43,7 @@ uint8_t log_data[512];
  * @brief The aris_packet_data stores the aris data generated.
  * 
  */
-uint8_t aris_packet_data[512];
+uint8_t aris_packet_data[512],aris_temp_data[512];
 
 /**
  * @brief The pslv_queue is the queue from which data is provided to the pslv stage 4 data processing unit
@@ -113,6 +113,7 @@ timer_instance_t aris_timer;
  * @brief Miscellaneous variables used to keep track of various counts and states
  * 
  */
+uint16_t aris_collect;
 uint8_t log_count,result_global,api_id,sd_state,aris_sample_no;
 uint8_t uart_irq_rx_buffer[3],uart_irq_tx_buffer[2];
 uint8_t uart_irq_size;
@@ -353,14 +354,15 @@ uint8_t Flags_Init() {
 
 void FabricIrq10_IRQHandler(void) {
 	TMR_clear_int(&aris_timer);
-	aris_packet = (aris_pkt_t*)aris_packet_data;
-	if(aris_sample_no == 0) {
-		aris_packet->start_time = current_time_upper;
-		aris_packet->ccsds_s2 = current_time_lower;
-		aris_packet->ccsds_s1 = current_time_upper;
+	if(aris_sample_no < 20) {
+		if(aris_sample_no == 0) {
+			aris_packet->start_time = current_time_upper;
+			aris_packet->ccsds_s2 = current_time_lower;
+			aris_packet->ccsds_s1 = current_time_upper;
+		}
+		result_global = get_aris_sample(aris_packet,current_time_lower,aris_sample_no);
+		aris_sample_no++;
 	}
-	result_global = get_aris_sample(aris_packet,current_time_lower,aris_sample_no);
-	aris_sample_no++;
 
 }
 uint32_t time_us;
@@ -380,6 +382,7 @@ int main()
 	Flags_Init();
 	time_us = get_time_in_us();
 	log_packet = (log_packet_t*)log_data;
+	aris_packet = (aris_pkt_t*)aris_packet_data;
 //	MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 //	add_to_queue(TIME_PKT_LENGTH,&timer_p,(uint8_t*)&sync_time,&hk_miss);
 //	MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
@@ -498,24 +501,30 @@ int main()
 		if(aris_sample_no >= 20) {
 			timer_start();
 			TMR_stop(&aris_timer);
+			for(aris_collect = 0;aris_collect < 512;aris_collect++) {
+				aris_temp_data[aris_collect] = aris_packet_data[aris_collect];
+			}
+			result_global = 0;
+			aris_seq_no++;
+			aris_sample_no = 0;
+			TMR_start(&aris_timer);
 			//Form Aris packet and add to queue
 			log_packet->logs[log_count].task_id = ARIS_TASK_ID;
 			log_packet->logs[log_count].time_L = current_time_lower;
 			log_packet->logs[log_count].time_H = current_time_upper;
-			aris_packet = (aris_pkt_t*)aris_packet_data;
 			aris_packet->ccsds_p1 = PILOT_REVERSE_BYTE_ORDER(ccsds_p1(tlm_pkt_type,ARIS_API_ID));
 			aris_packet->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(ccsds_p2(aris_seq_no));
 			aris_packet->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(ccsds_p3(ARIS_PKT_LENGTH));
 			aris_packet->Fletcher_Code = ARIS_FLETCHER_CODE;
 			log_packet->logs[log_count].task_status = 0;
 			MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
-			add_to_queue(ARIS_PKT_LENGTH,&aris_p,aris_packet_data,&aris_miss);
+			add_to_queue(ARIS_PKT_LENGTH,&aris_p,aris_temp_data,&aris_miss);
 			MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 			//Reset sample count
-			aris_sample_no = 0;
-			aris_seq_no++;
+
+
 			log_count++;
-			TMR_start(&aris_timer);
+			//TMR_start(&aris_timer);
 #if DEBUG == 1
 			downlink(aris_packet_data,ARIS_PKT_LENGTH);
 #endif
