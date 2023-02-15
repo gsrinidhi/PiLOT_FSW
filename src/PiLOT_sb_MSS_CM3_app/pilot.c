@@ -12,7 +12,6 @@
 #include"pilot.h"
 #include "memory.h"
 
-
 uint8_t ADC_Init(i2c_instance_t *i2c_chx,uint8_t address){
 	i2c_status_t status;
 	uint8_t channel = 0;
@@ -211,8 +210,8 @@ uint8_t Pilot_Init() {
 	ADC_Init(&i2c_3,ADC_I2CU2_ADDR);
 	ADC_Init(&i2c_5,ADC_I2CU1_ADDR);
 	ADC_Init(&i2c_5,ADC_I2CU2_ADDR);
-	MSS_GPIO_set_output(TX_INV_EN,1);
-	MSS_GPIO_set_output(RX_INV_EN,1);
+	MSS_GPIO_set_output(TX_INV_EN,0);
+	MSS_GPIO_set_output(RX_INV_EN,0);
 	MSS_GPIO_set_output(EN_UART,0);
 	MSS_GPIO_set_output(EN_SENSOR_BOARD,1);
 	res = res | (vc_init(VC1) << 1);

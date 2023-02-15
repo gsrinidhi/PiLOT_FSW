@@ -13,6 +13,8 @@
 #include "pilot.h"
 #include "peripherals.h"
 #include "testing.h"
+#include "cli.h"
+#include "commands.h"
 #define MAX_COUNT		0xFFFFFFFF
 
 #define TESTING		0
@@ -135,6 +137,9 @@ uint8_t downlink(uint8_t *data,uint8_t size) {
 		return 0;
 }
 uint64_t no;
+void set_baud_rate(char* arg, uint8_t s);
+void (*SET_BAUD_RATE)(char* arg, uint8_t s) = &set_baud_rate;
+uint8_t add_command(char[],uint8_t);
 /**
  * @brief This is the interrupt handler which gets triggered whenever a byte is received from the UART Rx line. This function first checks if the receved byte is an address byte by reading the PE bit of the Line Status Register (LSR) of MSS UART 1. Then it checks if the received address is that of PiLOT. If the address matches, two bytes of data are transmitted from the pslv_queue
  * 
@@ -198,7 +203,7 @@ uint8_t get_sd_hk(hk_pkt_t *hk_pkt) {
 void add_to_queue(uint8_t size,partition_t *p,uint8_t *data,uint16_t *miss) {
 	q_in_i = 0;
 	MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
-	while(!((q_head > q_tail && (2048 - q_head + q_tail) >= size) || (q_head < q_tail && (q_tail - q_head) >= size)));
+	//while(!((q_head > q_tail && (2048 - q_head + q_tail) >= size) || (q_head < q_tail && (q_tail - q_head) >= size)));
 	MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 	if((q_head > q_tail && (2048 - q_head + q_tail) >= size) || (q_head < q_tail && (q_tail - q_head) >= size)) {
 		for(;q_in_i<size;q_in_i+=2) {
@@ -383,6 +388,7 @@ int main()
 	time_us = get_time_in_us();
 	log_packet = (log_packet_t*)log_data;
 	aris_packet = (aris_pkt_t*)aris_packet_data;
+	cli_init();
 //	MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 //	add_to_queue(TIME_PKT_LENGTH,&timer_p,(uint8_t*)&sync_time,&hk_miss);
 //	MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
@@ -612,6 +618,12 @@ int main()
 
 			timer_seq_no++;
 		}
+        if(command_index > 1){
+            if(c[command_index - 1] == '\r'){
+                serial_responder();
+            }
+
+        }
 	}
 }
 #else
