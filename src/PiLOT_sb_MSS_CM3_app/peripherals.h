@@ -44,8 +44,8 @@ i2c_instance_t g_core_i2c5;
 
 i2c_status_t core_i2c_status;
 
-#define i2c_3 g_core_i2c1//
-#define i2c_5 g_core_i2c3
+#define i2c_3 g_core_i2c4//
+#define i2c_5 g_core_i2c4
 
 #define I2C_SLAVE_ADDRESS 0x12
 

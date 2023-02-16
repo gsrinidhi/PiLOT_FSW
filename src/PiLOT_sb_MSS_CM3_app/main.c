@@ -217,6 +217,9 @@ void add_to_queue(uint8_t size,partition_t *p,uint8_t *data,uint16_t *miss) {
 		}
 	} else {
 		(*miss)+=1;
+		if((*miss) > 10) {
+			store_data(p,data);
+		}
 //			if(sd_state == 0x7) {//If sd card is working
 //
 //			result_global = store_data(p,data);
@@ -513,7 +516,7 @@ int main()
 			result_global = 0;
 			aris_seq_no++;
 			aris_sample_no = 0;
-			TMR_start(&aris_timer);
+			//TMR_start(&aris_timer);
 			//Form Aris packet and add to queue
 			log_packet->logs[log_count].task_id = ARIS_TASK_ID;
 			log_packet->logs[log_count].time_L = current_time_lower;
@@ -524,8 +527,9 @@ int main()
 			aris_packet->Fletcher_Code = ARIS_FLETCHER_CODE;
 			log_packet->logs[log_count].task_status = 0;
 			MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
-			add_to_queue(ARIS_PKT_LENGTH,&aris_p,aris_temp_data,&aris_miss);
+			add_to_queue(ARIS_PKT_LENGTH,&aris_p,aris_packet_data,&aris_miss);
 			MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
+			TMR_start(&aris_timer);
 			//Reset sample count
 
 

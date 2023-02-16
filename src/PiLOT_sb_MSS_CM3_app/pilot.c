@@ -22,8 +22,8 @@ uint8_t ADC_Init(i2c_instance_t *i2c_chx,uint8_t address){
 	for(;channel <= 3;channel++) {
 		DATA_HIGH[0] = DATA_HIGH_REG(channel);
 		DATA_LOW[0] = DATA_LOW_REG(channel);
-		I2C_write(i2c_chx,address,DATA_HIGH,3,I2C_RELEASE_BUS);
-		status = I2C_wait_complete(i2c_chx, I2C_NO_TIMEOUT);
+		I2C_write(&g_core_i2c4,address,DATA_HIGH,3,I2C_RELEASE_BUS);
+		status = I2C_wait_complete(&g_core_i2c4, I2C_NO_TIMEOUT);
 		I2C_write(i2c_chx,address,DATA_LOW,3,I2C_RELEASE_BUS);
 		status = I2C_wait_complete(i2c_chx, I2C_NO_TIMEOUT);
 		return_value |= (status << channel);
@@ -45,6 +45,8 @@ uint16_t get_ADC_value(i2c_instance_t *i2c_chx,uint8_t address,uint8_t chx,uint8
 		*flag = 1;
 	} else {
 		voltage = (adc_read_value[0] << 8 ) | adc_read_value[1];
+		voltage &= 0x0FFF;
+		voltage  = voltage >> 2;
 		*flag = 0;
 	}
 	return voltage;
@@ -210,8 +212,8 @@ uint8_t Pilot_Init() {
 	ADC_Init(&i2c_3,ADC_I2CU2_ADDR);
 	ADC_Init(&i2c_5,ADC_I2CU1_ADDR);
 	ADC_Init(&i2c_5,ADC_I2CU2_ADDR);
-	MSS_GPIO_set_output(TX_INV_EN,0);
-	MSS_GPIO_set_output(RX_INV_EN,0);
+	MSS_GPIO_set_output(TX_INV_EN,1);
+	MSS_GPIO_set_output(RX_INV_EN,1);
 	MSS_GPIO_set_output(EN_UART,0);
 	MSS_GPIO_set_output(EN_SENSOR_BOARD,1);
 	res = res | (vc_init(VC1) << 1);
