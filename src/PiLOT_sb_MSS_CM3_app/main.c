@@ -217,9 +217,9 @@ void add_to_queue(uint8_t size,partition_t *p,uint8_t *data,uint16_t *miss) {
 		}
 	} else {
 		(*miss)+=1;
-		if((*miss) > 10) {
-			store_data(p,data);
-		}
+//		if((*miss) > 10) {
+//			store_data(p,data);
+//		}
 //			if(sd_state == 0x7) {//If sd card is working
 //
 //			result_global = store_data(p,data);

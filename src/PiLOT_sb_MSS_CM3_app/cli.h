@@ -24,7 +24,7 @@
  uint8_t command_flag , argument_flag ;
  uint8_t uart0_irq_rx_buffer[3];
  char all_msg[50][50];// = {BAUD_RATE_MSG, TX_INV_MSG, RX_INV_MSG};
- char cmd_not_exists[50];// = CMD_NOT_EXISTS;
+
   uint8_t  argu_index , msg_index , uart0_irq_size;
 
 

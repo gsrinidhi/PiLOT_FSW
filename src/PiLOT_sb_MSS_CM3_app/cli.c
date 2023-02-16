@@ -2,7 +2,8 @@
 
 #include "cli.h"
 uint8_t prompt_msg[30] =  "\n\r PiLOT Commanding : \0" ;
-
+char all_msg[50][50] = {BAUD_RATE_MSG, TX_INV_MSG, RX_INV_MSG};
+char cmd_not_exists[50] = CMD_NOT_EXISTS;
 void uart0_rx_handler(mss_uart_instance_t* this_uart) {
     uart0_irq_size = MSS_UART_get_rx(this_uart,uart0_irq_rx_buffer,1);
     if(uart0_irq_rx_buffer[0] == 127){
