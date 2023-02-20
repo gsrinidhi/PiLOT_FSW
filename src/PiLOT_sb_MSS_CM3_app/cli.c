@@ -36,7 +36,7 @@ void cli_init(){
 
 void feedback(uint8_t command_flag){
     if(command_flag == 1){
-        uint8_t message[] = BAUD_RATE_FEEDBACK;
+        uint8_t message[50] = BAUD_RATE_FEEDBACK;
         MSS_UART_polled_tx_string(&g_mss_uart0, message);
     }
     cli_init();
@@ -84,7 +84,7 @@ void chk_msg(){
 //                   }
 uint8_t j,i;
 
-    for(j=0;j<sizeof(all_msg);j++){
+    for(j=0;j<5;j++){
 		for(i = 0;i<msg_index;i++){
 
 			   if(c[i] != all_msg[j][i]){

@@ -206,9 +206,9 @@ void add_to_queue(uint8_t size,partition_t *p,uint8_t *data,uint16_t *miss) {
 	//while(!((q_head > q_tail && (2048 - q_head + q_tail) >= size) || (q_head < q_tail && (q_tail - q_head) >= size)));
 	MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 	if((q_head > q_tail && (2048 - q_head + q_tail) >= size) || (q_head < q_tail && (q_tail - q_head) >= size)) {
-		for(;q_in_i<size;q_in_i+=2) {
+		for(;q_in_i<size;q_in_i+=1) {
 			pslv_queue[q_head] = data[q_in_i];
-			pslv_queue[q_head+1] = data[q_in_i+1];
+			pslv_queue[q_head+1] = data[q_in_i];
 			q_head+=2;
 			if(q_head >= 2048) {
 				//q_head reached limit
@@ -699,30 +699,53 @@ int main() {
 //		}
 
 		//Writing to all blocks
-		uint32_t addr = 0;
-		uint8_t data[512];
-		for(addr = 0;addr < 512;addr++) {
-			data[addr] = addr & 0xFF;
-		}
-		addr = 0;
-		stat = SD_Init();
-		uint32_t fail_addr[2048];
-		uint32_t count = 0;
-		while(1) {
-			MSS_WD_reload();
-			stat = SD_Write(addr*512,data);
-			if(stat) {
+//		uint32_t addr = 0;
+//		uint8_t data[512];
+//		for(addr = 0;addr < 512;addr++) {
+//			data[addr] = addr & 0xFF;
+//		}
+//		addr = 0;
+//		stat = SD_Init();
+//		uint32_t fail_addr[2048];
+//		uint32_t count = 0;
+//		while(1) {
+//			MSS_WD_reload();
+//			stat = SD_Write(addr,data);
+//			if(stat) {
+//
+////				MSS_GPIO_set_output(SD_CARD_GPIO,0);
+////				stat = SD_Init();
+////				dummy = 0;
+////				fail_addr[count] = addr;
+////				count++;
+//			}
+//			if(addr%500 == 0) {
+//				dummy = 0;
+//			}
+//			addr++;
+//		}
 
-				MSS_GPIO_set_output(SD_CARD_GPIO,0);
-				stat = SD_Init();
-				dummy = 0;
-				fail_addr[count] = addr;
-				count++;
+		uint32_t addr = 0;
+		stat = SD_Init();
+		uint8_t rdata[512],wdata[512];
+		i = 0;
+		for(;i<512;i++) {
+			wdata[i] = i%255;
+			rdata[i] = 0;
+		}
+		uint32_t thr = 0x80;
+		uint8_t k = 0;
+		for(addr = thr;addr < 0x80000000;addr = addr * 2) {
+			for(i = 0;i<512;i++) {
+				wdata[i] = k;
 			}
-			if(addr%500 == 0) {
-				dummy = 0;
-			}
-			addr++;
+			stat = SD_Write(addr-1,wdata);
+			stat = SD_Read(addr-1,rdata);
+			k++;
+			i = 0;
+		}
+		while(1) {
+
 		}
 }
 #endif

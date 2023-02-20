@@ -23,7 +23,7 @@ uint8_t store_data(partition_t *partition,uint8_t *data) {
 		return 2;
 	}
 
-	if(SD_Write(partition->write_pointer * 512,data) == 0) {
+	if(SD_Write(partition->write_pointer,data) == 0) {
 		partition->write_pointer++;
 		return 0;
 	}
@@ -36,7 +36,7 @@ uint8_t read_data(partition_t *partition,uint8_t *data) {
 		return 2;
 	}
 
-	if(SD_Read(partition->read_pointer * 512,data) == 0) {
+	if(SD_Read(partition->read_pointer,data) == 0) {
 		partition->read_pointer++;
 		return 0;
 	}

@@ -10,9 +10,9 @@
 #define BAUD_RATE_MSG "setbaudrate"
 #define TX_INV_MSG "tx_inv_enable"
 #define RX_INV_MSG "rx_inv_enable"
-#define CMD_NOT_EXISTS "Command Does not exists"
+#define CMD_NOT_EXISTS "\n\rCommand Does not exists\0"
 
-#define BAUD_RATE_FEEDBACK "\n \r BAUDRATE SET SUCCESSFULL!!"
+#define BAUD_RATE_FEEDBACK "\n \r BAUDRATE SET SUCCESSFULL!!\0"
 #define TX_INV_FEEDBACK "\r TX_INV SUCCESSFULL!!"
 #define RX_INV_FEEDBACK "\r RX_INV SUCCESSFULL!!"
 
