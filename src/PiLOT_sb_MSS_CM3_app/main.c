@@ -120,6 +120,7 @@ uint8_t log_count,result_global,api_id,sd_state,aris_sample_no;
 uint8_t uart_irq_rx_buffer[3],uart_irq_tx_buffer[2];
 uint8_t uart_irq_size;
 uint8_t sd_count;
+uint8_t interface_count;
 sd_test sd;
 volatile uint8_t uart_irq_addr_flag;
 
@@ -206,9 +207,9 @@ void add_to_queue(uint8_t size,partition_t *p,uint8_t *data,uint16_t *miss) {
 	//while(!((q_head > q_tail && (2048 - q_head + q_tail) >= size) || (q_head < q_tail && (q_tail - q_head) >= size)));
 	MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 	if((q_head > q_tail && (2048 - q_head + q_tail) >= size) || (q_head < q_tail && (q_tail - q_head) >= size)) {
-		for(;q_in_i<size;q_in_i+=1) {
+		for(;q_in_i<size;q_in_i+=(interface_count+1)) {
 			pslv_queue[q_head] = data[q_in_i];
-			pslv_queue[q_head+1] = data[q_in_i];
+			pslv_queue[q_head+1] = data[q_in_i+interface_count];
 			q_head+=2;
 			if(q_head >= 2048) {
 				//q_head reached limit

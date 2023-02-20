@@ -27,7 +27,12 @@
 
   uint8_t  argu_index , msg_index , uart0_irq_size;
 
-
+typedef struct {
+	  uint8_t id;
+	  char name[100];
+	  void (*work)(char *arg,uint8_t size);
+	  char feedback[100];
+} command_t;
   void set_baud_rate(char* arg, uint8_t s);
    void (*SET_BAUD_RATE)(char* arg, uint8_t s);// = &set_baud_rate;
 
