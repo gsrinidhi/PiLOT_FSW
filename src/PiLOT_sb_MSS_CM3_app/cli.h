@@ -34,10 +34,14 @@ typedef struct {
 	  char feedback[100];
 } command_t;
   void set_baud_rate(char* arg, uint8_t s);
+  void get_ADC_correct_values(char *arg,uint8_t size);
+  void get_imu_acc(char *data,uint8_t size);
+  void get_imu_gyro(char *data,uint8_t size);
    void (*SET_BAUD_RATE)(char* arg, uint8_t s);// = &set_baud_rate;
 
 
-
+   void scpy(char *src,char *dest);
+   uint8_t scmp(char *s1,char *s2,uint8_t size);
 void cli_init();
 void feedback(uint8_t command_flag);
 void call_function(uint8_t ID, char* data, uint8_t size);

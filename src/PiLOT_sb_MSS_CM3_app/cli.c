@@ -8,6 +8,9 @@ command_t cmd_list[10];
 uint8_t cmd_in;
 uint8_t scmp(char *s1,char *s2,uint8_t size) {
 	uint8_t k = 0;
+	if(size == 0) {
+		return 1;
+	}
 	for(;k<size;k++) {
 		if(s1[k] != s2[k]) {
 			return 1;
@@ -57,13 +60,15 @@ void cli_init(){
 	argument_flag = 0;
 	msg_index = 0;
 	val = 0;
-	add_command("setbaudrate\0",set_baud_rate,"baud rate set\0");
+	cmd_in = 0;
+	add_command("setbaudrate\0",set_baud_rate,"\n\rbaud rate set\0");
+	add_command("view_thermistor\0",get_ADC_correct_values,"\n\rThermistor values displayed\0");
+	add_command("disp_acc\0",get_imu_acc,"\n\rAcc displayed\0");
+	add_command("disp_gyro\0",get_imu_gyro,"\n\rGyro displayed\0");
 	MSS_UART_polled_tx_string(&g_mss_uart0,prompt_msg);
 
 }
 void cli_reset() {
-    MSS_UART_init(&g_mss_uart0, 9600, MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT );
-    MSS_UART_set_rx_handler(&g_mss_uart0,uart0_rx_handler,MSS_UART_FIFO_SINGLE_BYTE);
 	c[command_index - 1] = '\0';
 	command_flag = 0;
 	command_index = 0;
@@ -74,12 +79,12 @@ void cli_reset() {
 
 	MSS_UART_polled_tx_string(&g_mss_uart0,prompt_msg);
 }
-void feedback(uint8_t command_flag){
+void feedback(uint8_t idc){
 //    if(command_flag == 1){
 //        uint8_t message[50] = BAUD_RATE_FEEDBACK;
 //        MSS_UART_polled_tx_string(&g_mss_uart0, message);
 //    }
-	MSS_UART_polled_tx_string(&g_mss_uart0, cmd_list[command_flag].feedback);
+	MSS_UART_polled_tx_string(&g_mss_uart0, cmd_list[idc].feedback);
     cli_reset();
 }
 
@@ -127,13 +132,17 @@ void chk_msg(){
 //
 //                       }
 //                   }
-uint8_t j,i;
+uint8_t j,i = 0;
 
 	for(j = 0;j<cmd_in;j++) {
 		if(scmp(c,cmd_list[j].name,msg_index) == 0) {
 			command_flag = j;
+			i = 1;
 			break;
 		}
+	}
+	if(i == 0) {
+		command_flag = cmd_in + 1;
 	}
 //    for(j=0;j<5;j++){
 //		for(i = 0;i<msg_index;i++){
