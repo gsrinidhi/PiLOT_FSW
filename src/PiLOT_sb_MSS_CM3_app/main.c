@@ -97,7 +97,7 @@ uint16_t thermistor_seq_no,logs_seq_no,hk_seq_no,sd_hk_seq_no,aris_seq_no;
  * @brief These variables are used for queue operations
  * 
  */
-uint16_t q_head,q_tail,q_in_i;
+uint16_t q_head,q_tail,q_in_i,aris_miss,hk_miss,payload_miss,sd_hk_miss,logs_miss;
 
 /**
  * @brief Miscellaneous variables used to keep track of various counts and states
@@ -107,7 +107,14 @@ uint8_t log_count,result_global,api_id,sd_state,aris_sample_no;
 uint8_t uart_irq_rx_buffer[3],uart_irq_tx_buffer[2];
 uint8_t uart_irq_size;
 uint8_t sd_count;
+sd_test sd;
 volatile uint8_t uart_irq_addr_flag;
+
+/**
+ * @brief Timer instance to collect aris data
+ *
+ */
+timer_instance_t aris_timer;
 
 /**
  * @brief This is to be used only if the packets are to be sent over uart as they are formed and not from the queue. This is only for testing purposes.
@@ -188,9 +195,9 @@ uint8_t Flags_Init() {
 	 */
 	time_to_count(DEFAULT_HK_PERIOD,&hk_period_H,&hk_period_L);
 	time_to_count(DEFAULT_PAYLOAD_PERIOD,&payload_period_H,&payload_period_L);
-	time_to_count(600000,&sd_hk_period_H,&sd_hk_period_L);
+	time_to_count(3000,&sd_hk_period_H,&sd_hk_period_L);
 	time_to_count(10,&aris_period_H,&aris_period_L);
-	time_to_count(300000,&sd_dump_period_H,&sd_dump_period_L);
+	time_to_count(60000,&sd_dump_period_H,&sd_dump_period_L);
 	/**
 	 * @brief Initialise all sequence numbers to one
 	 * 
@@ -240,6 +247,12 @@ uint8_t Flags_Init() {
     q_head = 2;
     q_tail = 0;
     sd_count = SD_TIMEOUT;
+    TMR_init(&aris_timer,CORETIMER_0_0,TMR_CONTINUOUS_MODE,PRESCALER_DIV_2,aris_period_L/2);
+    NVIC_EnableIRQ( FabricIrq10_IRQn );
+    NVIC_SetPriority(FabricIrq10_IRQn,0xFE);
+    //NVIC_SetPriority(UART1_IRQn,0xFD);
+    TMR_enable_int(&aris_timer);
+    TMR_start(&aris_timer);
 	return 0;
 }
 
@@ -250,8 +263,10 @@ uint8_t Flags_Init() {
  * @param p 	: 	The partiton of the sd card to which the data must be written in case the queue is full.
  * @param data 	:	The data to be written
  */
-void add_to_queue(uint8_t size,partition_t *p,uint8_t *data) {
+void add_to_queue(uint8_t size,partition_t *p,uint8_t *data,uint16_t *miss) {
 	q_in_i = 0;
+	result_global = 0;
+	while((!(q_head > q_tail && (2048 - q_head + q_tail) >= size) || (q_head < q_tail && (q_tail - q_head) >= size)) && ((result_global++)<100));
 	if((q_head > q_tail && (2048 - q_head + q_tail) >= size) || (q_head < q_tail && (q_tail - q_head) >= size)) {
 		for(;q_in_i<size;q_in_i+=2) {
 			pslv_queue[q_head] = data[q_in_i];
@@ -262,11 +277,19 @@ void add_to_queue(uint8_t size,partition_t *p,uint8_t *data) {
 				q_head = 0;
 			}
 		}
-	} else if(sd_state == 0x7) {//If sd card is working
-		result_global = store_data(p,data);
-		if(result_global == 1) {//
-			sd_state = 0x0;//so that no furhther operations are done on the SD card until its functionality has been checked again
-		}
+	} else {
+		(*miss)+=1;
+		store_data(p,data);
+//		if((*miss) > 10) {
+//			store_data(p,data);
+//		}
+//			if(sd_state == 0x7) {//If sd card is working
+//
+//			result_global = store_data(p,data);
+//			if(result_global == 1) {//
+//				sd_state = 0x0;//so that no furhther operations are done on the SD card until its functionality has been checked again
+//			}
+//		}
 	}
 }
 
@@ -297,6 +320,36 @@ void add_to_queue_from_sd(uint8_t size,partition_t *p,uint8_t *data) {
 
 
 }
+
+/**
+ * @brief: Interrupt handler for aris sample collection
+ */
+void FabricIrq10_IRQHandler(void) {
+	TMR_clear_int(&aris_timer);
+	aris_packet = (aris_pkt_t*)aris_packet_data;
+	if(aris_sample_no < 20) {
+		if(aris_sample_no == 0) {
+			aris_packet->start_time = current_time_upper;
+			aris_packet->ccsds_s2 = current_time_lower;
+			aris_packet->ccsds_s1 = current_time_upper;
+		}
+		result_global = get_aris_sample(aris_packet,current_time_lower,aris_sample_no);
+		aris_sample_no++;
+	}
+
+}
+
+void inline form_log_packet() {
+	log_packet->ccsds_p1 = PILOT_REVERSE_BYTE_ORDER(ccsds_p1(tlm_pkt_type,LOGS_API_ID));
+	log_packet->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(ccsds_p2((logs_seq_no)));
+	log_packet->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(ccsds_p3(LOGS_PKT_LENGTH));
+	log_packet->Fletcher_Code = LOGS_FLETCHER_CODE;
+	MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
+	add_to_queue(LOGS_PKT_LENGTH,&log_p,log_data,&logs_miss);
+	MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
+	log_count = 0;
+	logs_seq_no++;
+}
 int main()
 {
 	//Initialise all the peripherals and devices connected to the OBC in PiLOT
@@ -321,9 +374,9 @@ int main()
 			log_packet->logs[log_count].time_L = current_time_lower;
 			thermistor_packet = (thermistor_pkt_t*)packet_data;
 			result_global = get_thermistor_vals(thermistor_packet,thermistor_seq_no);
-			//MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
-			add_to_queue(THERMISTOR_PKT_LENGTH,&payload_p,packet_data);
-			//MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
+			MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
+			add_to_queue(THERMISTOR_PKT_LENGTH,&payload_p,packet_data,&payload_miss);
+			MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 			log_packet->logs[log_count].task_status = result_global;
 			thermistor_seq_no++;
 			log_count++;
@@ -333,15 +386,7 @@ int main()
 
 		//If 10 log entries have been recorded, write the logs to the queue and reset the log counter
 		if(log_count >= 10) {
-			log_packet->ccsds_p1 = PILOT_REVERSE_BYTE_ORDER(ccsds_p1(tlm_pkt_type,LOGS_API_ID));
-			log_packet->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(ccsds_p2((logs_seq_no)));
-			log_packet->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(ccsds_p3(LOGS_PKT_LENGTH));
-			log_packet->Fletcher_Code = LOGS_FLETCHER_CODE;
-			//MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
-			add_to_queue(LOGS_PKT_LENGTH,&log_p,log_data);
-			//MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
-			log_count = 0;
-			logs_seq_no++;
+			form_log_packet();
 		}
 
 		// For HK Packet
@@ -353,12 +398,24 @@ int main()
             hk_packet = (hk_pkt_t*)packet_data;
             result_global = get_hk(hk_packet,hk_seq_no,&sd_state);
 			result_global = get_sd_hk(hk_packet);
+			hk_packet->sd_dump = 0;
+			hk_packet->ccsds_s1 = current_time_upper;
+			hk_packet->ccsds_s2 = current_time_lower;
+			hk_packet->aris_miss = aris_miss;
+			hk_packet->payload_miss = payload_miss;
+			hk_packet->hk_miss = hk_miss;
+			hk_packet->logs_miss = logs_miss;
+			hk_packet->sd_hk_miss = sd_hk_miss;
             log_packet->logs[log_count].task_status = result_global;
-			//MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
-			add_to_queue(HK_PKT_LENGTH,&hk_p,packet_data);
+			MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
+			add_to_queue(HK_PKT_LENGTH,&hk_p,packet_data,&hk_miss);
 			hk_packet->q_head = q_head;
 			hk_packet->q_tail = q_tail;
-			//MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
+			MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
+			if(hk_seq_no%20 == 1) {
+				hk_packet->sd_dump = 1;
+				store_data(&hk_p,packet_data);
+			}
             hk_seq_no++;
             log_count++;
             hk_last_count_H = current_time_upper;
@@ -367,80 +424,54 @@ int main()
 
 		//If 10 log entries have been recorded, write the logs to the SD card and reset the log counter
 		if(log_count >= 10) {
-			log_packet->ccsds_p1 = PILOT_REVERSE_BYTE_ORDER(ccsds_p1(tlm_pkt_type,LOGS_API_ID));
-			log_packet->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(ccsds_p2((logs_seq_no)));
-			log_packet->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(ccsds_p3(LOGS_PKT_LENGTH));
-			log_packet->Fletcher_Code = LOGS_FLETCHER_CODE;
-			//MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
-			add_to_queue(LOGS_PKT_LENGTH,&log_p,log_data);
-			//MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
-			log_count = 0;
-			logs_seq_no++;
+			form_log_packet();
 		}
 
 		if(aris_sample_no >= 20) {
 			//Form Aris packet and add to queue
-			aris_packet = (aris_pkt_t*)aris_packet_data;
+			TMR_stop(&aris_timer);
+			result_global = 0;
+			aris_seq_no++;
+			aris_sample_no = 0;
+			//TMR_start(&aris_timer);
+			//Form Aris packet and add to queue
+			log_packet->logs[log_count].task_id = ARIS_TASK_ID;
+			log_packet->logs[log_count].time_L = current_time_lower;
+			log_packet->logs[log_count].time_H = current_time_upper;
 			aris_packet->ccsds_p1 = PILOT_REVERSE_BYTE_ORDER(ccsds_p1(tlm_pkt_type,ARIS_API_ID));
 			aris_packet->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(ccsds_p2(aris_seq_no));
 			aris_packet->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(ccsds_p3(ARIS_PKT_LENGTH));
 			aris_packet->Fletcher_Code = ARIS_FLETCHER_CODE;
-			//MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
-			add_to_queue(ARIS_PKT_LENGTH,&aris_p,aris_packet_data);
-			//MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
-			//Reset sample count
-			aris_sample_no = 0;
-			aris_seq_no++;
-		}
-
-		if((aris_last_count_H - current_time_upper >= aris_period_H) && (aris_last_count_L - current_time_lower >= aris_period_L)) {
-			log_packet->logs[log_count].task_id = ARIS_TASK_ID;
-			log_packet->logs[log_count].time_H = current_time_upper;
-			log_packet->logs[log_count].time_L = current_time_lower;
-			aris_packet = (aris_pkt_t*)aris_packet_data;
-			if(aris_sample_no == 0) {
-				aris_packet->start_time = current_time_lower;
-			}
-			result_global = get_aris_sample(aris_packet,current_time_lower,aris_sample_no);
-			log_packet->logs[log_count].task_status = result_global;
-			aris_sample_no++;
+			log_packet->logs[log_count].task_status = 0;
+			MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
+			add_to_queue(ARIS_PKT_LENGTH,&aris_p,aris_packet_data,&aris_miss);
+			MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
+			TMR_start(&aris_timer);
 			log_count++;
-			aris_last_count_H = current_time_upper;
-			aris_last_count_L = current_time_lower;
 		}
 
 		if(log_count >= 10) {
-			log_packet->ccsds_p1 = PILOT_REVERSE_BYTE_ORDER(ccsds_p1(tlm_pkt_type,LOGS_API_ID));
-			log_packet->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(ccsds_p2((logs_seq_no)));
-			log_packet->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(ccsds_p3(LOGS_PKT_LENGTH));
-			log_packet->Fletcher_Code = LOGS_FLETCHER_CODE;
-			//MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
-			add_to_queue(LOGS_PKT_LENGTH,&log_p,log_data);
-			//MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
-			log_count = 0;
-			logs_seq_no++;
+			form_log_packet();
 		}
 
 		if((sd_hk_last_count_H - current_time_upper >= sd_hk_period_H) && (sd_hk_last_count_L - current_time_lower >= sd_hk_period_L)) {
-			result_global = sd_status(&sd_state,packet_data);
+			sd.ccsds_p1 = PILOT_REVERSE_BYTE_ORDER(ccsds_p1(tlm_pkt_type,SD_HK_API_ID));
+			sd.ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(ccsds_p2((sd_hk_seq_no)));
+			sd.ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(ccsds_p3(SD_HK_PKT_LENGTH));
+			result_global = sd_hk_test(&sd,packet_data,sd_hk_seq_no);
+			sd.Fletcher_Code = SD_HK_FLETCHER_CODE;
+			sd_hk_seq_no++;
+			MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
+			add_to_queue(SD_HK_PKT_LENGTH,&payload_p,(uint8_t*)&sd,&sd_hk_miss);
+			MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 			sd_hk_last_count_H = current_time_upper;
 			sd_hk_last_count_L = current_time_lower;
-			if(sd_state == 0x8 && sd_count == SD_TIMEOUT) {
-				sd_count = SD_TIMEOUT - 1;
-			}
-			if(sd_count > 0 && sd_state == 0x9) {
-				sd_count--;
-			}else if(sd_state == 0x9){
-				sd_state = 0;
-				sd_count = SD_TIMEOUT;
-			}
 
 		}
 
 		if((sd_dump_last_count_H - current_time_upper >= sd_dump_period_H) && (sd_dump_last_count_L - current_time_lower >= sd_dump_period_L)) {
-			if(aris_p.read_pointer != aris_p.write_pointer) {
-				add_to_queue_from_sd(ARIS_PKT_LENGTH,&aris_p,aris_packet_data);
-			}
+			add_to_queue_from_sd(HK_PKT_LENGTH,&hk_p,packet_data);
+			add_to_queue_from_sd(ARIS_PKT_LENGTH,&aris_p,packet_data);
 			sd_dump_last_count_H = current_time_upper;
 			sd_dump_last_count_L = current_time_lower;
 		}

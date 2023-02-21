@@ -60,13 +60,17 @@ uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no){
 
    uint8_t i = 0,flag;
    uint8_t loss_count = 0;
+   pkt->data_valid = 0;
    for(;i<8;i++){
-        pkt->thermistor_set_A[i] = get_ADC_value(&i2c_3, ADC_I2CU1_ADDR, i,&flag);
-        loss_count+=flag;
-        pkt->thermistor_set_B[i] = get_ADC_value(&i2c_3, ADC_I2CU2_ADDR, i,&flag);
-        loss_count+=flag;
-        pkt->thermistor_set_C[i] = get_ADC_value(&i2c_5, ADC_I2CU1_ADDR, i,&flag);
-        loss_count+=flag;
+       pkt->thermistor_set_A[i] = get_ADC_value(&i2c_3, ADC_I2CU1_ADDR, i,&flag);
+       loss_count+=flag;
+       pkt->data_valid |= ((flag) << (24+i));
+       pkt->thermistor_set_B[i] = get_ADC_value(&i2c_3, ADC_I2CU2_ADDR, i,&flag);
+       loss_count+=flag;
+       pkt->data_valid |= ((flag) << (16+i));
+       pkt->thermistor_set_C[i] = get_ADC_value(&i2c_5, ADC_I2CU1_ADDR, i,&flag);
+       loss_count+=flag;
+       pkt->data_valid |= ((flag) << (8+i));
      }
 
     pkt->Fletcher_Code  = THERMISTOR_FLETCHER_CODE;
@@ -79,10 +83,14 @@ uint8_t get_aris_sample(aris_pkt_t *pkt,uint32_t time,uint8_t sample_no) {
 	pkt->aris_samples[sample_no].collect_time = time;
 	pkt->aris_samples[sample_no].aris_data[0] = get_ADC_value(&i2c_5, ADC_I2CU2_ADDR, 0,&flag);
 	loss_count+=flag;
+	pkt->aris_samples[sample_no].data_valid = 0;
+	pkt->aris_samples[sample_no].data_valid |= flag;
 	pkt->aris_samples[sample_no].aris_data[1] = get_ADC_value(&i2c_5, ADC_I2CU2_ADDR, 1,&flag);
 	loss_count+=flag;
+	pkt->aris_samples[sample_no].data_valid |= (flag << 1);
 	pkt->aris_samples[sample_no].aris_data[2] = get_ADC_value(&i2c_5, ADC_I2CU2_ADDR, 2,&flag);
 	loss_count+=flag;
+	pkt->aris_samples[sample_no].data_valid |= (flag << 2);
 	return loss_count;
 }
 
@@ -213,10 +221,6 @@ uint8_t test_peripherals(uint8_t *sd) {
 	uint8_t adc_read_value[2];
 	uint8_t result = 0x00;
 	uint8_t tx[] = {IMU_WHO_AM_I_REG};
-	uint8_t sd_test[512];
-	for(;count<512;count++) {
-		sd_test[count] = 0;
-	}
 	count = 0;
 	i2c_status_t status;
 	//Testing i2c_3 in cdh
@@ -432,6 +436,14 @@ uint8_t sd_status(uint8_t *sd,uint8_t *data) {
 		MSS_GPIO_set_output(SD_CARD_GPIO,0);
 		*sd = 0x8;
 	}
+	return 0;
+}
+
+uint8_t sd_hk_test(sd_test *sd,uint8_t *data,uint32_t addr) {
+	sd->sd_result = !(SD_Init());
+	sd->sd_result |= (!(SD_Write(addr*512,data))) << 1;
+	sd->sd_result |= (!(SD_Read(addr*512,data))) << 2;
+	//MSS_GPIO_set_output(SD_CARD_GPIO,0);
 	return 0;
 }
 
