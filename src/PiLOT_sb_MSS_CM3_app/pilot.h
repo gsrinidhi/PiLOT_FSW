@@ -218,5 +218,5 @@ uint8_t get_aris_sample(aris_pkt_t *pkt,uint32_t time,uint8_t sample_no);
  */
 uint8_t sd_status(uint8_t *sd,uint8_t *data);
 
-uint8_t sd_hk_test(sd_test *sd,uint8_t *data,uint32_t addr);
+uint8_t sd_hk_test(sd_test *sd,uint8_t *data,uint32_t addr,uint8_t *sd_state);
 #endif

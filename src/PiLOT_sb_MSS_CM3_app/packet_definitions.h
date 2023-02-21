@@ -32,6 +32,9 @@
 #define SD_HK_PKT_LENGTH  sizeof(sd_test)
 #define SD_HK_FLETCHER_CODE 0xCDCD
 
+#define TIME_API_ID			60
+#define TIME_PKT_LENGTH		sizeof(timer_pkt)
+
 typedef struct {
     //CCSDS
 

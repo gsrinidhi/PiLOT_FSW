@@ -272,9 +272,6 @@ uint8_t test_peripherals(uint8_t *sd) {
 
 	//Appending the state of the sd card to result
 	result |= (*sd << 4);
-	if(*sd == 0x8) {
-		*sd = 0x9;
-	}
 
 	return result;
 }
@@ -439,10 +436,22 @@ uint8_t sd_status(uint8_t *sd,uint8_t *data) {
 	return 0;
 }
 
-uint8_t sd_hk_test(sd_test *sd,uint8_t *data,uint32_t addr) {
-	sd->sd_result = !(SD_Init());
-	sd->sd_result |= (!(SD_Write(addr*512,data))) << 1;
-	sd->sd_result |= (!(SD_Read(addr*512,data))) << 2;
+uint8_t sd_hk_test(sd_test *sd,uint8_t *data,uint32_t addr,uint8_t *sd_state) {
+	if((*sd_state) == 7) {
+		sd->sd_result = !(SD_Init());
+		sd->sd_result |= (!(SD_Write(addr*512,data))) << 1;
+		sd->sd_result |= (!(SD_Read(addr*512,data))) << 2;
+		if(sd->sd_result == 0) {
+			MSS_GPIO_set_output(SD_CARD_GPIO,0);
+			*sd_state = 0;
+			uint32_t ph,pl;
+			time_to_count(60000,&ph,&pl);
+			TMR_init(&sd_timer,SD_TIMER_BASE_ADDR,TMR_ONE_SHOT_MODE,PRESCALER_DIV_2,pl/2);
+			TMR_enable_int(&sd_timer);
+			TMR_start(&sd_timer);
+		}
+	}
+
 	//MSS_GPIO_set_output(SD_CARD_GPIO,0);
 	return 0;
 }
