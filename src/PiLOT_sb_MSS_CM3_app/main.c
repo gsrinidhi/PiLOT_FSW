@@ -80,7 +80,7 @@ uint64_t current_time_lower,current_time_upper;
  * @brief These variables hold the upper and lower periods of all the tasks
  * 
  */
-uint32_t payload_period_L,payload_period_H,hk_period_H,hk_period_L,sd_hk_period_L,sd_hk_period_H,aris_period_L,aris_period_H,sd_dump_period_L,sd_dump_period_H,timer_period_H,timer_period_L;
+uint64_t payload_period_L,payload_period_H,hk_period_H,hk_period_L,sd_hk_period_L,sd_hk_period_H,aris_period_L,aris_period_H,sd_dump_period_L,sd_dump_period_H,timer_period_H,timer_period_L;
 
 /**
  * @brief These variables are used to keep track of the last counts at which a task was run
@@ -120,7 +120,8 @@ timer_instance_t aris_timer;
 
 timer_pkt sync_time;
 
-uint64_t hk_period,hk_last_count,current_time;
+uint64_t hk_period,current_time,payload_period,sd_hk_period,sd_dump_period,timer_period;
+uint64_t hk_last_count,payload_last_count,sd_hk_last_count,sd_dump_last_count,timer_last_count;
 /**
  * @brief This is to be used only if the packets are to be sent over uart as they are formed and not from the queue. This is only for testing purposes.
  * 
@@ -271,7 +272,16 @@ uint8_t Flags_Init() {
 	sync_time.reset = 1;
 
 	hk_last_count = 0xFFFFFFFFFFFFFFFF;
+	payload_last_count = 0xFFFFFFFFFFFFFFFF;
+	sd_hk_last_count = 0xFFFFFFFFFFFFFFFF;
+	sd_dump_last_count = 0xFFFFFFFFFFFFFFFF;
+	timer_last_count = 0xFFFFFFFFFFFFFFFF;
 	hk_period = hk_period_L | (hk_period_H << 32);
+	payload_period = (payload_period_L) | (payload_period_H << 32);
+	sd_hk_period = (sd_hk_period_L) | (sd_hk_period_H << 32);
+	sd_dump_period = (sd_dump_period_L) | (sd_dump_period_H << 32);
+	timer_period = (timer_period_L) | (timer_period_H << 32);
+
 	return 0;
 }
 
@@ -297,7 +307,9 @@ void add_to_queue(uint8_t size,partition_t *p,uint8_t *data,uint16_t *miss) {
 				q_head = 0;
 			}
 		}
+		MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 	} else {
+		MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 		(*miss)+=1;
 		store_data(p,data);
 //		if((*miss) > 10) {
@@ -311,7 +323,7 @@ void add_to_queue(uint8_t size,partition_t *p,uint8_t *data,uint16_t *miss) {
 //			}
 //		}
 	}
-	MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
+
 }
 
 /**
@@ -370,9 +382,21 @@ void inline form_log_packet() {
 	log_packet->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(ccsds_p2((logs_seq_no)));
 	log_packet->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(ccsds_p3(LOGS_PKT_LENGTH));
 	log_packet->Fletcher_Code = LOGS_FLETCHER_CODE;
+	log_packet->ccsds_s2 = current_time_lower;
+	log_packet->ccsds_s1 = current_time_upper;
 	add_to_queue(LOGS_PKT_LENGTH,&log_p,log_data,&logs_miss);
 	log_count = 0;
 	logs_seq_no++;
+}
+
+uint8_t inline can_run(uint64_t *period,uint64_t *last_count) {
+	MSS_TIM64_get_current_value((uint32_t*)&current_time_upper,(uint32_t*)&current_time_lower);
+	current_time = (current_time_lower) | (current_time_upper << 32);
+	if((*last_count) - current_time > (*period)) {
+		(*last_count) = current_time;
+		return 1;
+	}
+	return 0;
 }
 int main()
 {
@@ -390,16 +414,15 @@ int main()
 	while(1) {
 		//Reload the watchdog counter
 		MSS_WD_reload();
-		//Get the current values of the 64 bit counter
-		MSS_TIM64_get_current_value(&current_time_upper,&current_time_lower);
-		current_time = (current_time_lower) | (current_time_upper << 32);
 		//Checking if it is time to take thermistor readings (must be verified)
-		if((payload_last_count_H - current_time_upper >= payload_period_H) && (payload_last_count_L - current_time_lower >= payload_period_L)) {
+		if(can_run(&payload_period,&payload_last_count)) {
 			log_packet->logs[log_count].task_id = THERMISTOR_TASK_ID;
 			log_packet->logs[log_count].time_H = current_time_upper;
 			log_packet->logs[log_count].time_L = current_time_lower;
 			thermistor_packet = (thermistor_pkt_t*)packet_data;
 			result_global = get_thermistor_vals(thermistor_packet,thermistor_seq_no);
+			thermistor_packet->ccsds_s2 = current_time_lower;
+			thermistor_packet->ccsds_s1 = current_time_upper;
 			add_to_queue(THERMISTOR_PKT_LENGTH,&payload_p,packet_data,&hk_miss);
 			log_packet->logs[log_count].task_status = result_global;
 			thermistor_seq_no++;
@@ -416,7 +439,7 @@ int main()
 		// For HK Packet
 
 		//if((hk_last_count_H - current_time_upper >= hk_period_H) && (hk_last_count_L - current_time_lower >= hk_period_L)) {
-		if(hk_last_count - current_time > hk_period) {
+		if(can_run(&hk_period,&hk_last_count)) {
             log_packet->logs[log_count].task_id = HK_TASK_ID;
             log_packet->logs[log_count].time_H = current_time_upper;
             log_packet->logs[log_count].time_L = current_time_lower;
@@ -482,10 +505,12 @@ int main()
 			form_log_packet();
 		}
 
-		if((sd_hk_last_count_H - current_time_upper >= sd_hk_period_H) && (sd_hk_last_count_L - current_time_lower >= sd_hk_period_L)) {
+		if(can_run(&sd_hk_period,&sd_hk_last_count)) {
 			sd.ccsds_p1 = PILOT_REVERSE_BYTE_ORDER(ccsds_p1(tlm_pkt_type,SD_HK_API_ID));
 			sd.ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(ccsds_p2((sd_hk_seq_no)));
 			sd.ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(ccsds_p3(SD_HK_PKT_LENGTH));
+			sd.ccsds_s2 = current_time_lower;
+			sd.ccsds_s1 = current_time_upper;
 			result_global = sd_hk_test(&sd,packet_data,sd_hk_seq_no,&sd_state);
 			sd.Fletcher_Code = SD_HK_FLETCHER_CODE;
 			sd_hk_seq_no++;
@@ -495,14 +520,14 @@ int main()
 
 		}
 
-		if((sd_dump_last_count_H - current_time_upper >= sd_dump_period_H) && (sd_dump_last_count_L - current_time_lower >= sd_dump_period_L)) {
+		if(can_run(&sd_dump_period,&sd_dump_last_count)) {
 			add_to_queue_from_sd(HK_PKT_LENGTH,&hk_p,packet_data);
 			add_to_queue_from_sd(ARIS_PKT_LENGTH,&aris_p,packet_data);
 			sd_dump_last_count_H = current_time_upper;
 			sd_dump_last_count_L = current_time_lower;
 		}
 
-		if(((timer_last_count_H - current_time_upper >= timer_period_H) && (timer_last_count_L - current_time_lower >= timer_period_L)) || ((timer_last_count_H - current_time_upper > timer_period_H) && (current_time_lower > timer_last_count_L) && (current_time_lower - timer_last_count_L < MAX_COUNT - timer_period_L) )) {
+		if(can_run(&timer_period,&timer_last_count)) {
 			sync_time.ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(ccsds_p2(timer_seq_no));
 			sync_time.reset = 0;
 			MSS_TIM64_get_current_value(&sync_time.upper_count,&sync_time.lower_count);

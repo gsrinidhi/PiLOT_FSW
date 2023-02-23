@@ -18,11 +18,11 @@
 
 #define ARIS_API_ID           50
 #define ARIS_PKT_LENGTH       sizeof(aris_pkt_t)
-#define ARIS_FLETCHER_CODE    0x01
+#define ARIS_FLETCHER_CODE    0xCDCD
 
 #define LOGS_API_ID			30
 #define LOGS_PKT_LENGTH		sizeof(log_packet_t)
-#define LOGS_FLETCHER_CODE	0x00
+#define LOGS_FLETCHER_CODE	0xCDCD
 
 #define HK_API_ID			10
 #define HK_PKT_LENGTH		sizeof(hk_pkt_t)
@@ -34,6 +34,7 @@
 
 #define TIME_API_ID			60
 #define TIME_PKT_LENGTH		sizeof(timer_pkt)
+#define TIME_FLETCHER_CODE	0xCDCD
 
 typedef struct {
     //CCSDS

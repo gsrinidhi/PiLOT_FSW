@@ -180,7 +180,7 @@ uint8_t get_IMU_gyro(uint16_t *roll_rate, uint16_t *pitch_rate,uint16_t *yaw_rat
  * @param upper_count 	: pointer to store the upper 32 bits of counter
  * @param lower_count 	: pointer to store the lower 32 bits of counter
  */
-void time_to_count(uint32_t ms,uint32_t *upper_count,uint32_t *lower_count);
+void time_to_count(uint32_t ms,uint64_t *upper_count,uint64_t *lower_count);
 
 /**
  * @brief Function to get the health of Pilot
