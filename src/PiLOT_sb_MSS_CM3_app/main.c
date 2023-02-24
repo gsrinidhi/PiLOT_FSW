@@ -13,6 +13,7 @@
 #include "pilot.h"
 #include "peripherals.h"
 #define MAX_COUNT		0xFFFFFFFF
+#define QUEUE_BYTES		0
 /**
  * @brief All the required partitions are declared below
  * payload_p	:		partition for thermistor data
@@ -111,6 +112,8 @@ uint8_t sd_count;
 sd_test sd;
 uint16_t aris_count,timer_seq_no;
 volatile uint8_t uart_irq_addr_flag;
+uint8_t sd_fail_count;
+uint16_t queue_lost;
 
 /**
  * @brief Timer instance to collect aris data
@@ -282,6 +285,8 @@ uint8_t Flags_Init() {
 	sd_dump_period = (sd_dump_period_L) | (sd_dump_period_H << 32);
 	timer_period = (timer_period_L) | (timer_period_H << 32);
 
+	sd_fail_count = 0;
+
 	return 0;
 }
 
@@ -294,13 +299,13 @@ uint8_t Flags_Init() {
  */
 void add_to_queue(uint8_t size,partition_t *p,uint8_t *data,uint16_t *miss) {
 	q_in_i = 0;
-	result_global = 0;
-	while(!((q_head > q_tail && (2048 - q_head + q_tail) >= size) || (q_head < q_tail && (q_tail - q_head) >= size)));
+	queue_lost = 0;
+	while(!((q_head > q_tail && (2048 - q_head + q_tail) >= size) || (q_head < q_tail && (q_tail - q_head) >= size)) && ((queue_lost++) < 500));
 	MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 	if((q_head > q_tail && (2048 - q_head + q_tail) >= size) || (q_head < q_tail && (q_tail - q_head) >= size)) {
-		for(;q_in_i<size;q_in_i+=2) {
+		for(;q_in_i<size;q_in_i+=(QUEUE_BYTES + 1)) {
 			pslv_queue[q_head] = data[q_in_i];
-			pslv_queue[q_head+1] = data[q_in_i+1];
+			pslv_queue[q_head+1] = data[q_in_i + QUEUE_BYTES];
 			q_head+=2;
 			if(q_head >= 2048) {
 				//q_head reached limit
@@ -311,7 +316,17 @@ void add_to_queue(uint8_t size,partition_t *p,uint8_t *data,uint16_t *miss) {
 	} else {
 		MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 		(*miss)+=1;
-		store_data(p,data);
+		if(sd_state == SD_WORKING_MASK) {
+			sd_state |= store_data(p,data);
+			if(sd_state != SD_WORKING_MASK) {
+				sd_fail_count++;
+				if(sd_fail_count > SD_THRESHOLD) {
+					sd_fail_count = 0;
+					start_sd_timer(&sd_state);
+				}
+			}
+		}
+
 //		if((*miss) > 10) {
 //			store_data(p,data);
 //		}
@@ -457,6 +472,7 @@ int main()
             log_packet->logs[log_count].task_status = result_global;
 			hk_packet->q_head = q_head;
 			hk_packet->q_tail = q_tail;
+			hk_packet->sd_fail_count = sd_fail_count;
 			add_to_queue(HK_PKT_LENGTH,&hk_p,packet_data,&hk_miss);
 			if(hk_seq_no%20 == 1) {
 				hk_packet->sd_dump = 1;

@@ -198,6 +198,7 @@ uint8_t Pilot_Peripherals_Init() {
 	res = SD_Init();
 	MSS_TIM64_init(MSS_TIMER_ONE_SHOT_MODE);
 	MSS_TIM64_load_immediate(0xFFFFFFFF,0xFFFFFFFF);
+	MSS_GPIO_set_output(EN_UART,1);
 	MSS_TIM64_start();
 	return res;
 }
@@ -436,19 +437,23 @@ uint8_t sd_status(uint8_t *sd,uint8_t *data) {
 	return 0;
 }
 
+void start_sd_timer(uint8_t *sd_state) {
+	MSS_GPIO_set_output(SD_CARD_GPIO,0);
+	*sd_state = 0;
+	uint64_t ph,pl;
+	time_to_count(60000,&ph,&pl);
+	TMR_init(&sd_timer,SD_TIMER_BASE_ADDR,TMR_ONE_SHOT_MODE,PRESCALER_DIV_2,pl/2);
+	TMR_enable_int(&sd_timer);
+	TMR_start(&sd_timer);
+}
+
 uint8_t sd_hk_test(sd_test *sd,uint8_t *data,uint32_t addr,uint8_t *sd_state) {
 	if((*sd_state) == 7) {
 		sd->sd_result = !(SD_Init());
-		sd->sd_result |= (!(SD_Write(addr*512,data))) << 1;
-		sd->sd_result |= (!(SD_Read(addr*512,data))) << 2;
+		sd->sd_result |= (!(SD_Write(addr,data))) << 1;
+		sd->sd_result |= (!(SD_Read(addr,data))) << 2;
 		if(sd->sd_result == 0) {
-			MSS_GPIO_set_output(SD_CARD_GPIO,0);
-			*sd_state = 0;
-			uint64_t ph,pl;
-			time_to_count(60000,&ph,&pl);
-			TMR_init(&sd_timer,SD_TIMER_BASE_ADDR,TMR_ONE_SHOT_MODE,PRESCALER_DIV_2,pl/2);
-			TMR_enable_int(&sd_timer);
-			TMR_start(&sd_timer);
+			start_sd_timer(sd_state);
 		}
 	}
 
