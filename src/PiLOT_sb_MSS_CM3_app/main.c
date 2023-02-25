@@ -353,6 +353,7 @@ void add_to_queue_from_sd(uint8_t size,partition_t *p,uint8_t *data) {
 	if(sd_state == 0x7) {//read from the SD card only if it is operational
 		result_global = read_data(p,data);
 		while(!((q_head > q_tail && (2048 - q_head + q_tail) >= size) || (q_head < q_tail && (q_tail - q_head) >= size)));
+		MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 		if((q_head > q_tail && (2048 - q_head + q_tail) >= size) || (q_head < q_tail && (q_tail - q_head) >= size)) {
 			for(;q_in_i<size;q_in_i+=2) {
 				pslv_queue[q_head] = data[q_in_i];
@@ -364,6 +365,7 @@ void add_to_queue_from_sd(uint8_t size,partition_t *p,uint8_t *data) {
 				}
 			}
 		}
+		MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 	}
 
 
@@ -513,7 +515,6 @@ int main()
 			aris_packet->Fletcher_Code = ARIS_FLETCHER_CODE;
 			log_packet->logs[log_count].task_status = 0;
 			add_to_queue(ARIS_PKT_LENGTH,&aris_p,aris_temp_data,&aris_miss);
-			TMR_start(&aris_timer);
 			log_count++;
 		}
 

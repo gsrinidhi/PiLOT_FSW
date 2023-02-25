@@ -18,7 +18,7 @@
 #define SD_WRITE_MASK	0x2
 #define SD_READ_MASK	0x4
 #define SD_WORKING_MASK		(SD_INIT_MASK | SD_WRITE_MASK | SD_READ_MASK)
-#define SD_TIMEOUT	2
+//#define SD_TIMEOUT	2
 
 #define SD_THRESHOLD	10
 /**
