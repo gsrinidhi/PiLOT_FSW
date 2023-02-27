@@ -55,10 +55,12 @@
 #define HK_PERIOD_L				0xFFFF
 
 //TASK IDs
+#define TIMER_TASK_ID		0
 #define THERMISTOR_TASK_ID	1
 #define HK_TASK_ID			2
 #define SD_HK_TASK_ID		3
 #define ARIS_TASK_ID		4
+#define LOGS_TASK_ID		5
 
 //PSLV address
 #define PSLV_TO_PILOT_ADDR			119

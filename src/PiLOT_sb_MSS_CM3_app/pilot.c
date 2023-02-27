@@ -205,7 +205,7 @@ uint8_t Pilot_Peripherals_Init() {
 uint8_t Pilot_Init() {
 	uint8_t res;
 	res = Pilot_Peripherals_Init();
-	ADC_Init(&i2c_3,ADC_I2C_ADDR);
+	ADC_Init(&i2c_3,ADC_I2CU1_ADDR);
 	ADC_Init(&i2c_3,ADC_I2CU2_ADDR);
 	ADC_Init(&i2c_5,ADC_I2CU1_ADDR);
 	ADC_Init(&i2c_5,ADC_I2CU2_ADDR);
