@@ -40,7 +40,7 @@ uint8_t log_data[512];
  * @brief The aris_packet_data stores the aris data generated.
  * 
  */
-uint8_t aris_packet_data[512],aris_temp_data[512];
+uint8_t aris_packet_data1[512],aris_packet_data2[512];
 
 /**
  * @brief The pslv_queue is the queue from which data is provided to the pslv stage 4 data processing unit
@@ -69,7 +69,7 @@ log_packet_t *log_packet;
  * @brief A pointer to the aris packet type. Aris data is stored in aris_packet_data using this pointer.
  * 
  */
-aris_pkt_t *aris_packet;
+aris_pkt_t *aris_packet_collecting,*aris_packet_add_to_queue;
 
 /**
  * @brief These two variable hold the current counts of the 64 bit counter
@@ -192,6 +192,11 @@ uint8_t get_sd_hk(hk_pkt_t *hk_pkt) {
     return 0;
 }
 
+void toggle_aris_pointer() {
+	aris_packet_collecting = (aris_packet_collecting == aris_packet_data1) ? ((aris_pkt_t*)aris_packet_data2) : ((aris_pkt_t*)aris_packet_data1);
+	aris_packet_add_to_queue = (aris_packet_collecting == aris_packet_data1) ? ((aris_pkt_t*)aris_packet_data2) : ((aris_pkt_t*)aris_packet_data1);
+}
+
 /**
  * @brief This function initialises all the global variables in this file.
  * 
@@ -287,6 +292,10 @@ uint8_t Flags_Init() {
 
 	sd_fail_count = 0;
 
+	//Initialise ARIS collect and add to queue pointers
+	aris_packet_collecting = (aris_pkt_t*)aris_packet_data1;
+	aris_packet_add_to_queue = (aris_pkt_t*)aris_packet_data2;
+
 	return 0;
 }
 
@@ -326,17 +335,6 @@ void add_to_queue(uint8_t size,partition_t *p,uint8_t *data,uint16_t *miss) {
 				}
 			}
 		}
-
-//		if((*miss) > 10) {
-//			store_data(p,data);
-//		}
-//			if(sd_state == 0x7) {//If sd card is working
-//
-//			result_global = store_data(p,data);
-//			if(result_global == 1) {//
-//				sd_state = 0x0;//so that no furhther operations are done on the SD card until its functionality has been checked again
-//			}
-//		}
 	}
 
 }
@@ -376,14 +374,13 @@ void add_to_queue_from_sd(uint8_t size,partition_t *p,uint8_t *data) {
  */
 void FabricIrq9_IRQHandler(void) {
 	TMR_clear_int(&aris_timer);
-	aris_packet = (aris_pkt_t*)aris_packet_data;
 	if(aris_sample_no < 20) {
 		if(aris_sample_no == 0) {
-			aris_packet->start_time = current_time_upper;
-			aris_packet->ccsds_s2 = current_time_lower;
-			aris_packet->ccsds_s1 = current_time_upper;
+			aris_packet_collecting->start_time = current_time_upper;
+			aris_packet_collecting->ccsds_s2 = current_time_lower;
+			aris_packet_collecting->ccsds_s1 = current_time_upper;
 		}
-		result_global = get_aris_sample(aris_packet,current_time_lower,aris_sample_no);
+		result_global = get_aris_sample(aris_packet_collecting,current_time_lower,aris_sample_no);
 		aris_sample_no++;
 	}
 
@@ -496,25 +493,19 @@ int main()
 			//Form Aris packet and add to queue
 			TMR_stop(&aris_timer);
 			TMR_stop(&sd_timer);
-			aris_count = 0;
-			aris_seq_no++;
-			aris_sample_no = 0;
-			for(aris_count = 0;aris_count < 512;aris_count++) {
-				aris_temp_data[aris_count] = aris_packet_data[aris_count];
-
-			}
+			toggle_aris_pointer();
 			TMR_start(&aris_timer);
 			TMR_start(&sd_timer);
 			//Form Aris packet and add to queue
 			log_packet->logs[log_count].task_id = ARIS_TASK_ID;
 			log_packet->logs[log_count].time_L = current_time_lower;
 			log_packet->logs[log_count].time_H = current_time_upper;
-			aris_packet->ccsds_p1 = PILOT_REVERSE_BYTE_ORDER(ccsds_p1(tlm_pkt_type,ARIS_API_ID));
-			aris_packet->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(ccsds_p2(aris_seq_no));
-			aris_packet->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(ccsds_p3(ARIS_PKT_LENGTH));
-			aris_packet->Fletcher_Code = ARIS_FLETCHER_CODE;
+			aris_packet_add_to_queue->ccsds_p1 = PILOT_REVERSE_BYTE_ORDER(ccsds_p1(tlm_pkt_type,ARIS_API_ID));
+			aris_packet_add_to_queue->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(ccsds_p2(aris_seq_no));
+			aris_packet_add_to_queue->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(ccsds_p3(ARIS_PKT_LENGTH));
+			aris_packet_add_to_queue->Fletcher_Code = ARIS_FLETCHER_CODE;
 			log_packet->logs[log_count].task_status = 0;
-			add_to_queue(ARIS_PKT_LENGTH,&aris_p,aris_temp_data,&aris_miss);
+			add_to_queue(ARIS_PKT_LENGTH,&aris_p,(uint8_t*)aris_packet_add_to_queue,&aris_miss);
 			log_count++;
 		}
 
