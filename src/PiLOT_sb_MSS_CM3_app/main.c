@@ -197,8 +197,8 @@ uint8_t get_sd_hk(hk_pkt_t *hk_pkt) {
 }
 
 void toggle_aris_pointer() {
-	aris_packet_collecting = (aris_packet_collecting == aris_packet_data1) ? ((aris_pkt_t*)aris_packet_data2) : ((aris_pkt_t*)aris_packet_data1);
-	aris_packet_add_to_queue = (aris_packet_collecting == aris_packet_data1) ? ((aris_pkt_t*)aris_packet_data2) : ((aris_pkt_t*)aris_packet_data1);
+	aris_packet_collecting = (aris_packet_collecting == (aris_pkt_t*)aris_packet_data1) ? ((aris_pkt_t*)aris_packet_data2) : ((aris_pkt_t*)aris_packet_data1);
+	aris_packet_add_to_queue = (aris_packet_collecting == (aris_pkt_t*)aris_packet_data1) ? ((aris_pkt_t*)aris_packet_data2) : ((aris_pkt_t*)aris_packet_data1);
 }
 
 /**
@@ -389,7 +389,7 @@ void FabricIrq9_IRQHandler(void) {
 			aris_packet_collecting->ccsds_s2 = current_time_lower;
 			aris_packet_collecting->ccsds_s1 = current_time_upper;
 		}
-		aris_result = get_aris_sample(aris_packet,current_time_lower,aris_sample_no);
+		aris_result = get_aris_sample(aris_packet_collecting,current_time_lower,aris_sample_no);
 		aris_sample_no++;
 	}
 
@@ -530,10 +530,10 @@ int main()
 			log_packet->logs[log_count].task_id = SD_HK_TASK_ID;
 			log_packet->logs[log_count].time_L = current_time_lower;
 			log_packet->logs[log_count].time_H = current_time_upper;
-			aris_packet->ccsds_p1 = PILOT_REVERSE_BYTE_ORDER(ccsds_p1(tlm_pkt_type,SD_HK_API_ID));
-			aris_packet->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(ccsds_p2(sd_hk_seq_no));
-			aris_packet->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(ccsds_p3(SD_HK_PKT_LENGTH));
-			aris_packet->Fletcher_Code = SD_HK_FLETCHER_CODE;
+			sd_hk.ccsds_p1 = PILOT_REVERSE_BYTE_ORDER(ccsds_p1(tlm_pkt_type,SD_HK_API_ID));
+			sd_hk.ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(ccsds_p2(sd_hk_seq_no));
+			sd_hk.ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(ccsds_p3(SD_HK_PKT_LENGTH));
+			sd_hk.end_sequence = SD_HK_FLETCHER_CODE;
 			log_packet->logs[log_count].task_status = 0;
 			add_to_queue(SD_HK_PKT_LENGTH,&sd_hk_p,(uint8_t*)&sd_hk,&sd_hk_miss,SD_HK_TASK_ID);
 			log_count++;
