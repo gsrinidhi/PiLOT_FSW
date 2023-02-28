@@ -13,7 +13,7 @@
 #include "pilot.h"
 #include "peripherals.h"
 #define MAX_COUNT		0xFFFFFFFF
-#define QUEUE_BYTES		1
+#define QUEUE_BYTES		0
 /**
  * @brief All the required partitions are declared below
  * payload_p	:		partition for thermistor data
@@ -237,7 +237,7 @@ uint8_t Flags_Init() {
 	initialise_partition(&log_p,LOGS_BLOCK_INIT,LOGS_BLOCK_END);
 	initialise_partition(&sd_hk_p,SD_BLOCK_INIT,SD_BLOCK_END);
 	initialise_partition(&aris_p,ARIS_BLOCK_INIT,ARIS_BLOCK_END);
-	initialise_partition(&timer_p,0,0);
+	initialise_partition(&timer_p,0,9);
 	/**
 	 * @brief Initialise all the last counts to the maximum value of the counter
 	 * 
@@ -312,9 +312,9 @@ uint8_t Flags_Init() {
 void add_to_queue(uint8_t size,partition_t *p,uint8_t *data,uint16_t *miss,uint8_t task_id) {
 	q_in_i = 0;
 	queue_lost = 0;
-	while(!((q_head > q_tail && (2048 - q_head + q_tail) >= size) || (q_head < q_tail && (q_tail - q_head) >= size)) && ((queue_lost++) < 500));
+	while(!((q_head > q_tail && (2048 - q_head + q_tail) >= (size * (2 - QUEUE_BYTES))) || (q_head < q_tail && (q_tail - q_head) >= (size * (2 - QUEUE_BYTES)))) && ((queue_lost++) < 500));
 	MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
-	if((q_head > q_tail && (2048 - q_head + q_tail) >= size) || (q_head < q_tail && (q_tail - q_head) >= size)) {
+	if((q_head > q_tail && (2048 - q_head + q_tail) >= (size * (2 - QUEUE_BYTES))) || (q_head < q_tail && (q_tail - q_head) >= (size * (2 - QUEUE_BYTES)))) {
 		for(;q_in_i<size;q_in_i+=(QUEUE_BYTES + 1)) {
 			pslv_queue[q_head] = data[q_in_i];
 			pslv_queue[q_head+1] = data[q_in_i + QUEUE_BYTES];
@@ -326,17 +326,17 @@ void add_to_queue(uint8_t size,partition_t *p,uint8_t *data,uint16_t *miss,uint8
 		}
 		MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 	} else {
-		miss_margin = (q_head > q_tail) ? (size - (2048 -(q_head - q_tail))) : (size - (q_tail - q_head));
+		miss_margin = (q_head > q_tail) ? ((size * (2 - QUEUE_BYTES)) - (2048 -(q_head - q_tail))) : ((size * (2 - QUEUE_BYTES)) - (q_tail - q_head));
 		MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 		(*miss)+=1;
-		if(sd_state == SD_WORKING_MASK) {
+		if(sd_state & SD_WORKING_MASK) {
 			sd_state |= store_data(p,data);
 			if(sd_hk_sample_no <20) {
 				sd_hk.samples[sd_hk_sample_no].sd_state = sd_state;
 				sd_hk.samples[sd_hk_sample_no].task_id = task_id;
 				sd_hk.samples[sd_hk_sample_no++].miss_margin = miss_margin;
 			}
-			if(sd_state != SD_WORKING_MASK) {
+			if(!(sd_state & SD_WORKING_MASK)) {
 				sd_fail_count++;
 				if(sd_fail_count > SD_THRESHOLD) {
 					sd_fail_count = 0;
@@ -359,12 +359,12 @@ void add_to_queue_from_sd(uint8_t size,partition_t *p,uint8_t *data) {
 	q_in_i = 0;
 	if(sd_state == 0x7) {//read from the SD card only if it is operational
 		result_global = read_data(p,data);
-		while(!((q_head > q_tail && (2048 - q_head + q_tail) >= size) || (q_head < q_tail && (q_tail - q_head) >= size)));
+		while(!((q_head > q_tail && (2048 - q_head + q_tail) >= (size * (2 - QUEUE_BYTES))) || (q_head < q_tail && (q_tail - q_head) >= (size * (2 - QUEUE_BYTES)))));
 		MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
-		if((q_head > q_tail && (2048 - q_head + q_tail) >= size) || (q_head < q_tail && (q_tail - q_head) >= size)) {
-			for(;q_in_i<size;q_in_i+=2) {
+		if((q_head > q_tail && (2048 - q_head + q_tail) >= (size * (2 - QUEUE_BYTES))) || (q_head < q_tail && (q_tail - q_head) >= (size * (2 - QUEUE_BYTES)))) {
+			for(;q_in_i<size;q_in_i+=(QUEUE_BYTES + 1)) {
 				pslv_queue[q_head] = data[q_in_i];
-				pslv_queue[q_head+1] = data[q_in_i+1];
+				pslv_queue[q_head+1] = data[q_in_i+ QUEUE_BYTES];
 				q_head+=2;
 				if(q_head >= 2048) {
 					//q_head reached limit
@@ -503,6 +503,7 @@ int main()
 			TMR_stop(&aris_timer);
 			TMR_stop(&sd_timer);
 			toggle_aris_pointer();
+			aris_sample_no = 0;
 			TMR_start(&aris_timer);
 			TMR_start(&sd_timer);
 			//Form Aris packet and add to queue
@@ -515,6 +516,7 @@ int main()
 			aris_packet_add_to_queue->Fletcher_Code = ARIS_FLETCHER_CODE;
 			log_packet->logs[log_count].task_status = 0;
 			add_to_queue(ARIS_PKT_LENGTH,&aris_p,(uint8_t*)aris_packet_add_to_queue,&aris_miss,ARIS_TASK_ID);
+
 			log_count++;
 		}
 
@@ -536,7 +538,11 @@ int main()
 			sd_hk.end_sequence = SD_HK_FLETCHER_CODE;
 			log_packet->logs[log_count].task_status = 0;
 			add_to_queue(SD_HK_PKT_LENGTH,&sd_hk_p,(uint8_t*)&sd_hk,&sd_hk_miss,SD_HK_TASK_ID);
-			log_count++;
+			//log_count++;
+		}
+
+		if(log_count >= 10) {
+			form_log_packet();
 		}
 
 		if(can_run(&sd_dump_period,&sd_dump_last_count)) {
