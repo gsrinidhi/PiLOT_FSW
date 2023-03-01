@@ -331,11 +331,6 @@ void add_to_queue(uint8_t size,partition_t *p,uint8_t *data,uint16_t *miss,uint8
 		(*miss)+=1;
 		if(sd_state & SD_WORKING_MASK) {
 			sd_state |= store_data(p,data);
-			if(sd_hk_sample_no <20) {
-				sd_hk.samples[sd_hk_sample_no].sd_state = sd_state;
-				sd_hk.samples[sd_hk_sample_no].task_id = task_id;
-				sd_hk.samples[sd_hk_sample_no++].miss_margin = miss_margin;
-			}
 			if(!(sd_state & SD_WORKING_MASK)) {
 				sd_fail_count++;
 				if(sd_fail_count > SD_THRESHOLD) {
@@ -343,6 +338,11 @@ void add_to_queue(uint8_t size,partition_t *p,uint8_t *data,uint16_t *miss,uint8
 					start_sd_timer(&sd_state);
 				}
 			}
+		}
+		if(sd_hk_sample_no <20) {
+			sd_hk.samples[sd_hk_sample_no].sd_state = sd_state;
+			sd_hk.samples[sd_hk_sample_no].task_id = task_id;
+			sd_hk.samples[sd_hk_sample_no++].miss_margin = miss_margin;
 		}
 	}
 
