@@ -301,6 +301,12 @@ uint8_t Flags_Init() {
 	aris_packet_collecting = (aris_pkt_t*)aris_packet_data1;
 	aris_packet_add_to_queue = (aris_pkt_t*)aris_packet_data2;
 
+	aris_miss = 0;
+	hk_miss = 0;
+	payload_miss = 0;
+	sd_hk_miss = 0;
+	logs_miss = 0;
+
 	return 0;
 }
 
@@ -422,6 +428,23 @@ uint8_t inline can_run(uint64_t *period,uint64_t *last_count) {
 		return 1;
 	}
 	return 0;
+}
+
+void store_sd_pointers() {
+	check_reset = (reset_pkt_t*)ENVM_RESET_PKT_ADDR;
+	put_reset.reset_count = check_reset->reset_count;
+	put_reset.ARIS_Read_Pointer = aris_p.read_pointer;
+	put_reset.ARIS_Write_Pointer = aris_p.write_pointer;
+	put_reset.HK_Read_Pointer = hk_p.read_pointer;
+	put_reset.HK_Write_Pointer = hk_p.write_pointer;
+	put_reset.Logs_Read_Pointer = log_p.read_pointer;
+	put_reset.Logs_Write_Pointer = log_p.write_pointer;
+	put_reset.SD_Test_Read_Pointer = sd_hk_p.read_pointer;
+	put_reset.SD_Test_Write_Pointer = sd_hk_p.write_pointer;
+	put_reset.Thermistor_Read_Pointer = payload_p.read_pointer;
+	put_reset.Thermistor_Write_Pointer = payload_p.write_pointer;
+	nvm_status_t nvm_status = NVM_write(ENVM_RESET_PKT_ADDR,(const uint8_t *)put_reset,sizeof(reset_pkt_t),NVM_DO_NOT_LOCK_PAGE);
+
 }
 int main()
 {
