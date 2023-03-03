@@ -466,6 +466,40 @@ void time_to_count(uint32_t ms,uint64_t *upper_count,uint64_t *lower_count) {
     *upper_count = (ms/FULL_SCALE_TIME_MS);
 }
 
+void envm_init(reset_pkt_t *check_reset,reset_pkt_t *put_reset) {
+	check_reset = (reset_pkt_t *)ENVM_RESET_PKT_ADDR;
+	if(0 == check_reset->reset_count) {
+		put_reset->ARIS_Read_Pointer = ARIS_BLOCK_INIT;
+		put_reset->ARIS_Write_Pointer = ARIS_BLOCK_INIT;
+		put_reset->HK_Read_Pointer = HK_BLOCK_INIT;
+		put_reset->HK_Write_Pointer = HK_BLOCK_INIT;
+		put_reset->Logs_Read_Pointer = LOGS_BLOCK_INIT;
+		put_reset->Logs_Write_Pointer = LOGS_BLOCK_INIT;
+		put_reset->SD_Test_Read_Pointer = SD_BLOCK_INIT;
+		put_reset->SD_Test_Write_Pointer = SD_BLOCK_INIT;
+		put_reset->Thermistor_Read_Pointer = PAYLOAD_BLOCK_INIT;
+		put_reset->Thermistor_Write_Pointer = PAYLOAD_BLOCK_INIT;
+		put_reset->reset_count = 1;
+	} else {
+		put_reset->ARIS_Read_Pointer = check_reset->ARIS_Read_Pointer;
+		put_reset->ARIS_Write_Pointer = check_reset->ARIS_Write_Pointer;
+		put_reset->HK_Read_Pointer = check_reset->HK_Read_Pointer;
+		put_reset->HK_Write_Pointer = check_reset->HK_Write_Pointer;
+		put_reset->Logs_Read_Pointer = check_reset->Logs_Read_Pointer;
+		put_reset->Logs_Write_Pointer = check_reset->Logs_Write_Pointer;
+		put_reset->SD_Test_Read_Pointer = check_reset->SD_Test_Read_Pointer;
+		put_reset->SD_Test_Write_Pointer = check_reset->SD_Test_Write_Pointer;
+		put_reset->Thermistor_Read_Pointer = check_reset->Thermistor_Read_Pointer;
+		put_reset->Thermistor_Write_Pointer = check_reset->Thermistor_Write_Pointer;
+		put_reset->reset_count = check_reset->reset_count+1;
+	}
+
+	nvm_status_t nvm_status;
+	nvm_status = NVM_write(ENVM_RESET_PKT_ADDR,(const uint8_t *)put_reset,sizeof(reset_pkt_t),NVM_DO_NOT_LOCK_PAGE);
+	uint8_t i = 0;
+	i = NVM_read_page_write_count(0x60006000);
+}
+
 void FabricIrq0_IRQHandler(void)
 {
     I2C_isr(&g_core_i2c0);

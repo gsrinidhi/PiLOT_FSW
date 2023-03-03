@@ -223,4 +223,6 @@ uint8_t sd_status(uint8_t *sd,uint8_t *data);
 uint8_t sd_hk_test(sd_test *sd,uint8_t *data,uint32_t addr,uint8_t *sd_state);
 
 void start_sd_timer(uint8_t *sd_state);
+
+void envm_init(reset_pkt_t *check_reset,reset_pkt_t *put_reset);
 #endif

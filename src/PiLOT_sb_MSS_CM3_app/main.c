@@ -129,6 +129,8 @@ uint64_t hk_last_count,payload_last_count,sd_hk_last_count,sd_dump_last_count,ti
 uint16_t miss_margin,sd_hk_sample_no;
 
 sd_hk_t sd_hk;
+
+reset_pkt_t *check_reset,put_reset;
 /**
  * @brief This is to be used only if the packets are to be sent over uart as they are formed and not from the queue. This is only for testing purposes.
  * 
@@ -430,6 +432,7 @@ int main()
 	if(sd_state == 1){
 		sd_state = 0x7;
 	}
+	envm_init(check_reset,&put_reset);
 	//Initialise all the global variables in main.c
 	Flags_Init();
 	add_to_queue(TIME_PKT_LENGTH,&timer_p,(uint8_t*)&sync_time,&payload_miss,TIMER_TASK_ID);

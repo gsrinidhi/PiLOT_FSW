@@ -191,4 +191,19 @@ typedef struct {
     uint16_t end_sequence;
 }__attribute__((packed)) sd_hk_t;
 
+typedef struct {
+	uint32_t reset_count;
+    uint32_t HK_Read_Pointer;
+    uint32_t HK_Write_Pointer;
+    uint32_t Thermistor_Read_Pointer;
+    uint32_t Thermistor_Write_Pointer;
+    uint32_t Logs_Read_Pointer;
+    uint32_t Logs_Write_Pointer;
+    uint32_t SD_Test_Read_Pointer;
+    uint32_t SD_Test_Write_Pointer;
+    uint32_t ARIS_Read_Pointer;
+    uint32_t ARIS_Write_Pointer;
+
+}__attribute__((packed)) reset_pkt_t ;
+
 #endif
