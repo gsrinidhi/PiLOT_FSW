@@ -11,6 +11,6 @@
 #define ARGU_INDEX 0
 #define MSG_INDEX 0
 
-
+timer_instance_t timer;
 
 #endif

@@ -4,6 +4,9 @@
 #ifndef _CLI_DEFINITIONS_
 #define _CLI_DEFINITIONS_
 #include<drivers/mss_uart/mss_uart.h>
+#include "peripherals.h"
+#include "packet_definitions.h"
+#include "cli_packet_definitions.h"
 #define BAUD_RATE_ID 1;
 #define TX_INV_ENA_ID 2;
 #define RX_INV_ENA_ID 3;
@@ -38,7 +41,18 @@ typedef struct {
   void get_imu_acc(char *data,uint8_t size);
   void get_imu_gyro(char *data,uint8_t size);
    void (*SET_BAUD_RATE)(char* arg, uint8_t s);// = &set_baud_rate;
-
+   void i2c_test_cmd(char *data,uint8_t size);
+   void echo(char *data,uint8_t size);
+   void echo_str(char *data);
+   void ftos(double s,char *value,uint8_t dot);
+   void i2c_test(i2c_argu_t *argu,i2c_results_t *res,uint8_t *Tx_Buffer,uint8_t *Rx_Buffer);
+   void sd_test_cmd(char *data,uint8_t size);
+   char num_in_str[10];
+   void print_num(char *data,double num);
+   void i2c_signal_check(char *data, uint8_t size);
+   void start_pilot(char *data, uint8_t size);
+   void argu_to_pilotargu(char *data,uint16_t *addr, uint8_t *tx_en,uint8_t *rx_en);
+   void get_temp(char *data,uint8_t size);
 
    void scpy(char *src,char *dest);
    uint8_t scmp(char *s1,char *s2,uint8_t size);
@@ -47,5 +61,11 @@ void feedback(uint8_t command_flag);
 void call_function(uint8_t ID, char* data, uint8_t size);
 void uart0_rx_handler(mss_uart_instance_t* this_uart);
 void serial_responder();
+
+#define COSMOS_UART g_mss_uart1
+#define COSMOS_UART_SEND MSS_UART_polled_tx
+#define DEBUG_UART	g_mss_uart0
+#define DEBUG_UART_SEND MSS_UART_polled_tx
+#define DEBUG_UART_SEND_STR MSS_UART_polled_tx_string
 
 #endif

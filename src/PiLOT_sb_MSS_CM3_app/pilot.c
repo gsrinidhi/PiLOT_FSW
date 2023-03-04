@@ -11,7 +11,7 @@
 
 #include"pilot.h"
 #include "memory.h"
-
+extern uint8_t tx_en_gpio,rx_en_gpio;
 uint8_t ADC_Init(i2c_instance_t *i2c_chx,uint8_t address){
 	i2c_status_t status;
 	uint8_t channel = 0;
@@ -212,8 +212,8 @@ uint8_t Pilot_Init() {
 	ADC_Init(&i2c_3,ADC_I2CU2_ADDR);
 	ADC_Init(&i2c_5,ADC_I2CU1_ADDR);
 	ADC_Init(&i2c_5,ADC_I2CU2_ADDR);
-	MSS_GPIO_set_output(TX_INV_EN,1);
-	MSS_GPIO_set_output(RX_INV_EN,1);
+	MSS_GPIO_set_output(TX_INV_EN,tx_en_gpio);
+	MSS_GPIO_set_output(RX_INV_EN,rx_en_gpio);
 	MSS_GPIO_set_output(EN_UART,0);
 	MSS_GPIO_set_output(EN_SENSOR_BOARD,1);
 	res = res | (vc_init(VC1) << 1);
@@ -502,6 +502,30 @@ void envm_init(reset_pkt_t *check_reset,reset_pkt_t *put_reset) {
 	nvm_status = NVM_write(ENVM_RESET_PKT_ADDR,(const uint8_t *)put_reset,sizeof(reset_pkt_t),NVM_DO_NOT_LOCK_PAGE);
 	uint8_t i = 0;
 	i = NVM_read_page_write_count(0x60006000);
+}
+
+uint8_t get_IMU_temp(uint16_t *temp) {
+
+		uint8_t read_temp_L[] = {0x15};
+		uint8_t read_temp_H[] = {0x16};
+		uint8_t IMU_slave_addr = 0x6a;
+		uint8_t rx_buffer[1],rx_buffer_2[1];
+		i2c_status_t status;
+
+		I2C_write_read(&g_core_i2c5,IMU_slave_addr,read_temp_L,1,rx_buffer,
+								1,I2C_RELEASE_BUS);
+
+		status = I2C_wait_complete(&g_core_i2c5,I2C_NO_TIMEOUT);
+
+		I2C_write_read(&g_core_i2c5,IMU_slave_addr,read_temp_H,1,rx_buffer_2,
+								1,I2C_RELEASE_BUS);
+
+		status = I2C_wait_complete(&g_core_i2c5,I2C_NO_TIMEOUT);
+
+		*temp = (rx_buffer[0]) | (rx_buffer_2[0] << 8);
+
+		return 0;
+
 }
 
 void FabricIrq0_IRQHandler(void)

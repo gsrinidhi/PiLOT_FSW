@@ -112,7 +112,6 @@ uint16_t thermistor_seq_no,logs_seq_no,hk_seq_no,sd_hk_seq_no,aris_seq_no,timer_
  */
 uint16_t q_head,q_tail,q_in_i,aris_miss,hk_miss,payload_miss,sd_hk_miss,logs_miss;
 
-timer_instance_t aris_timer;
 /**
  * @brief Miscellaneous variables used to keep track of various counts and states
  * 
@@ -145,6 +144,9 @@ uint16_t miss_margin,sd_hk_sample_no;
 sd_hk_t sd_hk;
 
 reset_pkt_t *check_reset,put_reset;
+
+uint16_t pilot_addr;
+uint8_t tx_en_gpio,rx_en_gpio;
 /**
  * @brief This is to be used only if the packets are to be sent over uart as they are formed and not from the queue. This is only for testing purposes.
  * 
@@ -152,13 +154,12 @@ reset_pkt_t *check_reset,put_reset;
  * @param size The number of bytes to be sent
  * @return uint8_t returns 0
  */
-uint8_t downlink(uint8_t *data,uint8_t size) {
-		MSS_GPIO_set_output(EN_UART,1);
-		MSS_UART_polled_tx(&g_mss_uart1,data,size);
-		MSS_GPIO_set_output(EN_UART,0);
-		return 0;
-}
-uint64_t no;
+//uint8_t downlink(uint8_t *data,uint8_t size) {
+//		MSS_GPIO_set_output(EN_UART,1);
+//		MSS_UART_polled_tx(&g_mss_uart1,data,size);
+//		MSS_GPIO_set_output(EN_UART,0);
+//		return 0;
+//}
 void set_baud_rate(char* arg, uint8_t s);
 void (*SET_BAUD_RATE)(char* arg, uint8_t s) = &set_baud_rate;
 uint8_t add_command(char[],uint8_t);
@@ -172,7 +173,7 @@ void uart1_rx_handler(mss_uart_instance_t * this_uart) {
 	uart_irq_addr_flag = (&g_mss_uart1)->hw_reg->LSR;
 	uart_irq_size = MSS_UART_get_rx(this_uart,uart_irq_rx_buffer,1);
 
-	if(read_bit_reg8(&uart_irq_addr_flag,PE) && uart_irq_rx_buffer[0] == PSLV_TO_PILOT_ADDR) {
+	if(read_bit_reg8(&uart_irq_addr_flag,PE) && uart_irq_rx_buffer[0] == pilot_addr) {
 		MSS_GPIO_set_output(EN_UART,1);
 		MSS_UART_polled_tx(&g_mss_uart1,&pslv_queue[q_tail],2);
 		while(!(MSS_UART_TEMT & MSS_UART_get_tx_status(&g_mss_uart1)))
@@ -261,16 +262,16 @@ uint8_t Flags_Init() {
 	 * @brief Initialise all the last counts to the maximum value of the counter
 	 * 
 	 */
-	hk_last_count_H = 0xFFFFFFFF;
-	hk_last_count_L = 0xFFFFFFFF;
-	payload_last_count_H = 0xFFFFFFFF;
-	payload_last_count_L = 0xFFFFFFFF;
-	sd_hk_last_count_H = 0xFFFFFFFF;
-	sd_hk_last_count_L = 0xFFFFFFFF;
-	aris_last_count_H = 0xFFFFFFFF;
-	aris_last_count_L = 0xFFFFFFFF;
-	sd_dump_last_count_H = 0xFFFFFFFF;
-	sd_dump_last_count_L = 0xFFFFFFFF;
+//	hk_last_count_H = 0xFFFFFFFF;
+//	hk_last_count_L = 0xFFFFFFFF;
+//	payload_last_count_H = 0xFFFFFFFF;
+//	payload_last_count_L = 0xFFFFFFFF;
+//	sd_hk_last_count_H = 0xFFFFFFFF;
+//	sd_hk_last_count_L = 0xFFFFFFFF;
+//	aris_last_count_H = 0xFFFFFFFF;
+//	aris_last_count_L = 0xFFFFFFFF;
+//	sd_dump_last_count_H = 0xFFFFFFFF;
+//	sd_dump_last_count_L = 0xFFFFFFFF;
 	/**
 	 * @brief Set the MSS UART 1 interrupt handler to the one defined above
 	 * 
@@ -447,35 +448,38 @@ uint8_t inline can_run(uint64_t *period,uint64_t *last_count) {
 	return 0;
 }
 
-void store_sd_pointers() {
-	check_reset = (reset_pkt_t*)ENVM_RESET_PKT_ADDR;
-	put_reset.reset_count = check_reset->reset_count;
-	put_reset.ARIS_Read_Pointer = aris_p.read_pointer;
-	put_reset.ARIS_Write_Pointer = aris_p.write_pointer;
-	put_reset.HK_Read_Pointer = hk_p.read_pointer;
-	put_reset.HK_Write_Pointer = hk_p.write_pointer;
-	put_reset.Logs_Read_Pointer = log_p.read_pointer;
-	put_reset.Logs_Write_Pointer = log_p.write_pointer;
-	put_reset.SD_Test_Read_Pointer = sd_hk_p.read_pointer;
-	put_reset.SD_Test_Write_Pointer = sd_hk_p.write_pointer;
-	put_reset.Thermistor_Read_Pointer = payload_p.read_pointer;
-	put_reset.Thermistor_Write_Pointer = payload_p.write_pointer;
-	nvm_status_t nvm_status = NVM_write(ENVM_RESET_PKT_ADDR,(const uint8_t *)&put_reset,sizeof(reset_pkt_t),NVM_DO_NOT_LOCK_PAGE);
+//void store_sd_pointers() {
+//	check_reset = (reset_pkt_t*)ENVM_RESET_PKT_ADDR;
+//	put_reset.reset_count = check_reset->reset_count;
+//	put_reset.ARIS_Read_Pointer = aris_p.read_pointer;
+//	put_reset.ARIS_Write_Pointer = aris_p.write_pointer;
+//	put_reset.HK_Read_Pointer = hk_p.read_pointer;
+//	put_reset.HK_Write_Pointer = hk_p.write_pointer;
+//	put_reset.Logs_Read_Pointer = log_p.read_pointer;
+//	put_reset.Logs_Write_Pointer = log_p.write_pointer;
+//	put_reset.SD_Test_Read_Pointer = sd_hk_p.read_pointer;
+//	put_reset.SD_Test_Write_Pointer = sd_hk_p.write_pointer;
+//	put_reset.Thermistor_Read_Pointer = payload_p.read_pointer;
+//	put_reset.Thermistor_Write_Pointer = payload_p.write_pointer;
+//	nvm_status_t nvm_status = NVM_write(ENVM_RESET_PKT_ADDR,(const uint8_t *)&put_reset,sizeof(reset_pkt_t),NVM_DO_NOT_LOCK_PAGE);
+//
+//}
 
-}
 
 
-int main()
+int pilot(uint16_t addr,uint8_t tx_gpio,uint8_t rx_gpio)
 {
+	pilot_addr = addr;
+	tx_en_gpio = tx_gpio;
+	rx_en_gpio = rx_gpio;
 	//Initialise all the peripherals and devices connected to the OBC in PiLOT
-	timer_start();
 	result_global = Pilot_Init();
 	sd_state = result_global & 0x1;
 	sd_state = !sd_state;
 	if(sd_state == 1){
 		sd_state = 0x7;
 	}
-	envm_init(check_reset,&put_reset);
+	//envm_init(check_reset,&put_reset);
 	//Initialise all the global variables in main.c
 	Flags_Init();
 	add_to_queue(TIME_PKT_LENGTH,&timer_p,(uint8_t*)&sync_time,&payload_miss,TIMER_TASK_ID);
@@ -618,6 +622,67 @@ int main()
 			timer_last_count_L = current_time_lower;
 			timer_seq_no++;
 		}	}
+}
+
+void Uart_Init_cli() {
+	MSS_UART_init(&g_mss_uart0,MSS_UART_9600_BAUD,MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT);
+	MSS_UART_init(&g_mss_uart1,MSS_UART_9600_BAUD,MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT);
+}
+
+uint8_t Pilot_Peripherals_Init_cli() {
+	uint8_t res = 0;
+	SYSREG->WDOG_CR = 0;
+	GPIO_Init();
+	I2C_Init();
+	Uart_Init_cli();
+	SPI_Init();
+//	res = SD_Init();
+//	print_num("SD card init result \0",res);
+	MSS_GPIO_set_output(TX_INV_EN,0);
+	MSS_GPIO_set_output(RX_INV_EN,0);
+	return res;
+}
+void init_test() {
+
+	Pilot_Peripherals_Init_cli();
+	echo_str("Pilot Commanding\n\r\0");
+//	i2c_argu_t i2c_argu;
+//	i2c_results_t i2c_result;
+//	i2c_argu.msg_type = 0;
+//	i2c_argu.no_bytes = 200;
+//	uint8_t tx[10],rx[10];
+//	uint16_t clk_speed[] = {256,224,192,160,960,120,60};
+//	uint8_t channel = 0,clock_rate = 0;
+//	echo_str("PiLOT Starting\n\r\0");
+//	echo_str("I2C_Testing\n\r\0");
+//	for(;channel<=5;channel++) {
+//		print_num("I2C Channel \0",channel);
+//		print_num("No of bytes: \0",i2c_argu.no_bytes);
+//		i2c_argu.i2c_chx = channel;
+//		for(clock_rate = 0;clock_rate <= 6;clock_rate++){
+//			i2c_argu.clock_speed = clock_rate;
+//			i2c_test(&i2c_argu,&i2c_result,tx,rx);
+//			print_num("I2C Clock Speed \0",(double)clk_speed[clock_rate]);
+//			print_num("I2C write \0",(double)i2c_result.Tx_Status);
+//			print_num("I2C write time \0",(double)i2c_result.Tx_time);
+//			print_num("I2C read \0",(double)i2c_result.Rx_Status);
+//			print_num("I2C read time \0",(double)i2c_result.Rx_time);
+//			print_num("I2C mismatch \0",(double)i2c_result.no_Incorrect_bytes);
+//		}
+//	}
+}
+
+int main() {
+	init_test();
+	cli_init();
+	while(1) {
+        if(command_index > 1){
+            if(c[command_index - 1] == '\r'){
+                serial_responder();
+            }
+
+        }
+	}
 }
 #else
 #include "testing.h"

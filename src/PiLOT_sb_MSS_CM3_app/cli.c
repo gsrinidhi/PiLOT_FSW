@@ -2,10 +2,18 @@
 
 #include "cli.h"
 uint8_t prompt_msg[30] =  "\n\r PiLOT Commanding : \0" ;
-char all_msg[50][50] = {BAUD_RATE_MSG, TX_INV_MSG, RX_INV_MSG};
 char cmd_not_exists[50] = CMD_NOT_EXISTS;
 command_t cmd_list[10];
 uint8_t cmd_in;
+
+void print_num(char *data,double num) {
+	echo_str(data);
+	ftos(num,num_in_str,0);
+	echo_str(num_in_str);
+	echo_str("\n\r\0");
+	num_in_str[0] = '\0';
+	num_in_str[1] = '\0';
+}
 uint8_t scmp(char *s1,char *s2,uint8_t size) {
 	uint8_t k = 0;
 	if(size == 0) {
@@ -27,6 +35,69 @@ void scpy(char *src,char *dest) {
 		}
 		ci++;
 	}
+}
+
+uint32_t s_to_i(char* str){
+	uint32_t val = 0;
+	uint8_t k,i = 0;
+	while(1){
+	    	if(str[i] == '\0' || str[i] == '\r' || str[i] == ' '){
+	    		break;
+	    	}
+
+	        val = val*10;
+	        k = (int)(str[i] - 48);
+	        val = val+k;
+	        i++;
+
+	    }
+	return val;
+}
+
+void argu_to_i2cargu(char *argu,i2c_argu_t * i2c){
+	i2c->i2c_chx = (int)(argu[0] - 48);
+	i2c->clock_speed = (int)(argu[2] - 48);
+	char temp[7];
+	uint8_t i =8;
+	while(argu[i] != ' '){
+		temp[i-8] = argu[i];
+		i++;
+	}
+	temp[i] = '\0';
+
+	i2c->no_bytes = s_to_i(temp);
+	i2c->msg_type = (int)(argu[4] - 48);
+	i2c->output_type = (int)(argu[6]-48);
+	i2c->custom_msg = &argu[i+1];
+}
+
+void argu_to_pilotargu(char *data,uint16_t *addr, uint8_t *tx_en,uint8_t *rx_en) {
+	char temp[7];
+	if(data[0] == '0') {
+		*tx_en = 0;
+	} else if(data[0] == '1') {
+		*tx_en = 1;
+	} else {
+		echo_str("Wrong tx en value. Try again\n\r");
+		return;
+	}
+	if(data[2] == '0') {
+		*rx_en = 0;
+	} else if(data[0] == '1') {
+		*rx_en = 1;
+	} else {
+		echo_str("Wrong rx en value. Try again\n\r");
+		return;
+	}
+
+	uint8_t i = 4;
+	while(data[i] != ' ' && data[i] != '\r' && data[i] != '\0') {
+		temp[i-4] = data[i];
+		i++;
+	}
+	temp[i] = '\0';
+	*addr = s_to_i(temp);
+	print_num("PiLOT started with address \0",(double)(*addr));
 }
 void add_command(char name[],void (*work)(char *arg,uint8_t size),char fb[]) {
 	cmd_list[cmd_in].id = cmd_in;
@@ -65,6 +136,12 @@ void cli_init(){
 	add_command("view_thermistor\0",get_ADC_correct_values,"\n\rThermistor values displayed\0");
 	add_command("disp_acc\0",get_imu_acc,"\n\rAcc displayed\0");
 	add_command("disp_gyro\0",get_imu_gyro,"\n\rGyro displayed\0");
+	add_command("I2C_TEST\0",i2c_test_cmd,"\n\rI2C Test Done");
+	add_command("echo\0",echo,"\n\r");
+	add_command("sd_test\0",sd_test_cmd,"SD test done");
+	add_command("i2c_sigcheck\0",i2c_signal_check,"I2C Signal transmitted");
+	add_command("start_pilot\0",start_pilot,"PiLOT running");
+	add_command("get_temp\0",get_temp,"Temperature obtained");
 	MSS_UART_polled_tx_string(&g_mss_uart0,prompt_msg);
 
 }
@@ -187,3 +264,37 @@ void serial_responder(){
 
  }
 
+void ftos(double s,char *value,uint8_t dot) {
+	uint16_t k = (uint16_t)s;
+	if(s == 0) {
+		value[0] = '0';
+		value[1] = '\0';
+	} else {
+		char stk[10];
+		uint8_t i = 0,j = 0;
+		while(k > 0) {
+			stk[i] = k%10;
+			k/=10;
+			i++;
+		}
+		for(j = 0;j<i;j++) {
+			if(i > 0) {
+				value[j] = stk[i-1-j] + 48;
+			}
+
+		}
+		if(dot != 0) {
+			value[j] = '.';
+			for(i = 0;i<dot;i++) {
+				k = (uint16_t)(s * 10);
+				value[j+i+1] = (k%10) + 48;
+				s*=10;
+			}
+			value[j+i+1] = '\0';
+		} else {
+			value[j] = '\0';
+		}
+	}
+
+
+}
