@@ -460,7 +460,7 @@ void store_sd_pointers() {
 	put_reset.SD_Test_Write_Pointer = sd_hk_p.write_pointer;
 	put_reset.Thermistor_Read_Pointer = payload_p.read_pointer;
 	put_reset.Thermistor_Write_Pointer = payload_p.write_pointer;
-	nvm_status_t nvm_status = NVM_write(ENVM_RESET_PKT_ADDR,(const uint8_t *)put_reset,sizeof(reset_pkt_t),NVM_DO_NOT_LOCK_PAGE);
+	nvm_status_t nvm_status = NVM_write(ENVM_RESET_PKT_ADDR,(const uint8_t *)&put_reset,sizeof(reset_pkt_t),NVM_DO_NOT_LOCK_PAGE);
 
 }
 
