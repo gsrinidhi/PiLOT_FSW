@@ -55,10 +55,12 @@
 #define HK_PERIOD_L				0xFFFF
 
 //TASK IDs
+#define TIMER_TASK_ID		0
 #define THERMISTOR_TASK_ID	1
 #define HK_TASK_ID			2
 #define SD_HK_TASK_ID		3
 #define ARIS_TASK_ID		4
+#define LOGS_TASK_ID		5
 
 //PSLV address
 #define PSLV_TO_PILOT_ADDR			119
@@ -180,7 +182,7 @@ uint8_t get_IMU_gyro(uint16_t *roll_rate, uint16_t *pitch_rate,uint16_t *yaw_rat
  * @param upper_count 	: pointer to store the upper 32 bits of counter
  * @param lower_count 	: pointer to store the lower 32 bits of counter
  */
-void time_to_count(uint32_t ms,uint32_t *upper_count,uint32_t *lower_count);
+void time_to_count(uint32_t ms,uint64_t *upper_count,uint64_t *lower_count);
 
 /**
  * @brief Function to get the health of Pilot
@@ -218,5 +220,9 @@ uint8_t get_aris_sample(aris_pkt_t *pkt,uint32_t time,uint8_t sample_no);
  */
 uint8_t sd_status(uint8_t *sd,uint8_t *data);
 
-uint8_t sd_hk_test(sd_test *sd,uint8_t *data,uint32_t addr);
+uint8_t sd_hk_test(sd_test *sd,uint8_t *data,uint32_t addr,uint8_t *sd_state);
+
+void start_sd_timer(uint8_t *sd_state);
+
+void envm_init(reset_pkt_t *check_reset,reset_pkt_t *put_reset);
 #endif

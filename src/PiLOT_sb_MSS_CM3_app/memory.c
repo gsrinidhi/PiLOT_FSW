@@ -20,26 +20,26 @@ void initialise_partition(partition_t *partition, uint32_t start_b,uint32_t end_
 
 uint8_t store_data(partition_t *partition,uint8_t *data) {
 	if((partition->write_pointer >= partition->end_block) || (partition->write_pointer < partition->start_block)) {
-		return 2;
+		return POINTER_ERROR_MASK;
 	}
 
 	if(SD_Write(partition->write_pointer,data) == 0) {
 		partition->write_pointer++;
-		return 0;
+		return SD_WORKING_MASK;
 	}
 
-	return 1;
+	return SD_INIT_MASK | SD_READ_MASK;
 }
 
 uint8_t read_data(partition_t *partition,uint8_t *data) {
 	if((partition->read_pointer >= partition->write_pointer) || (partition->read_pointer < partition->start_block)) {
-		return 2;
+		return POINTER_ERROR_MASK;
 	}
 
 	if(SD_Read(partition->read_pointer,data) == 0) {
 		partition->read_pointer++;
-		return 0;
+		return SD_WORKING_MASK;
 	}
 
-	return 1;
+	return SD_INIT_MASK | SD_WRITE_MASK;
 }

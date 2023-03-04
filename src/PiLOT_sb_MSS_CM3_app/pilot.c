@@ -208,7 +208,7 @@ uint8_t Pilot_Peripherals_Init() {
 uint8_t Pilot_Init() {
 	uint8_t res;
 	res = Pilot_Peripherals_Init();
-	ADC_Init(&i2c_3,ADC_I2C_ADDR);
+	ADC_Init(&i2c_3,ADC_I2CU1_ADDR);
 	ADC_Init(&i2c_3,ADC_I2CU2_ADDR);
 	ADC_Init(&i2c_5,ADC_I2CU1_ADDR);
 	ADC_Init(&i2c_5,ADC_I2CU2_ADDR);
@@ -226,10 +226,6 @@ uint8_t test_peripherals(uint8_t *sd) {
 	uint8_t adc_read_value[2];
 	uint8_t result = 0x00;
 	uint8_t tx[] = {IMU_WHO_AM_I_REG};
-	uint8_t sd_test[512];
-	for(;count<512;count++) {
-		sd_test[count] = 0;
-	}
 	count = 0;
 	i2c_status_t status;
 	//Testing i2c_3 in cdh
@@ -281,9 +277,6 @@ uint8_t test_peripherals(uint8_t *sd) {
 
 	//Appending the state of the sd card to result
 	result |= (*sd << 4);
-	if(*sd == 0x8) {
-		*sd = 0x9;
-	}
 
 	return result;
 }
@@ -456,9 +449,67 @@ uint8_t sd_hk_test(sd_test *sd,uint8_t *data,uint32_t addr) {
 	return 0;
 }
 
-void time_to_count(uint32_t ms,uint32_t *upper_count,uint32_t *lower_count) {
+void start_sd_timer(uint8_t *sd_state) {
+	MSS_GPIO_set_output(SD_CARD_GPIO,0);
+	*sd_state = 0;
+	uint64_t ph,pl;
+	time_to_count(60000,&ph,&pl);
+	TMR_init(&sd_timer,SD_TIMER_BASE_ADDR,TMR_ONE_SHOT_MODE,PRESCALER_DIV_2,pl/2);
+	TMR_enable_int(&sd_timer);
+	TMR_start(&sd_timer);
+}
+
+uint8_t sd_hk_test(sd_test *sd,uint8_t *data,uint32_t addr,uint8_t *sd_state) {
+	if((*sd_state) == 7) {
+		sd->sd_result = !(SD_Init());
+		sd->sd_result |= (!(SD_Write(addr,data))) << 1;
+		sd->sd_result |= (!(SD_Read(addr,data))) << 2;
+		if(sd->sd_result == 0) {
+			start_sd_timer(sd_state);
+		}
+	}
+
+	//MSS_GPIO_set_output(SD_CARD_GPIO,0);
+	return 0;
+}
+
+void time_to_count(uint32_t ms,uint64_t *upper_count,uint64_t *lower_count) {
     *lower_count = (ms%FULL_SCALE_TIME_MS) * TIMER_COUNT_PER_MS;
     *upper_count = (ms/FULL_SCALE_TIME_MS);
+}
+
+void envm_init(reset_pkt_t *check_reset,reset_pkt_t *put_reset) {
+	check_reset = (reset_pkt_t *)ENVM_RESET_PKT_ADDR;
+	if(0 == check_reset->reset_count) {
+		put_reset->ARIS_Read_Pointer = ARIS_BLOCK_INIT;
+		put_reset->ARIS_Write_Pointer = ARIS_BLOCK_INIT;
+		put_reset->HK_Read_Pointer = HK_BLOCK_INIT;
+		put_reset->HK_Write_Pointer = HK_BLOCK_INIT;
+		put_reset->Logs_Read_Pointer = LOGS_BLOCK_INIT;
+		put_reset->Logs_Write_Pointer = LOGS_BLOCK_INIT;
+		put_reset->SD_Test_Read_Pointer = SD_BLOCK_INIT;
+		put_reset->SD_Test_Write_Pointer = SD_BLOCK_INIT;
+		put_reset->Thermistor_Read_Pointer = PAYLOAD_BLOCK_INIT;
+		put_reset->Thermistor_Write_Pointer = PAYLOAD_BLOCK_INIT;
+		put_reset->reset_count = 1;
+	} else {
+		put_reset->ARIS_Read_Pointer = check_reset->ARIS_Read_Pointer;
+		put_reset->ARIS_Write_Pointer = check_reset->ARIS_Write_Pointer;
+		put_reset->HK_Read_Pointer = check_reset->HK_Read_Pointer;
+		put_reset->HK_Write_Pointer = check_reset->HK_Write_Pointer;
+		put_reset->Logs_Read_Pointer = check_reset->Logs_Read_Pointer;
+		put_reset->Logs_Write_Pointer = check_reset->Logs_Write_Pointer;
+		put_reset->SD_Test_Read_Pointer = check_reset->SD_Test_Read_Pointer;
+		put_reset->SD_Test_Write_Pointer = check_reset->SD_Test_Write_Pointer;
+		put_reset->Thermistor_Read_Pointer = check_reset->Thermistor_Read_Pointer;
+		put_reset->Thermistor_Write_Pointer = check_reset->Thermistor_Write_Pointer;
+		put_reset->reset_count = check_reset->reset_count+1;
+	}
+
+	nvm_status_t nvm_status;
+	nvm_status = NVM_write(ENVM_RESET_PKT_ADDR,(const uint8_t *)put_reset,sizeof(reset_pkt_t),NVM_DO_NOT_LOCK_PAGE);
+	uint8_t i = 0;
+	i = NVM_read_page_write_count(0x60006000);
 }
 
 void FabricIrq0_IRQHandler(void)

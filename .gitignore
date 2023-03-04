@@ -1,6 +1,12 @@
 .metadata/.lock
 .metadata/
 *.mk
+*.d
+*.o
+*.a
+*.json
+
+*.mk
 *.o
 *.a
 *.d

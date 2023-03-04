@@ -25,7 +25,10 @@
 #include <drivers_config/sys_config/sys_config_mss_clocks.h>
 #include <drivers/CoreTimer/core_timer.h>
 #include <drivers/mss_watchdog/mss_watchdog.h>
+#include <drivers/mss_nvm/mss_nvm.h>
 #define WDOG_SYSREG_CR_ENABLE_MASK      0x00000001u
+
+#define ENVM_RESET_PKT_ADDR				0x60008D10
 //UART
 //defining PE bit of LSR register for MSS_UART
 #define PE							2u
@@ -43,6 +46,9 @@ i2c_instance_t g_core_i2c4;
 i2c_instance_t g_core_i2c5;
 
 i2c_status_t core_i2c_status;
+
+timer_instance_t sd_timer;
+#define SD_TIMER_BASE_ADDR	0x5000B000
 
 #define i2c_3 g_core_i2c1//
 #define i2c_5 g_core_i2c3

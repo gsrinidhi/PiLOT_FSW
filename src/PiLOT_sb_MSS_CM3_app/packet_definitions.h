@@ -18,22 +18,23 @@
 
 #define ARIS_API_ID           50
 #define ARIS_PKT_LENGTH       sizeof(aris_pkt_t)
-#define ARIS_FLETCHER_CODE    0x01
+#define ARIS_FLETCHER_CODE    0xCDCD
 
 #define LOGS_API_ID			30
 #define LOGS_PKT_LENGTH		sizeof(log_packet_t)
-#define LOGS_FLETCHER_CODE	0x00
+#define LOGS_FLETCHER_CODE	0xCDCD
 
 #define HK_API_ID			10
 #define HK_PKT_LENGTH		sizeof(hk_pkt_t)
 #define HK_FLETCHER_CODE	0xCDCD
 
 #define SD_HK_API_ID    	40
-#define SD_HK_PKT_LENGTH  sizeof(sd_test)
+#define SD_HK_PKT_LENGTH  sizeof(sd_hk_t)
 #define SD_HK_FLETCHER_CODE 0xCDCD
 
 #define TIME_API_ID			60
 #define TIME_PKT_LENGTH		sizeof(timer_pkt)
+#define TIME_FLETCHER_CODE	0xCDCD
 
 typedef struct {
     //CCSDS
@@ -108,8 +109,10 @@ typedef struct {
     uint16_t aris_miss;
     uint16_t hk_miss;
     uint16_t payload_miss;
+    uint16_t logs_miss;
+    uint16_t sd_hk_miss;
     uint8_t sd_dump;
-//
+    uint8_t sd_fail_count;
     uint16_t Fletcher_Code;
 }__attribute__((packed)) hk_pkt_t;
 
@@ -138,7 +141,6 @@ typedef struct {
 
     uint16_t Fletcher_Code;
 }__attribute__((packed)) log_packet_t;
-
 
 typedef struct {
     //CCSDS
@@ -171,5 +173,37 @@ typedef struct {
 	uint32_t upper_count;
 	uint16_t tail;
 }__attribute__((packed)) timer_pkt;
+
+typedef struct {
+	uint8_t task_id;
+	uint8_t sd_state;
+	uint16_t miss_margin;
+}__attribute__((packed)) sd_sample_t;
+
+typedef struct {
+    uint16_t ccsds_p1;
+    uint16_t ccsds_p2;
+    uint16_t ccsds_p3;
+
+    uint32_t ccsds_s1;
+    uint32_t ccsds_s2;
+    sd_sample_t samples[20];
+    uint16_t end_sequence;
+}__attribute__((packed)) sd_hk_t;
+
+typedef struct {
+	uint32_t reset_count;
+    uint32_t HK_Read_Pointer;
+    uint32_t HK_Write_Pointer;
+    uint32_t Thermistor_Read_Pointer;
+    uint32_t Thermistor_Write_Pointer;
+    uint32_t Logs_Read_Pointer;
+    uint32_t Logs_Write_Pointer;
+    uint32_t SD_Test_Read_Pointer;
+    uint32_t SD_Test_Write_Pointer;
+    uint32_t ARIS_Read_Pointer;
+    uint32_t ARIS_Write_Pointer;
+
+}__attribute__((packed)) reset_pkt_t ;
 
 #endif
