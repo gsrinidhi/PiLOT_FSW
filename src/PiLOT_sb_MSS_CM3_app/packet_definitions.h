@@ -171,6 +171,8 @@ typedef struct {
     uint32_t ccsds_s1;
     uint32_t ccsds_s2;
     uint8_t reset;
+    uint32_t reset_count;
+    uint8_t wd_reset;
 	uint32_t lower_count;
 	uint32_t upper_count;
 	uint16_t tail;

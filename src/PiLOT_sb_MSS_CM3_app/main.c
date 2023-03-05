@@ -227,7 +227,7 @@ void toggle_aris_pointer() {
  * 
  * @return uint8_t 
  */
-uint8_t Flags_Init() {
+uint8_t Flags_Init(uint32_t *reset_count,uint8_t wd_reset) {
 	/**
 	 * @brief Initialise the period upper and lower counters for all tasks
 	 * 
@@ -302,6 +302,8 @@ uint8_t Flags_Init() {
 	MSS_TIM64_get_current_value(&sync_time.upper_count,&sync_time.lower_count);
 	sync_time.tail = 0xBCBC;
 	sync_time.reset = 1;
+	sync_time.reset_count = *reset_count;
+	sync_time.wd_reset = wd_reset;
 
 	hk_last_count = 0xFFFFFFFFFFFFFFFF;
 	payload_last_count = 0xFFFFFFFFFFFFFFFF;
@@ -486,9 +488,9 @@ int pilot(uint16_t addr,uint8_t tx_gpio,uint8_t rx_gpio,uint8_t debug_flag)
 	if(sd_state == 1){
 		sd_state = 0x7;
 	}
-	//envm_init(check_reset,&put_reset);
+	envm_init(check_reset,&put_reset);
 	//Initialise all the global variables in main.c
-	Flags_Init();
+	Flags_Init(&put_reset.reset_count, result_global & WD_RESET);
 	add_to_queue(TIME_PKT_LENGTH,&timer_p,(uint8_t*)&sync_time,&payload_miss,TIMER_TASK_ID);
 	if(debug) {
 		DEBUG_UART_SEND(&DEBUG_UART,(uint8_t*)&sync_time,TIME_PKT_LENGTH);

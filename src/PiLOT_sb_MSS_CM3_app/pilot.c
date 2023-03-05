@@ -198,6 +198,7 @@ uint8_t Pilot_Peripherals_Init() {
 	uint8_t wdg_reset = MSS_WD_timeout_occured();
     if(wdg_reset)
     {
+    	res |= WD_RESET;
         MSS_WD_clear_timeout_event();
     }
 	MSS_TIM64_init(MSS_TIMER_ONE_SHOT_MODE);
@@ -207,7 +208,7 @@ uint8_t Pilot_Peripherals_Init() {
 	I2C_Init();
 	Uart_Init();
 	SPI_Init();
-	res = SD_Init();
+	res |= SD_Init();
 	return res;
 }
 uint8_t Pilot_Init() {
@@ -505,8 +506,6 @@ void envm_init(reset_pkt_t *check_reset,reset_pkt_t *put_reset) {
 
 	nvm_status_t nvm_status;
 	nvm_status = NVM_write(ENVM_RESET_PKT_ADDR,(const uint8_t *)put_reset,sizeof(reset_pkt_t),NVM_DO_NOT_LOCK_PAGE);
-	uint8_t i = 0;
-	i = NVM_read_page_write_count(0x60006000);
 }
 
 uint8_t get_IMU_temp(uint16_t *temp) {
