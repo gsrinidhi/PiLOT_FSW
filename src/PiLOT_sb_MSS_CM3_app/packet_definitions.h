@@ -68,6 +68,7 @@ typedef struct{
     uint32_t ccsds_s1;
     uint32_t ccsds_s2;
 
+    uint16_t aris_reset_count;
     uint32_t start_time;
 
     aris_sample_t aris_samples[20];
@@ -113,6 +114,8 @@ typedef struct {
     uint16_t sd_hk_miss;
     uint8_t sd_dump;
     uint8_t sd_fail_count;
+    uint16_t imu_temp;
+    uint16_t aris_sample_miss;
     uint16_t Fletcher_Code;
 }__attribute__((packed)) hk_pkt_t;
 
@@ -169,6 +172,10 @@ typedef struct {
     uint32_t ccsds_s1;
     uint32_t ccsds_s2;
     uint8_t reset;
+    uint32_t reset_count;
+    uint8_t wd_reset;
+    uint16_t q_head;
+    uint16_t q_tail;
 	uint32_t lower_count;
 	uint32_t upper_count;
 	uint16_t tail;

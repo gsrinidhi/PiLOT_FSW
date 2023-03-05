@@ -127,6 +127,11 @@ uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no,uint8_t *sd_s) {
     hk_pkt->Angular_Rate[1] = w_pitch;
     hk_pkt->Angular_Rate[2] = w_yaw;
 
+    //Temperature
+    uint16_t temperature;
+    result = get_IMU_temp(&temperature);
+    hk_pkt->imu_temp = temperature;
+
     //CDH_VC
     uint8_t i = 0;
 	for(;i<2;i++){
@@ -189,22 +194,23 @@ uint8_t Pilot_Peripherals_Init() {
 	uint8_t wdg_reset = MSS_WD_timeout_occured();
     if(wdg_reset)
     {
+    	res |= WD_RESET;
         MSS_WD_clear_timeout_event();
     }
+	MSS_TIM64_init(MSS_TIMER_ONE_SHOT_MODE);
+	MSS_TIM64_load_immediate(0xFFFFFFFF,0xFFFFFFFF);
+	MSS_TIM64_start();
 	GPIO_Init();
 	I2C_Init();
 	Uart_Init();
 	SPI_Init();
-	res = SD_Init();
-	MSS_TIM64_init(MSS_TIMER_ONE_SHOT_MODE);
-	MSS_TIM64_load_immediate(0xFFFFFFFF,0xFFFFFFFF);
-	MSS_GPIO_set_output(EN_UART,1);
-	MSS_TIM64_start();
+	res |= SD_Init();
 	return res;
 }
 uint8_t Pilot_Init() {
 	uint8_t res;
 	res = Pilot_Peripherals_Init();
+	MSS_GPIO_set_output(EN_SENSOR_BOARD,1);
 	ADC_Init(&i2c_3,ADC_I2CU1_ADDR);
 	ADC_Init(&i2c_3,ADC_I2CU2_ADDR);
 	ADC_Init(&i2c_5,ADC_I2CU1_ADDR);
@@ -496,10 +502,31 @@ void envm_init(reset_pkt_t *check_reset,reset_pkt_t *put_reset) {
 
 	nvm_status_t nvm_status;
 	nvm_status = NVM_write(ENVM_RESET_PKT_ADDR,(const uint8_t *)put_reset,sizeof(reset_pkt_t),NVM_DO_NOT_LOCK_PAGE);
-	uint8_t i = 0;
-	i = NVM_read_page_write_count(0x60006000);
 }
 
+uint8_t get_IMU_temp(uint16_t *temp) {
+
+		uint8_t read_temp_L[] = {0x15};
+		uint8_t read_temp_H[] = {0x16};
+		uint8_t IMU_slave_addr = 0x6a;
+		uint8_t rx_buffer[1],rx_buffer_2[1];
+		i2c_status_t status;
+
+		I2C_write_read(&g_core_i2c5,IMU_slave_addr,read_temp_L,1,rx_buffer,
+								1,I2C_RELEASE_BUS);
+
+		status = I2C_wait_complete(&g_core_i2c5,I2C_NO_TIMEOUT);
+
+		I2C_write_read(&g_core_i2c5,IMU_slave_addr,read_temp_H,1,rx_buffer_2,
+								1,I2C_RELEASE_BUS);
+
+		status = I2C_wait_complete(&g_core_i2c5,I2C_NO_TIMEOUT);
+
+		*temp = (rx_buffer[0]) | (rx_buffer_2[0] << 8);
+
+		return 0;
+
+}
 void FabricIrq0_IRQHandler(void)
 {
     I2C_isr(&g_core_i2c0);
