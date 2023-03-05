@@ -113,6 +113,8 @@ typedef struct {
     uint16_t sd_hk_miss;
     uint8_t sd_dump;
     uint8_t sd_fail_count;
+    uint16_t imu_temp;
+    uint16_t aris_sample_miss;
     uint16_t Fletcher_Code;
 }__attribute__((packed)) hk_pkt_t;
 

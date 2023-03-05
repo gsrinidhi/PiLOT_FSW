@@ -146,7 +146,8 @@ sd_hk_t sd_hk;
 reset_pkt_t *check_reset,put_reset;
 
 uint16_t pilot_addr;
-uint8_t tx_en_gpio,rx_en_gpio;
+uint8_t tx_en_gpio,rx_en_gpio,debug;
+uint16_t aris_sample_miss;
 /**
  * @brief This is to be used only if the packets are to be sent over uart as they are formed and not from the queue. This is only for testing purposes.
  * 
@@ -325,6 +326,7 @@ uint8_t Flags_Init() {
 	sd_hk_miss = 0;
 	logs_miss = 0;
 
+	aris_sample_miss = 0;
 	return 0;
 }
 
@@ -417,6 +419,8 @@ void FabricIrq9_IRQHandler(void) {
 		}
 		aris_result = get_aris_sample(aris_packet_collecting,current_time_lower,aris_sample_no);
 		aris_sample_no++;
+	} else {
+		aris_sample_miss++;
 	}
 
 }
@@ -436,6 +440,9 @@ void inline form_log_packet() {
 	add_to_queue(LOGS_PKT_LENGTH,&log_p,log_data,&logs_miss,LOGS_TASK_ID);
 	log_count = 0;
 	logs_seq_no++;
+	if(debug) {
+		DEBUG_UART_SEND(&DEBUG_UART,log_data,LOGS_PKT_LENGTH);
+	}
 }
 
 uint8_t inline can_run(uint64_t *period,uint64_t *last_count) {
@@ -467,7 +474,7 @@ uint8_t inline can_run(uint64_t *period,uint64_t *last_count) {
 
 
 
-int pilot(uint16_t addr,uint8_t tx_gpio,uint8_t rx_gpio)
+int pilot(uint16_t addr,uint8_t tx_gpio,uint8_t rx_gpio,uint8_t debug_flag)
 {
 	pilot_addr = addr;
 	tx_en_gpio = tx_gpio;
@@ -483,6 +490,9 @@ int pilot(uint16_t addr,uint8_t tx_gpio,uint8_t rx_gpio)
 	//Initialise all the global variables in main.c
 	Flags_Init();
 	add_to_queue(TIME_PKT_LENGTH,&timer_p,(uint8_t*)&sync_time,&payload_miss,TIMER_TASK_ID);
+	if(debug) {
+		DEBUG_UART_SEND(&DEBUG_UART,(uint8_t*)&sync_time,TIME_PKT_LENGTH);
+	}
 	log_packet = (log_packet_t*)log_data;
 	cli_init();
 //	MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
@@ -506,6 +516,9 @@ int pilot(uint16_t addr,uint8_t tx_gpio,uint8_t rx_gpio)
 			log_count++;
 			payload_last_count_H = current_time_upper;
 			payload_last_count_L = current_time_lower;
+			if(debug) {
+				DEBUG_UART_SEND(&DEBUG_UART,packet_data,THERMISTOR_PKT_LENGTH);
+			}
 		}
 
 		//If 10 log entries have been recorded, write the logs to the queue and reset the log counter
@@ -535,6 +548,7 @@ int pilot(uint16_t addr,uint8_t tx_gpio,uint8_t rx_gpio)
 			hk_packet->q_head = q_head;
 			hk_packet->q_tail = q_tail;
 			hk_packet->sd_fail_count = sd_fail_count;
+			hk_packet->aris_sample_miss = aris_sample_miss;
 			add_to_queue(HK_PKT_LENGTH,&hk_p,packet_data,&hk_miss,HK_TASK_ID);
 			if(hk_seq_no%20 == 1) {
 				hk_packet->sd_dump = 1;
@@ -544,6 +558,9 @@ int pilot(uint16_t addr,uint8_t tx_gpio,uint8_t rx_gpio)
             log_count++;
             hk_last_count_H = current_time_upper;
             hk_last_count_L = current_time_lower;
+			if(debug) {
+				DEBUG_UART_SEND(&DEBUG_UART,packet_data,HK_PKT_LENGTH);
+			}
 		 }
 
 		//If 10 log entries have been recorded, write the logs to the SD card and reset the log counter
@@ -571,6 +588,9 @@ int pilot(uint16_t addr,uint8_t tx_gpio,uint8_t rx_gpio)
 			add_to_queue(ARIS_PKT_LENGTH,&aris_p,(uint8_t*)aris_packet_add_to_queue,&aris_miss,ARIS_TASK_ID);
 
 			log_count++;
+			if(debug) {
+				DEBUG_UART_SEND(&DEBUG_UART,aris_packet_add_to_queue,ARIS_PKT_LENGTH);
+			}
 		}
 
 		if(log_count >= 10) {
@@ -592,6 +612,9 @@ int pilot(uint16_t addr,uint8_t tx_gpio,uint8_t rx_gpio)
 			add_to_queue(SD_HK_PKT_LENGTH,&sd_hk_p,(uint8_t*)&sd_hk,&sd_hk_miss,SD_HK_TASK_ID);
 			log_count++;
 			sd_hk_seq_no++;
+			if(debug) {
+				DEBUG_UART_SEND(&DEBUG_UART,(uint8_t*)&sd_hk,SD_HK_PKT_LENGTH);
+			}
 		}
 
 		if(log_count >= 10) {

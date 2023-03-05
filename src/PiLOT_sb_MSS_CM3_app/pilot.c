@@ -128,6 +128,11 @@ uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no,uint8_t *sd_s) {
     hk_pkt->Angular_Rate[1] = w_pitch;
     hk_pkt->Angular_Rate[2] = w_yaw;
 
+    //Temperature
+    uint16_t temperature;
+    result = get_IMU_temp(&temperature);
+    hk_pkt->imu_temp = temperature;
+
     //CDH_VC
     uint8_t i = 0;
 	for(;i<2;i++){
