@@ -147,7 +147,7 @@ reset_pkt_t *check_reset,put_reset;
 
 uint16_t pilot_addr;
 uint8_t tx_en_gpio,rx_en_gpio,debug;
-uint16_t aris_sample_miss;
+uint16_t aris_sample_miss,aris_reset_count;
 /**
  * @brief This is to be used only if the packets are to be sent over uart as they are formed and not from the queue. This is only for testing purposes.
  * 
@@ -329,6 +329,7 @@ uint8_t Flags_Init(uint32_t *reset_count,uint8_t wd_reset) {
 	logs_miss = 0;
 
 	aris_sample_miss = 0;
+	aris_reset_count = 0;
 	return 0;
 }
 
@@ -481,12 +482,13 @@ int pilot(uint16_t addr,uint8_t tx_gpio,uint8_t rx_gpio,uint8_t debug_flag)
 	pilot_addr = addr;
 	tx_en_gpio = tx_gpio;
 	rx_en_gpio = rx_gpio;
+	debug = debug_flag;
 	//Initialise all the peripherals and devices connected to the OBC in PiLOT
 	result_global = Pilot_Init();
 	sd_state = result_global & 0x1;
 	sd_state = !sd_state;
 	if(sd_state == 1){
-		sd_state = 0x7;
+		sd_state = SD_WORKING_MASK;
 	}
 	envm_init(check_reset,&put_reset);
 	//Initialise all the global variables in main.c
@@ -585,10 +587,13 @@ int pilot(uint16_t addr,uint8_t tx_gpio,uint8_t rx_gpio,uint8_t debug_flag)
 			aris_packet_add_to_queue->ccsds_p1 = PILOT_REVERSE_BYTE_ORDER(ccsds_p1(tlm_pkt_type,ARIS_API_ID));
 			aris_packet_add_to_queue->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(ccsds_p2(aris_seq_no++));
 			aris_packet_add_to_queue->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(ccsds_p3(ARIS_PKT_LENGTH));
+			aris_packet_add_to_queue->aris_reset_count = aris_reset_count;
 			aris_packet_add_to_queue->Fletcher_Code = ARIS_FLETCHER_CODE;
 			log_packet->logs[log_count].task_status = 0;
 			add_to_queue(ARIS_PKT_LENGTH,&aris_p,(uint8_t*)aris_packet_add_to_queue,&aris_miss,ARIS_TASK_ID);
-
+			if(aris_seq_no == 16383) {
+				aris_reset_count++;
+			}
 			log_count++;
 			if(debug) {
 				DEBUG_UART_SEND(&DEBUG_UART,aris_packet_add_to_queue,ARIS_PKT_LENGTH);

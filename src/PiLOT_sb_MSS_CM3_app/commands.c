@@ -8,7 +8,7 @@ extern uint8_t interface_count;
 extern uint16_t get_ADC_value(i2c_instance_t *i2c_chx,uint8_t address,uint8_t chx,uint8_t *flag);
 extern uint8_t get_IMU_acc(uint16_t *a_x,uint16_t *a_y,uint16_t *a_z);
 extern uint8_t get_IMU_gyro(uint16_t *roll_rate, uint16_t *pitch_rate,uint16_t *yaw_rate);
-extern int pilot(uint16_t addr,uint8_t tx_gpio,uint8_t rx_gpio);
+extern int pilot(uint16_t addr,uint8_t tx_gpio,uint8_t rx_gpio,uint8_t debug_flag);
 extern uint8_t get_IMU_temp(uint16_t *temp);
 char interface_debug[] = "debug\0";
 char interface_pslv[] = "pslv\0";
@@ -335,10 +335,10 @@ void start_pilot(char *data, uint8_t size) {
 	}
 
 	uint16_t addr;
-	uint8_t tx_en,rx_en;
-	argu_to_pilotargu(data,&addr,&tx_en,&rx_en);
+	uint8_t tx_en,rx_en,dbg;
+	argu_to_pilotargu(data,&addr,&tx_en,&rx_en,&dbg);
 	MSS_UART_set_rx_handler(&g_mss_uart0,uart0_pilot_reset_handler,MSS_UART_FIFO_SINGLE_BYTE);
-	pilot(addr,tx_en,rx_en);
+	pilot(addr,tx_en,rx_en,dbg);
 }
 
 void get_temp(char *data,uint8_t size) {

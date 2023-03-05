@@ -68,6 +68,7 @@ typedef struct{
     uint32_t ccsds_s1;
     uint32_t ccsds_s2;
 
+    uint16_t aris_reset_count;
     uint32_t start_time;
 
     aris_sample_t aris_samples[20];

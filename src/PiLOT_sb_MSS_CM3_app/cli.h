@@ -51,7 +51,7 @@ typedef struct {
    void print_num(char *data,double num);
    void i2c_signal_check(char *data, uint8_t size);
    void start_pilot(char *data, uint8_t size);
-   void argu_to_pilotargu(char *data,uint16_t *addr, uint8_t *tx_en,uint8_t *rx_en);
+   void argu_to_pilotargu(char *data,uint16_t *addr, uint8_t *tx_en,uint8_t *rx_en,uint8_t *dbg);
    void get_temp(char *data,uint8_t size);
 
    void scpy(char *src,char *dest);

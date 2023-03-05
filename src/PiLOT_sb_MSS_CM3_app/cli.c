@@ -71,7 +71,7 @@ void argu_to_i2cargu(char *argu,i2c_argu_t * i2c){
 	i2c->custom_msg = &argu[i+1];
 }
 
-void argu_to_pilotargu(char *data,uint16_t *addr, uint8_t *tx_en,uint8_t *rx_en) {
+void argu_to_pilotargu(char *data,uint16_t *addr, uint8_t *tx_en,uint8_t *rx_en,uint8_t *dbg) {
 	char temp[7];
 	if(data[0] == '0') {
 		*tx_en = 0;
@@ -89,13 +89,21 @@ void argu_to_pilotargu(char *data,uint16_t *addr, uint8_t *tx_en,uint8_t *rx_en)
 		echo_str("Wrong rx en value. Try again\n\r");
 		return;
 	}
+	if(data[4] == '0') {
+		*dbg = 0;
+	} else if(data[4] == '1') {
+		*dbg = 1;
+	}else {
+		echo_str("Wrong rx en value. Try again\n\r");
+		return;
+	}
 
-	uint8_t i = 4;
+	uint8_t i = 6;
 	while(data[i] != ' ' && data[i] != '\r' && data[i] != '\0') {
-		temp[i-4] = data[i];
+		temp[i-6] = data[i];
 		i++;
 	}
-	temp[i] = '\0';
+	temp[i-6] = '\0';
 	*addr = s_to_i(temp);
 	print_num("PiLOT started with address \0",(double)(*addr));
 }
@@ -132,11 +140,11 @@ void cli_init(){
 	msg_index = 0;
 	val = 0;
 	cmd_in = 0;
-	add_command("setbaudrate\0",set_baud_rate,"\n\rbaud rate set\0");
-	add_command("view_thermistor\0",get_ADC_correct_values,"\n\rThermistor values displayed\0");
-	add_command("disp_acc\0",get_imu_acc,"\n\rAcc displayed\0");
-	add_command("disp_gyro\0",get_imu_gyro,"\n\rGyro displayed\0");
-	add_command("I2C_TEST\0",i2c_test_cmd,"\n\rI2C Test Done");
+//	add_command("setbaudrate\0",set_baud_rate,"\n\rbaud rate set\0");
+//	add_command("view_thermistor\0",get_ADC_correct_values,"\n\rThermistor values displayed\0");
+//	add_command("disp_acc\0",get_imu_acc,"\n\rAcc displayed\0");
+//	add_command("disp_gyro\0",get_imu_gyro,"\n\rGyro displayed\0");
+//	add_command("I2C_TEST\0",i2c_test_cmd,"\n\rI2C Test Done");
 	add_command("echo\0",echo,"\n\r");
 	add_command("sd_test\0",sd_test_cmd,"SD test done");
 	add_command("i2c_sigcheck\0",i2c_signal_check,"I2C Signal transmitted");
