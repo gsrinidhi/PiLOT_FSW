@@ -133,6 +133,8 @@ sd_hk_t sd_hk;
 reset_pkt_t *check_reset,put_reset;
 
 uint16_t aris_sample_miss,aris_reset_count;
+
+uint8_t sensor_board_status,sensor_board_fail_count;
 /**
  * @brief This is to be used only if the packets are to be sent over uart as they are formed and not from the queue. This is only for testing purposes.
  * 
@@ -405,6 +407,12 @@ void FabricIrq9_IRQHandler(void) {
 			aris_packet_collecting->ccsds_s1 = current_time_upper;
 		}
 		aris_result = get_aris_sample(aris_packet_collecting,current_time_lower,aris_sample_no);
+		if(aris_result != 0) {
+			sensor_board_fail_count++;
+		}
+		if(sensor_board_fail_count > 10) {
+			sensor_board_status =
+		}
 		aris_sample_no++;
 	} else {
 		aris_sample_miss++;
@@ -516,6 +524,8 @@ int main()
 			hk_packet->q_head = q_head;
 			hk_packet->q_tail = q_tail;
 			hk_packet->sd_fail_count = sd_fail_count;
+			hk_packet->sensor_board_fail_count = sensor_board_fail_count;
+			hk_packet->sensor_board_status = sensor_board_status;
 			add_to_queue(HK_PKT_LENGTH,&hk_p,packet_data,&hk_miss,HK_TASK_ID);
 			if(hk_seq_no%20 == 1) {
 				hk_packet->sd_dump = 1;

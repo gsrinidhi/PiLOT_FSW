@@ -62,6 +62,10 @@
 #define ARIS_TASK_ID		4
 #define LOGS_TASK_ID		5
 
+#define SENSOR_BOARD_OFF		0
+#define SENSOR_BOARD_ON			1
+#define SENSOR_BOARD_RESET		2
+
 //PSLV address
 #define PSLV_TO_PILOT_ADDR			119
 
