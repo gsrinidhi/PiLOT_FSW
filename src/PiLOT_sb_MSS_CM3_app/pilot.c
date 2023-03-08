@@ -46,6 +46,7 @@ uint16_t get_ADC_value(i2c_instance_t *i2c_chx,uint8_t address,uint8_t chx,uint8
 		*flag = 1;
 	} else {
 		voltage = (adc_read_value[0] << 8 ) | adc_read_value[1];
+		voltage &= 0x0FFF;
 		*flag = 0;
 	}
 	return voltage;
