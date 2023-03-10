@@ -289,6 +289,8 @@ uint8_t Flags_Init(uint32_t reset_count, uint8_t wd_reset) {
 	sync_time.q_tail = 0;
 	sync_time.tail = 0xBCBC;
 	sync_time.reset = 1;
+	sync_time.wd_reset =(wd_reset!=0)? 1:0 ;
+	sync_time.reset_count = reset_count;
 
 	hk_last_count = 0xFFFFFFFFFFFFFFFF;
 	payload_last_count = 0xFFFFFFFFFFFFFFFF;
@@ -558,6 +560,7 @@ int main()
 			aris_packet_add_to_queue->ccsds_p1 = PILOT_REVERSE_BYTE_ORDER(ccsds_p1(tlm_pkt_type,ARIS_API_ID));
 			aris_packet_add_to_queue->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(ccsds_p2(aris_seq_no++));
 			aris_packet_add_to_queue->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(ccsds_p3(ARIS_PKT_LENGTH));
+			aris_packet_add_to_queue->aris_reset_count = aris_reset_count;
 			aris_packet_add_to_queue->Fletcher_Code = ARIS_FLETCHER_CODE;
 			log_packet->logs[log_count].task_status = 0;
 			add_to_queue(ARIS_PKT_LENGTH,&aris_p,(uint8_t*)aris_packet_add_to_queue,&aris_miss,ARIS_TASK_ID);
