@@ -41,4 +41,5 @@ typedef struct{
 
 } __attribute__((packed)) i2c_packet_t;
 
+
 #endif /* CLI_PACKET_DEFINITIONS_H_ */

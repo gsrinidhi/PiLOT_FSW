@@ -58,6 +58,7 @@ typedef struct {
    void rs485_tx_test(char *data,uint8_t size);
    void read_vc_sensor(char *data,uint8_t size);
    void read_vc_sensor_i(char *data,uint8_t size);;
+   void adc_test(char *data,uint8_t size);
 
    void scpy(char *src,char *dest);
    uint8_t scmp(char *s1,char *s2,uint8_t size);

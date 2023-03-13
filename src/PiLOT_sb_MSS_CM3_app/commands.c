@@ -70,9 +70,9 @@ void get_ADC_correct_values(char *arg,uint8_t size) {
 	} else if(chx == '2') {
 		dbg = &g_core_i2c4;
 	}
-	if(addr == '1') {
+	if(addr == '0') {
 		addr = ADC_I2CU1_ADDR;
-	} else if(addr == '2') {
+	} else if(addr == '1') {
 		addr = ADC_I2CU2_ADDR;
 	}
 	uint8_t i = 0,flag;
@@ -250,6 +250,7 @@ void i2c_test_cmd(char *data,uint8_t size){
 
 }
 
+
 void echo(char *data,uint8_t size) {
 	DEBUG_UART_SEND(&DEBUG_UART,"\n\r",2);
 	DEBUG_UART_SEND(&DEBUG_UART,(uint8_t*)data,size);
@@ -421,6 +422,9 @@ void rs485_tx_test(char *data,uint8_t size) {
 void read_vc_sensor(char *data,uint8_t size) {
 	echo_str("\n\rTesting VC sensor\0");
 	uint8_t flag = 0;
+	flag = vc_init(VC1);
+	print_num("\n\rVC Init: \0",flag);
+	flag = 0;
 	double vval = 0;
 	uint16_t c1;
 	c1 = read_bus_voltage(VC1,1,&flag);
@@ -441,6 +445,9 @@ void read_vc_sensor(char *data,uint8_t size) {
 void read_vc_sensor_i(char *data,uint8_t size) {
 	echo_str("\n\rTesting VC sensor\0");
 	uint8_t flag = 0;
+	flag = vc_init(VC1);
+	print_num("\n\rVC Init: \0",flag);
+	flag = 0;
 	double vval = 0;
 	uint16_t c1;
 	c1 = read_shunt_voltage(VC1,1,&flag);
@@ -456,4 +463,44 @@ void read_vc_sensor_i(char *data,uint8_t size) {
 	print_num("\n\rCh3 flag = \0",flag);
 	print_num("Ch3 current = \0",vval);
 
+}
+
+void adc_test(char *data,uint8_t size){
+	echo_str("\n\rTesting Sensor Board ADC");
+	uint8_t i2c_inst;
+	uint8_t i2c_addr;
+	uint8_t chx, flag;
+	uint8_t rx_buf[2];
+	uint16_t value;
+	i2c_instance_t* i;
+
+	void uart_adc_int_handler(mss_uart_instance_t* this_uart){
+		MSS_UART_get_rx(&this_uart, rx_buf, 1);
+		if(rx_buf == '32'){
+			MSS_UART_set_rx_handler(&this_uart, uart0_rx_handler, MSS_UART_FIFO_SINGLE_BYTE);
+		}
+	}
+
+	i2c_inst = (uint8_t)(data[0] - 48);
+	i2c_addr = (uint8_t)(data[2] -48);
+	chx = (uint8_t)(data[4] -48);
+
+	if(i2c_inst == 0){
+		i = &g_core_i2c3;
+	}
+	else{
+		i = &g_core_i2c5;
+	}
+
+	if(i2c_addr = 0){
+		i2c_addr = ADC_I2CU1_ADDR;
+	}
+	else{
+		i2c_addr = ADC_I2CU2_ADDR;
+	}
+
+	value = get_ADC_value(i, i2c_addr, chx, &flag);
+	print_num("Voltage", value);
+	print_num("ADC_Flag", flag);
+	MSS_UART_set_rx_handler(&g_mss_uart0,uart_adc_int_handler,MSS_UART_FIFO_SINGLE_BYTE);
 }

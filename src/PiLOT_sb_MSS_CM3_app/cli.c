@@ -155,6 +155,7 @@ void cli_init(){
 	add_command("rs485_test\0",rs485_tx_test,"RS485 tx complete");
 	add_command("vc_test_v\0",read_vc_sensor,"VC voltage test done");
 	add_command("vc_test_i\0",read_vc_sensor_i,"VC current test done");
+	add_command("adc_test\0", adc_test, "ADC_test done");
 	MSS_UART_polled_tx_string(&g_mss_uart0,prompt_msg);
 
 }
@@ -311,3 +312,8 @@ void ftos(double s,char *value,uint8_t dot) {
 
 
 }
+
+
+
+
+
