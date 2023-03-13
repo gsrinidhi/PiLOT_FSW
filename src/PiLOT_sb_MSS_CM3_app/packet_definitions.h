@@ -90,8 +90,9 @@ typedef struct {
     uint16_t q_head;
     uint16_t q_tail;
     uint8_t CDH_Periph_Status; //For all the 8 flags
-    uint16_t Acc[3];  // X,Y,Z Axis
-    uint16_t Angular_Rate[3]; //Pitch, Roll, Yaw
+    uint16_t imu_temp;
+    int16_t Acc[3];  // X,Y,Z Axis
+    int16_t Angular_Rate[3]; //Pitch, Roll, Yaw
     uint16_t Sensor_Board_VC[2];
     uint16_t CDH_VC[2];
     uint16_t Comms_VC[2];
@@ -114,9 +115,9 @@ typedef struct {
     uint16_t sd_hk_miss;
     uint8_t sd_dump;
     uint8_t sd_fail_count;
-    uint16_t imu_temp;
     uint16_t aris_sample_miss;
     uint16_t Fletcher_Code;
+    uint32_t test_data;
 }__attribute__((packed)) hk_pkt_t;
 
 /**

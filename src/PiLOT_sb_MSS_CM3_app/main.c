@@ -458,22 +458,22 @@ uint8_t inline can_run(uint64_t *period,uint64_t *last_count) {
 	return 0;
 }
 
-//void store_sd_pointers() {
-//	check_reset = (reset_pkt_t*)ENVM_RESET_PKT_ADDR;
-//	put_reset.reset_count = check_reset->reset_count;
-//	put_reset.ARIS_Read_Pointer = aris_p.read_pointer;
-//	put_reset.ARIS_Write_Pointer = aris_p.write_pointer;
-//	put_reset.HK_Read_Pointer = hk_p.read_pointer;
-//	put_reset.HK_Write_Pointer = hk_p.write_pointer;
-//	put_reset.Logs_Read_Pointer = log_p.read_pointer;
-//	put_reset.Logs_Write_Pointer = log_p.write_pointer;
-//	put_reset.SD_Test_Read_Pointer = sd_hk_p.read_pointer;
-//	put_reset.SD_Test_Write_Pointer = sd_hk_p.write_pointer;
-//	put_reset.Thermistor_Read_Pointer = payload_p.read_pointer;
-//	put_reset.Thermistor_Write_Pointer = payload_p.write_pointer;
-//	nvm_status_t nvm_status = NVM_write(ENVM_RESET_PKT_ADDR,(const uint8_t *)&put_reset,sizeof(reset_pkt_t),NVM_DO_NOT_LOCK_PAGE);
-//
-//}
+void store_sd_pointers() {
+	check_reset = (reset_pkt_t*)ENVM_RESET_PKT_ADDR;
+	put_reset.reset_count = check_reset->reset_count;
+	put_reset.ARIS_Read_Pointer = aris_p.read_pointer;
+	put_reset.ARIS_Write_Pointer = aris_p.write_pointer;
+	put_reset.HK_Read_Pointer = hk_p.read_pointer;
+	put_reset.HK_Write_Pointer = hk_p.write_pointer;
+	put_reset.Logs_Read_Pointer = log_p.read_pointer;
+	put_reset.Logs_Write_Pointer = log_p.write_pointer;
+	put_reset.SD_Test_Read_Pointer = sd_hk_p.read_pointer;
+	put_reset.SD_Test_Write_Pointer = sd_hk_p.write_pointer;
+	put_reset.Thermistor_Read_Pointer = payload_p.read_pointer;
+	put_reset.Thermistor_Write_Pointer = payload_p.write_pointer;
+	nvm_status_t nvm_status = NVM_write(ENVM_RESET_PKT_ADDR,(const uint8_t *)&put_reset,sizeof(reset_pkt_t),NVM_DO_NOT_LOCK_PAGE);
+
+}
 
 
 
@@ -553,6 +553,7 @@ int pilot(uint16_t addr,uint8_t tx_gpio,uint8_t rx_gpio,uint8_t debug_flag)
 			hk_packet->q_tail = q_tail;
 			hk_packet->sd_fail_count = sd_fail_count;
 			hk_packet->aris_sample_miss = aris_sample_miss;
+			hk_packet->test_data = 0;
 			add_to_queue(HK_PKT_LENGTH,&hk_p,packet_data,&hk_miss,HK_TASK_ID);
 			if(hk_seq_no%20 == 1) {
 				hk_packet->sd_dump = 1;
@@ -564,6 +565,10 @@ int pilot(uint16_t addr,uint8_t tx_gpio,uint8_t rx_gpio,uint8_t debug_flag)
             hk_last_count_L = current_time_lower;
 			if(debug) {
 				DEBUG_UART_SEND(&DEBUG_UART,packet_data,HK_PKT_LENGTH);
+			}
+			if(packet_data[99] != 0xCD && packet_data[100] != 0xCD) {
+				uint8_t k = 0;
+				k++;
 			}
 		 }
 
@@ -651,7 +656,14 @@ int pilot(uint16_t addr,uint8_t tx_gpio,uint8_t rx_gpio,uint8_t debug_flag)
 			timer_last_count_H = current_time_upper;
 			timer_last_count_L = current_time_lower;
 			timer_seq_no++;
-		}	}
+		}
+        if(command_index > 1){
+            if(c[command_index - 1] == '\r'){
+                serial_responder();
+            }
+
+        }
+	}
 }
 
 void Uart_Init_cli() {

@@ -46,7 +46,6 @@ uint16_t get_ADC_value(i2c_instance_t *i2c_chx,uint8_t address,uint8_t chx,uint8
 	} else {
 		voltage = (adc_read_value[0] << 8 ) | adc_read_value[1];
 		voltage &= 0x0FFF;
-		voltage  = voltage >> 2;
 		*flag = 0;
 	}
 	return voltage;
@@ -114,7 +113,7 @@ uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no,uint8_t *sd_s) {
     //IMU Values: -
 
    // Acceleration
-    uint16_t ax, ay, az;
+    int16_t ax, ay, az;
     uint8_t result;
     result = get_IMU_acc(&ax, &ay, &az);
     hk_pkt->Acc[0] = ((ax));
@@ -122,7 +121,7 @@ uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no,uint8_t *sd_s) {
     hk_pkt->Acc[2] = ((az));
 
     // Angular values
-    uint16_t w_roll, w_pitch, w_yaw;
+    int16_t w_roll, w_pitch, w_yaw;
     result  = get_IMU_gyro(&w_roll, &w_pitch, &w_yaw);
     hk_pkt->Angular_Rate[0] = w_roll;
     hk_pkt->Angular_Rate[1] = w_pitch;
@@ -218,8 +217,8 @@ uint8_t Pilot_Init() {
 	ADC_Init(&i2c_3,ADC_I2CU2_ADDR);
 	ADC_Init(&i2c_5,ADC_I2CU1_ADDR);
 	ADC_Init(&i2c_5,ADC_I2CU2_ADDR);
-	MSS_GPIO_set_output(TX_INV_EN,tx_en_gpio);
-	MSS_GPIO_set_output(RX_INV_EN,rx_en_gpio);
+	MSS_GPIO_set_output(TX_INV_EN,0);
+	MSS_GPIO_set_output(RX_INV_EN,1);
 	MSS_GPIO_set_output(EN_UART,0);
 	MSS_GPIO_set_output(EN_SENSOR_BOARD,1);
 	res = res | (vc_init(VC1) << 1);
@@ -317,9 +316,9 @@ uint8_t get_IMU_acc(uint16_t *a_x,uint16_t *a_y,uint16_t *a_z) {
 	result+=status;
 
 	*a_z = ((rx_buffer_2[0] << 8) | rx_buffer[0]);
-	if((*a_z) > 32768) {
-		*a_z = 65535-*a_z;
-	}
+//	if((*a_z) > 32768) {
+//		*a_z = 65535-*a_z;
+//	}
 
 	I2C_write_read(&g_core_i2c5,IMU_ADDR,read_ACC_out_Y_L,1,rx_buffer,
 							1,I2C_RELEASE_BUS);
@@ -334,9 +333,9 @@ uint8_t get_IMU_acc(uint16_t *a_x,uint16_t *a_y,uint16_t *a_z) {
 	result+=status;
 
 	*a_y = ((rx_buffer_2[0] << 8) | rx_buffer[0]);
-	if((*a_y) > 32768) {
-		*a_y = 65535-*a_y;
-	}
+//	if((*a_y) > 32768) {
+//		*a_y = 65535-*a_y;
+//	}
 
 	I2C_write_read(&g_core_i2c5,IMU_ADDR,read_ACC_out_X_L,1,rx_buffer,
 							1,I2C_RELEASE_BUS);
@@ -351,9 +350,9 @@ uint8_t get_IMU_acc(uint16_t *a_x,uint16_t *a_y,uint16_t *a_z) {
 	result+=status;
 
 	*a_x = ((rx_buffer_2[0] << 8) | rx_buffer[0]);
-	if((*a_x) > 32768) {
-		*a_x = 65535-*a_x;
-	}
+//	if((*a_x) > 32768) {
+//		*a_x = 65535-*a_x;
+//	}
 
 	return status;
 
@@ -527,8 +526,9 @@ uint8_t get_IMU_temp(uint16_t *temp) {
 		status = I2C_wait_complete(&g_core_i2c5,I2C_NO_TIMEOUT);
 
 		*temp = (rx_buffer[0]) | (rx_buffer_2[0] << 8);
+		*temp &= 0x00FF;
 
-		return 0;
+		return status;
 
 }
 

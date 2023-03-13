@@ -3,12 +3,12 @@
 #include "cli.h"
 uint8_t prompt_msg[30] =  "\n\r PiLOT Commanding : \0" ;
 char cmd_not_exists[50] = CMD_NOT_EXISTS;
-command_t cmd_list[10];
+command_t cmd_list[20];
 uint8_t cmd_in;
 
 void print_num(char *data,double num) {
 	echo_str(data);
-	ftos(num,num_in_str,0);
+	ftos(num,num_in_str,3);
 	echo_str(num_in_str);
 	echo_str("\n\r\0");
 	num_in_str[0] = '\0';
@@ -83,7 +83,7 @@ void argu_to_pilotargu(char *data,uint16_t *addr, uint8_t *tx_en,uint8_t *rx_en,
 	}
 	if(data[2] == '0') {
 		*rx_en = 0;
-	} else if(data[0] == '1') {
+	} else if(data[2] == '1') {
 		*rx_en = 1;
 	} else {
 		echo_str("Wrong rx en value. Try again\n\r");
@@ -140,16 +140,21 @@ void cli_init(){
 	msg_index = 0;
 	val = 0;
 	cmd_in = 0;
-//	add_command("setbaudrate\0",set_baud_rate,"\n\rbaud rate set\0");
-//	add_command("view_thermistor\0",get_ADC_correct_values,"\n\rThermistor values displayed\0");
-//	add_command("disp_acc\0",get_imu_acc,"\n\rAcc displayed\0");
-//	add_command("disp_gyro\0",get_imu_gyro,"\n\rGyro displayed\0");
-//	add_command("I2C_TEST\0",i2c_test_cmd,"\n\rI2C Test Done");
+	add_command("setbaudrate\0",set_baud_rate,"\n\rbaud rate set\0");
+	add_command("view_thermistor\0",get_ADC_correct_values,"\n\rThermistor values displayed\0");
+	add_command("disp_acc\0",get_imu_acc,"\n\rAcc displayed\0");
+	add_command("disp_gyro\0",get_imu_gyro,"\n\rGyro displayed\0");
+	add_command("I2C_TEST\0",i2c_test_cmd,"\n\rI2C Test Done");
 	add_command("echo\0",echo,"\n\r");
 	add_command("sd_test\0",sd_test_cmd,"SD test done");
 	add_command("i2c_sigcheck\0",i2c_signal_check,"I2C Signal transmitted");
 	add_command("start_pilot\0",start_pilot,"PiLOT running");
 	add_command("get_temp\0",get_temp,"Temperature obtained");
+	add_command("start_get_temp\0",start_get_temp,"\n\r");
+	add_command("reset\0",test_reset,"Performed Reset");
+	add_command("rs485_test\0",rs485_tx_test,"RS485 tx complete");
+	add_command("vc_test_v\0",read_vc_sensor,"VC voltage test done");
+	add_command("vc_test_i\0",read_vc_sensor_i,"VC current test done");
 	MSS_UART_polled_tx_string(&g_mss_uart0,prompt_msg);
 
 }
@@ -177,7 +182,7 @@ void feedback(uint8_t idc){
 void call_function(uint8_t ID, char* data, uint8_t size){
 
 	if(ID < cmd_in) {
-		cmd_list[ID].work(data,size);
+		cmd_list[ID].work(data,0);
 	}
 
 //	if(ID == 1){

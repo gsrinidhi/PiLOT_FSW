@@ -12,6 +12,8 @@ extern int pilot(uint16_t addr,uint8_t tx_gpio,uint8_t rx_gpio,uint8_t debug_fla
 extern uint8_t get_IMU_temp(uint16_t *temp);
 char interface_debug[] = "debug\0";
 char interface_pslv[] = "pslv\0";
+timer_instance_t temp_timer;
+uint16_t count = 0;
 //void ftos(double s,char *value) {
 //	uint16_t k = (uint16_t)s;
 //	char stk[10];
@@ -345,6 +347,113 @@ void get_temp(char *data,uint8_t size) {
 	uint16_t temp;
 	double val = 0;
 	uint8_t res = get_IMU_temp(&temp);
-	val = (double)(temp) / 16 + 25;
-	print_num("\n\rTemperature is :\0",val);
+	if(res!= 0) {
+		echo_str("\n\rIMU I2D Failed");
+	}
+	val = (double)(temp) / 16.0 + 25.0;
+	if(size == 0) {
+		print_num("\n\rTemperature is :\0",val);
+	} else if(size == 1) {
+		print_num("\n\rRaw Value is :\0",temp);
+		print_num("\n\r Temperature is :\0",val);
+	}
+
+}
+
+void FabricIrq11_IRQHandler(void) {
+	TMR_clear_int(&temp_timer);
+	print_num("\n\r",(double)count);
+	get_temp(NULL,1);
+	count++;
+}
+void start_get_temp(char *data, uint8_t temp) {
+
+
+
+	uint32_t load_value;
+	if(data[0] == '0') {
+		load_value = 5000 * TIMER_COUNT_PER_MS/2;
+	} else if(data[0] == '1') {
+		load_value = 10000 * TIMER_COUNT_PER_MS/2;
+	}
+	void uart0_i2c_signal_handler (mss_uart_instance_t* this_uart) {
+		MSS_UART_get_rx(&g_mss_uart0,&count,1);
+		TMR_stop(&temp_timer);
+	}
+	NVIC_EnableIRQ( FabricIrq11_IRQn );
+	NVIC_SetPriority(FabricIrq11_IRQn,0xFE);
+	TMR_init(&temp_timer,CORETIMER_2_0,TMR_CONTINUOUS_MODE,PRESCALER_DIV_2,load_value);
+	TMR_enable_int(&temp_timer);
+	TMR_start(&temp_timer);
+	MSS_UART_set_rx_handler(&g_mss_uart0,uart0_i2c_signal_handler,MSS_UART_FIFO_SINGLE_BYTE);
+	echo_str("\n\rCollecting IMU temp\n\r");
+	MSS_UART_set_rx_handler(&g_mss_uart0,uart0_rx_handler,MSS_UART_FIFO_SINGLE_BYTE);
+}
+
+void test_reset(char *data,uint8_t size) {
+	echo_str("\n\rPerforming Reset\0");
+	NVIC_SystemReset();
+}
+
+void rs485_tx_test(char *data,uint8_t size) {
+	uint8_t tx_inv,rx_inv;
+	tx_inv = (uint8_t)(data[0] - 48);
+	rx_inv = (uint8_t)(data[2] - 48);
+	MSS_GPIO_set_output(TX_INV_EN,tx_inv);
+	MSS_GPIO_set_output(RX_INV_EN,rx_inv);
+	uint8_t rs485_check = 0;
+	uint8_t tx_buff[] = {0x88,0x44,0x66};
+	void uart0_rs485_signal_handler (mss_uart_instance_t* this_uart) {
+		MSS_UART_get_rx(&g_mss_uart0,&rs485_check,1);
+		rs485_check = 1;
+	}
+	echo_str("\n\rTransmitting through UART 1\0");
+	MSS_UART_set_rx_handler(&g_mss_uart0,uart0_rs485_signal_handler,MSS_UART_FIFO_SINGLE_BYTE);
+	MSS_GPIO_set_output(EN_UART,1);
+	while(rs485_check == 0) {
+		MSS_UART_polled_tx(&g_mss_uart1,tx_buff,3);
+	}
+	MSS_GPIO_set_output(EN_UART,0);
+	echo_str("\n\rFinished Transmitting through UART 1\0");
+	MSS_UART_set_rx_handler(&g_mss_uart0,uart0_rx_handler,MSS_UART_FIFO_SINGLE_BYTE);
+}
+
+void read_vc_sensor(char *data,uint8_t size) {
+	echo_str("\n\rTesting VC sensor\0");
+	uint8_t flag = 0;
+	double vval = 0;
+	uint16_t c1;
+	c1 = read_bus_voltage(VC1,1,&flag);
+	vval = c1 * 0.001;
+	print_num("\n\rCh1 flag = \0",flag);
+	print_num("Ch1 voltage = \0",vval);
+	c1 = read_bus_voltage(VC1,2,&flag);
+	vval = c1 * 0.001;
+	print_num("\n\rCh2 flag = \0",flag);
+	print_num("Ch2 voltage = \0",vval);
+	c1 = read_bus_voltage(VC1,3,&flag);
+	vval = c1 * 0.001;
+	print_num("\n\rCh3 flag = \0",flag);
+	print_num("Ch3 voltage = \0",vval);
+
+}
+
+void read_vc_sensor_i(char *data,uint8_t size) {
+	echo_str("\n\rTesting VC sensor\0");
+	uint8_t flag = 0;
+	double vval = 0;
+	uint16_t c1;
+	c1 = read_shunt_voltage(VC1,1,&flag);
+	vval = c1 * 0.5;
+	print_num("\n\rCh1 flag = \0",flag);
+	print_num("Ch1 current = \0",vval);
+	c1 = read_shunt_voltage(VC1,2,&flag);
+	vval = c1 * 0.5;
+	print_num("\n\rCh2 flag = \0",flag);
+	print_num("Ch2 current = \0",vval);
+	c1 = read_shunt_voltage(VC1,3,&flag);
+	vval = c1 * 0.5;
+	print_num("\n\rCh3 flag = \0",flag);
+	print_num("Ch3 current = \0",vval);
+
 }
