@@ -475,9 +475,9 @@ void adc_test(char *data,uint8_t size){
 	i2c_instance_t* i;
 
 	void uart_adc_int_handler(mss_uart_instance_t* this_uart){
-		MSS_UART_get_rx(&this_uart, rx_buf, 1);
-		if(rx_buf == '32'){
-			MSS_UART_set_rx_handler(&this_uart, uart0_rx_handler, MSS_UART_FIFO_SINGLE_BYTE);
+		MSS_UART_get_rx(&g_mss_uart0, rx_buf, 1);
+		if(rx_buf[0] == '3' && rx_buf[1] == '2'){
+			MSS_UART_set_rx_handler(&g_mss_uart0, uart0_rx_handler, MSS_UART_FIFO_SINGLE_BYTE);
 		}
 	}
 
