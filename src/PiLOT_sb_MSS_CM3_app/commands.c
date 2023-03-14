@@ -424,7 +424,7 @@ void read_vc_sensor(char *data,uint8_t size) {
 	uint8_t flag = 0;
 	flag = vc_init(VC1);
 	print_num("\n\rVC Init: \0",flag);
-	flag = 0;
+	flag = 0;
 	double vval = 0;
 	uint16_t c1;
 	c1 = read_bus_voltage(VC1,1,&flag);
@@ -447,7 +447,7 @@ void read_vc_sensor_i(char *data,uint8_t size) {
 	uint8_t flag = 0;
 	flag = vc_init(VC1);
 	print_num("\n\rVC Init: \0",flag);
-	flag = 0;
+	flag = 0;
 	double vval = 0;
 	uint16_t c1;
 	c1 = read_shunt_voltage(VC1,1,&flag);
@@ -470,14 +470,17 @@ void adc_test(char *data,uint8_t size){
 	uint8_t i2c_inst;
 	uint8_t i2c_addr;
 	uint8_t chx, flag;
-	uint8_t rx_buf[2];
+	uint8_t rx_buf[2], m_flag=0;
 	uint16_t value;
 	i2c_instance_t* i;
 
 	void uart_adc_int_handler(mss_uart_instance_t* this_uart){
 		MSS_UART_get_rx(&g_mss_uart0, rx_buf, 1);
-		if(rx_buf[0] == '3' && rx_buf[1] == '2'){
-			MSS_UART_set_rx_handler(&g_mss_uart0, uart0_rx_handler, MSS_UART_FIFO_SINGLE_BYTE);
+		if(rx_buf[0] == 32){
+			m_flag = 1;
+		}
+		else if(rx_buf[0] == 10){
+			m_flag = 2;
 		}
 	}
 
@@ -500,7 +503,24 @@ void adc_test(char *data,uint8_t size){
 	}
 
 	value = get_ADC_value(i, i2c_addr, chx, &flag);
-	print_num("Voltage", value);
+	print_num("Voltage", (value*3.3)/4096);
 	print_num("ADC_Flag", flag);
+	flag = 0;
 	MSS_UART_set_rx_handler(&g_mss_uart0,uart_adc_int_handler,MSS_UART_FIFO_SINGLE_BYTE);
+	while(m_flag == 0){
+
+		if(m_flag == 1){
+			MSS_UART_set_rx_handler(&g_mss_uart0, uart0_rx_handler, MSS_UART_FIFO_SINGLE_BYTE);
+			break;
+		}
+		else if(m_flag == 2){
+			value = get_ADC_value(i, i2c_addr, chx, &flag);
+			print_num("Voltage", (value*3.3)/4096);
+			print_num("ADC_Flag", flag);
+			flag = 0;
+			m_flag = 0;
+			continue;
+		}
+
+	}
 }
