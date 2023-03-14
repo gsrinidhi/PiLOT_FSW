@@ -67,7 +67,7 @@
 #define SENSOR_BOARD_RESET		2
 
 //PSLV address
-#define PSLV_TO_PILOT_ADDR			119
+#define PSLV_TO_PILOT_ADDR			0x01
 
 #define PILOT_REVERSE_BYTE_ORDER(var)	(((var) << 8) | ((var) >> 8))
 

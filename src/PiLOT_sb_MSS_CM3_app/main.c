@@ -9,9 +9,9 @@
  * 
  */
 
-#include "memory.h"
-#include "pilot.h"
 #include "peripherals.h"
+#include "pilot.h"
+#include "memory.h"
 #define MAX_COUNT		0xFFFFFFFF
 #define QUEUE_BYTES		0
 /**
@@ -412,9 +412,9 @@ void FabricIrq9_IRQHandler(void) {
 		if(aris_result != 0) {
 			sensor_board_fail_count++;
 		}
-		if(sensor_board_fail_count > 10) {
-			sensor_board_status =
-		}
+//		if(sensor_board_fail_count > 10) {
+//			sensor_board_status =
+//		}
 		aris_sample_no++;
 	} else {
 		aris_sample_miss++;

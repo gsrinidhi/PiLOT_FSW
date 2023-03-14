@@ -266,15 +266,8 @@ uint8_t test_peripherals(uint8_t *sd) {
 
 	//Testing VC sensor I2C
 	count = 0;
-	while(count < 10) {
-		I2C_write(VC_SENSOR_I2C,VC1,tx,1,I2C_RELEASE_BUS);
-		status = I2C_wait_complete(VC_SENSOR_I2C,I2C_NO_TIMEOUT);
-		if(status == I2C_SUCCESS) {
-			break;
-		}
-		count++;
-	}
-	if(count < 10) {
+	count = vc_init(VC1);
+	if(count == 0) {
 		result |= 0x08;
 	}
 
