@@ -121,7 +121,7 @@ uint16_t queue_lost;
  */
 timer_instance_t aris_timer;
 
-timer_pkt sync_time;
+timer_pkt_t sync_time;
 
 uint64_t hk_period,current_time,payload_period,sd_hk_period,sd_dump_period,timer_period;
 uint64_t hk_last_count,payload_last_count,sd_hk_last_count,sd_dump_last_count,timer_last_count;
@@ -287,7 +287,6 @@ uint8_t Flags_Init(uint32_t reset_count, uint8_t wd_reset) {
 	MSS_TIM64_get_current_value(&sync_time.upper_count,&sync_time.lower_count);
 	sync_time.q_head = 2;
 	sync_time.q_tail = 0;
-	sync_time.tail = 0xBCBC;
 	sync_time.reset = 1;
 	sync_time.wd_reset =(wd_reset!=0)? 1:0 ;
 	sync_time.reset_count = reset_count;
@@ -427,13 +426,13 @@ void FabricIrq10_IRQHandler(void) {
 	MSS_GPIO_set_output(SD_CARD_GPIO,1);
 	result_global = SD_Init();
 }
-void inline form_log_packet() {
+void form_log_packet() {
 	log_packet->ccsds_p1 = PILOT_REVERSE_BYTE_ORDER(ccsds_p1(tlm_pkt_type,LOGS_API_ID));
 	log_packet->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(ccsds_p2((logs_seq_no)));
 	log_packet->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(ccsds_p3(LOGS_PKT_LENGTH));
-	log_packet->Fletcher_Code = LOGS_FLETCHER_CODE;
 	log_packet->ccsds_s2 = current_time_lower;
 	log_packet->ccsds_s1 = current_time_upper;
+	log_packet->Fletcher_Code = make_FLetcher(log_data,LOGS_PKT_LENGTH-2);
 	add_to_queue(LOGS_PKT_LENGTH,&log_p,log_data,&logs_miss,LOGS_TASK_ID);
 	log_count = 0;
 	logs_seq_no++;
@@ -468,7 +467,7 @@ void store_sd_pointers() {
 int main()
 {
 	//Initialise all the peripherals and devices connected to the OBC in PiLOT
-	result_global = Pilot_Init();
+	result_global = Pilot_Init(&sync_time);
 	sd_state = result_global & 0x1;
 	sd_state = !sd_state;
 	if(sd_state == 1){
@@ -477,6 +476,7 @@ int main()
 	envm_init(check_reset,&put_reset);
 	//Initialise all the global variables in main.c
 	Flags_Init(put_reset.reset_count,(result_global & WD_RESET));
+	sync_time.fletcher_code = make_FLetcher((uint8_t*)(&sync_time),TIME_PKT_LENGTH-2);
 	add_to_queue(TIME_PKT_LENGTH,&timer_p,(uint8_t*)&sync_time,&payload_miss,TIMER_TASK_ID);
 	log_packet = (log_packet_t*)log_data;
 	while(1) {
@@ -491,12 +491,11 @@ int main()
 			result_global = get_thermistor_vals(thermistor_packet,thermistor_seq_no);
 			thermistor_packet->ccsds_s2 = current_time_lower;
 			thermistor_packet->ccsds_s1 = current_time_upper;
+			thermistor_packet->Fletcher_Code = make_FLetcher(packet_data,THERMISTOR_PKT_LENGTH-2);
 			add_to_queue(THERMISTOR_PKT_LENGTH,&payload_p,packet_data,&hk_miss,THERMISTOR_TASK_ID);
 			log_packet->logs[log_count].task_status = result_global;
 			thermistor_seq_no++;
 			log_count++;
-			payload_last_count_H = current_time_upper;
-			payload_last_count_L = current_time_lower;
 		}
 
 		//If 10 log entries have been recorded, write the logs to the queue and reset the log counter
@@ -528,6 +527,7 @@ int main()
 			hk_packet->sd_fail_count = sd_fail_count;
 			hk_packet->sensor_board_fail_count = sensor_board_fail_count;
 			hk_packet->sensor_board_status = sensor_board_status;
+			hk_packet->Fletcher_Code = make_FLetcher(packet_data,HK_PKT_LENGTH-2);
 			add_to_queue(HK_PKT_LENGTH,&hk_p,packet_data,&hk_miss,HK_TASK_ID);
 			if(hk_seq_no%20 == 1) {
 				hk_packet->sd_dump = 1;
@@ -535,9 +535,6 @@ int main()
 			}
             hk_seq_no++;
             log_count++;
-            hk_last_count_H = current_time_upper;
-            hk_last_count_L = current_time_lower;
-            hk_last_count = current_time;
 		 }
 
 		//If 10 log entries have been recorded, write the logs to the SD card and reset the log counter
@@ -561,7 +558,7 @@ int main()
 			aris_packet_add_to_queue->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(ccsds_p2(aris_seq_no++));
 			aris_packet_add_to_queue->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(ccsds_p3(ARIS_PKT_LENGTH));
 			aris_packet_add_to_queue->aris_reset_count = aris_reset_count;
-			aris_packet_add_to_queue->Fletcher_Code = ARIS_FLETCHER_CODE;
+			aris_packet_add_to_queue->Fletcher_Code = make_FLetcher((uint8_t*)aris_packet_add_to_queue,ARIS_PKT_LENGTH);
 			log_packet->logs[log_count].task_status = 0;
 			add_to_queue(ARIS_PKT_LENGTH,&aris_p,(uint8_t*)aris_packet_add_to_queue,&aris_miss,ARIS_TASK_ID);
 			if(aris_seq_no == 16383) {
@@ -584,7 +581,7 @@ int main()
 			sd_hk.ccsds_p1 = PILOT_REVERSE_BYTE_ORDER(ccsds_p1(tlm_pkt_type,SD_HK_API_ID));
 			sd_hk.ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(ccsds_p2(sd_hk_seq_no++));
 			sd_hk.ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(ccsds_p3(SD_HK_PKT_LENGTH));
-			sd_hk.end_sequence = SD_HK_FLETCHER_CODE;
+			sd_hk.Fletcher_code = make_FLetcher((uint8_t*)&sd_hk,SD_HK_PKT_LENGTH-2);
 			log_packet->logs[log_count].task_status = 0;
 			add_to_queue(SD_HK_PKT_LENGTH,&sd_hk_p,(uint8_t*)&sd_hk,&sd_hk_miss,SD_HK_TASK_ID);
 			log_count++;
@@ -597,21 +594,18 @@ int main()
 		if(can_run(&sd_dump_period,&sd_dump_last_count)) {
 			add_to_queue_from_sd(HK_PKT_LENGTH,&hk_p,packet_data);
 			add_to_queue_from_sd(ARIS_PKT_LENGTH,&aris_p,packet_data);
-			sd_dump_last_count_H = current_time_upper;
-			sd_dump_last_count_L = current_time_lower;
 		}
 
 		if(can_run(&timer_period,&timer_last_count)) {
 			sync_time.ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(ccsds_p2(timer_seq_no));
 			sync_time.reset = 0;
 			MSS_TIM64_get_current_value(&sync_time.upper_count,&sync_time.lower_count);
-			add_to_queue(TIME_PKT_LENGTH,&timer_p,(uint8_t*)&sync_time,&payload_miss,TIMER_TASK_ID);
 			MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 			sync_time.q_head = q_head;
 			sync_time.q_tail = q_tail;
 			MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
-			timer_last_count_H = current_time_upper;
-			timer_last_count_L = current_time_lower;
+			sync_time.fletcher_code = make_FLetcher((uint8_t*)&sync_time,TIME_PKT_LENGTH-2);
+			add_to_queue(TIME_PKT_LENGTH,&timer_p,(uint8_t*)&sync_time,&payload_miss,TIMER_TASK_ID);
 			timer_seq_no++;
 		}
 	}

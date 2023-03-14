@@ -57,24 +57,22 @@ uint16_t get_ADC_value(i2c_instance_t *i2c_chx,uint8_t address,uint8_t chx,uint8
 uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no){
    pkt->ccsds_p1 = PILOT_REVERSE_BYTE_ORDER((ccsds_p1(tlm_pkt_type, THERMISTOR_API_ID)));
    pkt->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER((ccsds_p2(seq_no)));
-   pkt->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER((ccsds_p3(THERMISTOR_PKT_LENGTH-7)));
+   pkt->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER((ccsds_p3(THERMISTOR_PKT_LENGTH)));
 
    uint8_t i = 0,flag;
    uint8_t loss_count = 0;
-   pkt->data_valid = 0;
+   pkt->data_valid = 0xFF;
    for(;i<8;i++){
        pkt->thermistor_set_A[i] = get_ADC_value(&i2c_3, ADC_I2CU1_ADDR, i,&flag);
        loss_count+=flag;
-       pkt->data_valid |= ((flag) << (24+i));
+       pkt->data_valid &= ((flag) << (24+i));
        pkt->thermistor_set_B[i] = get_ADC_value(&i2c_3, ADC_I2CU2_ADDR, i,&flag);
        loss_count+=flag;
-       pkt->data_valid |= ((flag) << (16+i));
+       pkt->data_valid &= ((flag) << (16+i));
        pkt->thermistor_set_C[i] = get_ADC_value(&i2c_5, ADC_I2CU1_ADDR, i,&flag);
        loss_count+=flag;
-       pkt->data_valid |= ((flag) << (8+i));
+       pkt->data_valid &= ((flag) << (8+i));
      }
-
-    pkt->Fletcher_Code  = THERMISTOR_FLETCHER_CODE;
 
     return loss_count;
 }
@@ -98,11 +96,11 @@ uint8_t get_aris_sample(aris_pkt_t *pkt,uint32_t time,uint8_t sample_no) {
 // Function below will generate the HK Packet containing ___ items;
 
 uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no,uint8_t *sd_s) {
-    uint8_t loss_count,flag;
+    uint8_t loss_count = 0,flag;
 
     hk_pkt->ccsds_p1 = PILOT_REVERSE_BYTE_ORDER(((ccsds_p1(tlm_pkt_type, HK_API_ID))));
     hk_pkt->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(((ccsds_p2(seq_no))));
-    hk_pkt->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(((ccsds_p3(HK_PKT_LENGTH-7))));
+    hk_pkt->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(((ccsds_p3(HK_PKT_LENGTH))));
     hk_pkt->ccsds_s1 = 1;
     hk_pkt->ccsds_s2 = 1;
 
@@ -208,18 +206,18 @@ uint8_t Pilot_Peripherals_Init() {
 	res |= SD_Init();
 	return res;
 }
-uint8_t Pilot_Init() {
+uint8_t Pilot_Init(timer_pkt_t *init_pkt) {
 	uint8_t res;
 	res = Pilot_Peripherals_Init();
 	MSS_GPIO_set_output(EN_SENSOR_BOARD,1);
-	ADC_Init(&i2c_3,ADC_I2CU1_ADDR);
-	ADC_Init(&i2c_3,ADC_I2CU2_ADDR);
-	ADC_Init(&i2c_5,ADC_I2CU1_ADDR);
-	ADC_Init(&i2c_5,ADC_I2CU2_ADDR);
-	MSS_GPIO_set_output(TX_INV_EN,1);
+	init_pkt->adc_A = ADC_Init(&i2c_3,ADC_I2CU1_ADDR);
+	init_pkt->adc_B = ADC_Init(&i2c_3,ADC_I2CU2_ADDR);
+	init_pkt->adc_C = ADC_Init(&i2c_5,ADC_I2CU1_ADDR);
+	init_pkt->adc_D = ADC_Init(&i2c_5,ADC_I2CU2_ADDR);
+	MSS_GPIO_set_output(TX_INV_EN,0);
 	MSS_GPIO_set_output(RX_INV_EN,1);
 	MSS_GPIO_set_output(EN_UART,0);
-	res = res | (vc_init(VC1) << 1);
+	init_pkt->vc_init = vc_init(VC1);
 	return res;
 }
 
@@ -519,6 +517,20 @@ uint8_t get_IMU_temp(uint16_t *temp) {
 		*temp = (rx_buffer[0]) | (rx_buffer_2[0] << 8);
 
 		return 0;
+
+}
+
+uint16_t make_FLetcher(uint8_t *data,uint16_t len) {
+	uint8_t sumA = 0,sumB = 0,temp = 0;
+	uint8_t i = 0;
+	for(i = 0;i<len;i++) {
+		sumA = (sumA + data[i]) % 255;
+		sumB = (sumB + sumA) % 255;
+	}
+	temp = 255 - ((sumA + sumB) % 255);
+	sumB = 255 - ((sumA + temp) % 255);
+
+	return ((sumB << 8) | temp);
 
 }
 void FabricIrq0_IRQHandler(void)

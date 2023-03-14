@@ -33,8 +33,11 @@
 #define SD_HK_FLETCHER_CODE 0xCDCD
 
 #define TIME_API_ID			60
-#define TIME_PKT_LENGTH		sizeof(timer_pkt)
+#define TIME_PKT_LENGTH		sizeof(timer_pkt_t)
 #define TIME_FLETCHER_CODE	0xCDCD
+
+#define INIT_API_ID			70
+#define INIT_PKT_LENGTH		sizeof(init_pkt_t)
 
 typedef struct {
     //CCSDS
@@ -180,8 +183,13 @@ typedef struct {
     uint16_t q_tail;
 	uint32_t lower_count;
 	uint32_t upper_count;
-	uint16_t tail;
-}__attribute__((packed)) timer_pkt;
+    uint8_t adc_A;
+    uint8_t adc_B;
+    uint8_t adc_C;
+    uint8_t adc_D;
+    uint8_t vc_init;
+	uint16_t fletcher_code;
+}__attribute__((packed)) timer_pkt_t;
 
 typedef struct {
 	uint8_t task_id;
@@ -197,7 +205,7 @@ typedef struct {
     uint32_t ccsds_s1;
     uint32_t ccsds_s2;
     sd_sample_t samples[20];
-    uint16_t end_sequence;
+    uint16_t Fletcher_code;
 }__attribute__((packed)) sd_hk_t;
 
 typedef struct {
@@ -214,5 +222,20 @@ typedef struct {
     uint32_t ARIS_Write_Pointer;
 
 }__attribute__((packed)) reset_pkt_t ;
+
+typedef struct {
+    uint16_t ccsds_p1;
+    uint16_t ccsds_p2;
+    uint16_t ccsds_p3;
+
+    uint32_t ccsds_s1;
+    uint32_t ccsds_s2;
+    uint8_t adc_A;
+    uint8_t adc_B;
+    uint8_t adc_C;
+    uint8_t adc_D;
+    uint8_t vc_init;
+    uint16_t fletcher_code;
+} __attribute__ ((packed)) init_pkt_t;
 
 #endif

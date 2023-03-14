@@ -19,10 +19,8 @@
 
 //ADC Macros
 #define ADC_I2C_ADDR 0x20
-#define ADC_I2CU1_ADDR 0x24
-#define ADC_I2CU2_ADDR 0x23
-#define ADC_I2CU3_ADDR 0x24
-#define ADC_I2CU4_ADDR 0x23
+#define ADC_I2CU1_ADDR 0x21
+#define ADC_I2CU2_ADDR 0x22
 
 #define DATAHIGH_MAX_H 0x0F
 #define DATAHIGH_MAX_L 0xFC
@@ -133,7 +131,7 @@ uint8_t Pilot_Peripherals_Init();
  * @brief Initialises the sensor board ADCs and pslv interface board vc sensors
  *
  */
-uint8_t Pilot_Init();
+uint8_t Pilot_Init(timer_pkt_t *init_pkt);
 
 /**
  * @brief Get the thermistor packet
@@ -231,4 +229,6 @@ void start_sd_timer(uint8_t *sd_state);
 void envm_init(reset_pkt_t *check_reset,reset_pkt_t *put_reset);
 
 uint8_t get_IMU_temp(uint16_t *temp);
+
+uint16_t make_FLetcher(uint8_t *data,uint16_t len);
 #endif
