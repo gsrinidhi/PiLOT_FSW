@@ -34,7 +34,8 @@ uint8_t ADC_Init(i2c_instance_t *i2c_chx,uint8_t address){
 
 uint16_t get_ADC_value(i2c_instance_t *i2c_chx,uint8_t address,uint8_t chx,uint8_t *flag) {
 	uint8_t adc_read_value[2];
-	uint8_t ch_read[] = {chx};
+	uint8_t ch_read[1];
+	ch_read[0] = chx;
 	ch_read[0] |= 0x8;
 	ch_read[0] = ch_read[0] << 4;
 	uint8_t status;
@@ -45,7 +46,7 @@ uint16_t get_ADC_value(i2c_instance_t *i2c_chx,uint8_t address,uint8_t chx,uint8
 		*flag = 1;
 	} else {
 		voltage = (adc_read_value[0] << 8 ) | adc_read_value[1];
-		voltage &= 0x0FFF;
+		//voltage &= 0x0FFF;
 		*flag = 0;
 	}
 	return voltage;

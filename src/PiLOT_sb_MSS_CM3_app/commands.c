@@ -466,12 +466,12 @@ void read_vc_sensor_i(char *data,uint8_t size) {
 }
 
 void adc_test(char *data,uint8_t size){
-	echo_str("\n\rTesting Sensor Board ADC");
+	echo_str("\n\rTesting Sensor Board ADC\0");
 	uint8_t i2c_inst;
 	uint8_t i2c_addr;
 	uint8_t chx, flag;
 	uint8_t rx_buf[2], m_flag=0;
-	uint16_t value;
+	uint16_t value,chx_value;
 	i2c_instance_t* i;
 
 	void uart_adc_int_handler(mss_uart_instance_t* this_uart){
@@ -479,7 +479,7 @@ void adc_test(char *data,uint8_t size){
 		if(rx_buf[0] == 32){
 			m_flag = 1;
 		}
-		else if(rx_buf[0] == 10){
+		else{
 			m_flag = 2;
 		}
 	}
@@ -489,25 +489,32 @@ void adc_test(char *data,uint8_t size){
 	chx = (uint8_t)(data[4] -48);
 
 	if(i2c_inst == 0){
-		i = &g_core_i2c3;
+		i = &i2c_3;
 	}
-	else{
-		i = &g_core_i2c5;
+	else if(i2c_inst == 1){
+		i = &i2c_5;
+	} else {
+		i = &g_core_i2c4;
 	}
 
-	if(i2c_addr = 0){
+	if(i2c_addr == 0){
 		i2c_addr = ADC_I2CU1_ADDR;
 	}
-	else{
+	else if(i2c_addr == 1){
 		i2c_addr = ADC_I2CU2_ADDR;
+	} else {
+		i2c_addr = ADC_I2C_ADDR;
 	}
 
 	value = get_ADC_value(i, i2c_addr, chx, &flag);
-	print_num("Voltage", (value*3.3)/4096);
-	print_num("ADC_Flag", flag);
+	chx_value = (value & 0x7000) >> 12;
+	value &= 0x0FFF;
+	print_num("\n\rChannel from ADC: \0",chx_value);
+	print_num("Voltage: \0", (value*3.3)/4096);
+	print_num("ADC_Flag: \0", flag);
 	flag = 0;
 	MSS_UART_set_rx_handler(&g_mss_uart0,uart_adc_int_handler,MSS_UART_FIFO_SINGLE_BYTE);
-	while(m_flag == 0){
+	while(1){
 
 		if(m_flag == 1){
 			MSS_UART_set_rx_handler(&g_mss_uart0, uart0_rx_handler, MSS_UART_FIFO_SINGLE_BYTE);
@@ -515,11 +522,14 @@ void adc_test(char *data,uint8_t size){
 		}
 		else if(m_flag == 2){
 			value = get_ADC_value(i, i2c_addr, chx, &flag);
-			print_num("Voltage", (value*3.3)/4096);
-			print_num("ADC_Flag", flag);
+			chx_value = (value & 0x7000) >> 12;
+			value &= 0x0FFF;
+			print_num("\n\rChannel from ADC: \0",chx_value);
+			print_num("Voltage: \0", (value*3.3)/4096);
+			print_num("ADC_Flag: \0", flag);
 			flag = 0;
 			m_flag = 0;
-			continue;
+
 		}
 
 	}

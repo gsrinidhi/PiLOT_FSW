@@ -510,7 +510,7 @@
 <option id="gnu.c.link.option.paths.1402961990" name="Library search path (-L)" superClass="gnu.c.link.option.paths" valueType="libPaths">
 <listOptionValue builtIn="false" value="&quot;${workspace_loc:/PiLOT_sb_MSS_CM3_hw_platform/Release}&quot;"/>
 </option>
-<option id="gnu.c.link.option.ldflags.1775416781" name="Linker flags" superClass="gnu.c.link.option.ldflags" value="-T${workspace_loc:/PiLOT_sb_MSS_CM3_hw_platform/CMSIS/startup_gcc/production-smartfusion2-execute-in-place.ld}" valueType="string"/>
+<option id="gnu.c.link.option.ldflags.1775416781" name="Linker flags" superClass="gnu.c.link.option.ldflags" value="-T${workspace_loc:/PiLOT_sb_MSS_CM3_hw_platform/CMSIS/startup_gcc/debug-in-microsemi-smartfusion2-envm.ld}" valueType="string"/>
 <option id="gnu.c.link.option.userobjs.512685476" name="Other objects" superClass="gnu.c.link.option.userobjs" valueType="userObjs">
 <listOptionValue builtIn="false" value="&quot;${workspace_loc:/PiLOT_sb_MSS_CM3_hw_platform/Release/CMSIS/startup_gcc/startup_m2sxxx.o}&quot;"/>
 <listOptionValue builtIn="false" value="&quot;${workspace_loc:/PiLOT_sb_MSS_CM3_hw_platform/Release/CMSIS/startup_gcc/newlib_stubs.o}&quot;"/>

@@ -183,7 +183,7 @@ void feedback(uint8_t idc){
 void call_function(uint8_t ID, char* data, uint8_t size){
 
 	if(ID < cmd_in) {
-		cmd_list[ID].work(data,0);
+		cmd_list[ID].work(data,size);
 	}
 
 //	if(ID == 1){
