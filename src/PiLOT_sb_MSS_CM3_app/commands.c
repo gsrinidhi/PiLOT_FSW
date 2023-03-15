@@ -471,7 +471,7 @@ void adc_test(char *data,uint8_t size){
 	uint8_t i2c_addr;
 	uint8_t chx, flag;
 	uint8_t rx_buf[2], m_flag=0;
-	uint16_t value,chx_value;
+	uint16_t value,chx_value, sense_Val;
 	i2c_instance_t* i;
 
 	void uart_adc_int_handler(mss_uart_instance_t* this_uart){
@@ -507,8 +507,10 @@ void adc_test(char *data,uint8_t size){
 	}
 
 	value = get_ADC_value(i, i2c_addr, chx, &flag);
+	sense_Val = read_bus_voltage(VC1, 1, &flag);
 	chx_value = (value & 0x7000) >> 12;
 	value &= 0x0FFF;
+	print_num("\n\rSensor_Board_Voltage: \0",sense_Val*0.001);
 	print_num("\n\rChannel from ADC: \0",chx_value);
 	print_num("Voltage: \0", (value*3.3)/4096);
 	print_num("ADC_Flag: \0", flag);
@@ -522,8 +524,10 @@ void adc_test(char *data,uint8_t size){
 		}
 		else if(m_flag == 2){
 			value = get_ADC_value(i, i2c_addr, chx, &flag);
+			sense_Val = read_bus_voltage(VC1, 1, &flag);
 			chx_value = (value & 0x7000) >> 12;
 			value &= 0x0FFF;
+			print_num("\n\rSensor_Board_Voltage: \0",sense_Val*0.001);
 			print_num("\n\rChannel from ADC: \0",chx_value);
 			print_num("Voltage: \0", (value*3.3)/4096);
 			print_num("ADC_Flag: \0", flag);

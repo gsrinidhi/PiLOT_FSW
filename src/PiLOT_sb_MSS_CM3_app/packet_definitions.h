@@ -46,6 +46,8 @@ typedef struct {
     uint32_t ccsds_s1;
     uint32_t ccsds_s2;
 
+    uint16_t Sensor_Board_VC[2];
+
     uint32_t data_valid;
     uint16_t thermistor_set_A[8];
     uint16_t thermistor_set_B[8];

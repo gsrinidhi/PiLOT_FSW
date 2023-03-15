@@ -74,6 +74,18 @@ uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no){
         pkt->data_valid |= ((flag) << (8+i));
      }
 
+
+   	for(;i<2;i++){
+   		if(i == 0){
+   			pkt->Sensor_Board_VC[i] = read_bus_voltage(VC1, 1, &flag);
+   			loss_count+= flag;
+   		}
+   		else{
+   			pkt->Sensor_Board_VC[i] = read_shunt_voltage( VC1,  1, &flag);
+   			loss_count+= flag;
+       	}
+   	}
+
     pkt->Fletcher_Code  = THERMISTOR_FLETCHER_CODE;
 
     return loss_count;
