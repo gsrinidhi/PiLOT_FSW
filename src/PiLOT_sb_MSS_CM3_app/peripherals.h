@@ -28,7 +28,7 @@
 #include <drivers/mss_nvm/mss_nvm.h>
 #define WDOG_SYSREG_CR_ENABLE_MASK      0x00000001u
 
-#define ENVM_RESET_PKT_ADDR				0x60008D10
+#define ENVM_RESET_PKT_ADDR				0x6000DD10
 #define WD_RESET						0x80
 //UART
 //defining PE bit of LSR register for MSS_UART

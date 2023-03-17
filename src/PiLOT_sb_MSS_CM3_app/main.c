@@ -144,7 +144,7 @@ uint8_t sensor_board_status,sensor_board_fail_count;
  */
 uint8_t downlink(uint8_t *data,uint8_t size) {
 		MSS_GPIO_set_output(EN_UART,1);
-		MSS_UART_polled_tx(&g_mss_uart1,data,size);
+		MSS_UART_polled_tx(&g_mss_uart0,data,size);
 		MSS_GPIO_set_output(EN_UART,0);
 		return 0;
 }
@@ -220,7 +220,7 @@ uint8_t Flags_Init(uint32_t reset_count, uint8_t wd_reset) {
 	time_to_count(DEFAULT_HK_PERIOD,&hk_period_H,&hk_period_L);
 	time_to_count(DEFAULT_PAYLOAD_PERIOD,&payload_period_H,&payload_period_L);
 	time_to_count(3000,&sd_hk_period_H,&sd_hk_period_L);
-	time_to_count(10,&aris_period_H,&aris_period_L);
+	time_to_count(15,&aris_period_H,&aris_period_L);
 	time_to_count(60000,&sd_dump_period_H,&sd_dump_period_L);
 	time_to_count(3000,&timer_period_H,&timer_period_L);
 	/**
@@ -377,7 +377,8 @@ void add_to_queue_from_sd(uint8_t size,partition_t *p,uint8_t *data) {
 	q_in_i = 0;
 	if(sd_state == 0x7) {//read from the SD card only if it is operational
 		result_global = read_data(p,data);
-		while(!((q_head > q_tail && (2048 - q_head + q_tail) >= (size * (2 - QUEUE_BYTES))) || (q_head < q_tail && (q_tail - q_head) >= (size * (2 - QUEUE_BYTES)))));
+		queue_lost = 0;
+		while(!((q_head > q_tail && (2048 - q_head + q_tail) >= (size * (2 - QUEUE_BYTES))) || (q_head < q_tail && (q_tail - q_head) >= (size * (2 - QUEUE_BYTES))))&& ((queue_lost++) < 500));
 		MSS_UART_disable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 		if((q_head > q_tail && (2048 - q_head + q_tail) >= (size * (2 - QUEUE_BYTES))) || (q_head < q_tail && (q_tail - q_head) >= (size * (2 - QUEUE_BYTES)))) {
 			for(;q_in_i<size;q_in_i+=(QUEUE_BYTES + 1)) {
@@ -434,6 +435,7 @@ void form_log_packet() {
 	log_packet->ccsds_s1 = current_time_upper;
 	log_packet->Fletcher_Code = make_FLetcher(log_data,LOGS_PKT_LENGTH-2);
 	add_to_queue(LOGS_PKT_LENGTH,&log_p,log_data,&logs_miss,LOGS_TASK_ID);
+	downlink(log_data,LOGS_PKT_LENGTH);
 	log_count = 0;
 	logs_seq_no++;
 }
@@ -478,6 +480,7 @@ int main()
 	Flags_Init(put_reset.reset_count,(result_global & WD_RESET));
 	sync_time.fletcher_code = make_FLetcher((uint8_t*)(&sync_time),TIME_PKT_LENGTH-2);
 	add_to_queue(TIME_PKT_LENGTH,&timer_p,(uint8_t*)&sync_time,&payload_miss,TIMER_TASK_ID);
+	downlink(packet_data,THERMISTOR_PKT_LENGTH);
 	log_packet = (log_packet_t*)log_data;
 	while(1) {
 		//Reload the watchdog counter
@@ -496,6 +499,7 @@ int main()
 			log_packet->logs[log_count].task_status = result_global;
 			thermistor_seq_no++;
 			log_count++;
+			downlink(packet_data,THERMISTOR_PKT_LENGTH);
 		}
 
 		//If 10 log entries have been recorded, write the logs to the queue and reset the log counter
@@ -535,6 +539,7 @@ int main()
 			}
             hk_seq_no++;
             log_count++;
+            downlink(packet_data,HK_PKT_LENGTH);
 		 }
 
 		//If 10 log entries have been recorded, write the logs to the SD card and reset the log counter
@@ -565,6 +570,7 @@ int main()
 				aris_reset_count++;
 			}
 			log_count++;
+			downlink((uint8_t*)aris_packet_add_to_queue,ARIS_PKT_LENGTH);
 		}
 
 		if(log_count >= 10) {
@@ -585,6 +591,7 @@ int main()
 			log_packet->logs[log_count].task_status = 0;
 			add_to_queue(SD_HK_PKT_LENGTH,&sd_hk_p,(uint8_t*)&sd_hk,&sd_hk_miss,SD_HK_TASK_ID);
 			log_count++;
+			downlink((uint8_t*)&sd_hk,SD_HK_PKT_LENGTH);
 		}
 
 		if(log_count >= 10) {
@@ -607,6 +614,7 @@ int main()
 			sync_time.fletcher_code = make_FLetcher((uint8_t*)&sync_time,TIME_PKT_LENGTH-2);
 			add_to_queue(TIME_PKT_LENGTH,&timer_p,(uint8_t*)&sync_time,&payload_miss,TIMER_TASK_ID);
 			timer_seq_no++;
+			downlink((uint8_t*)&sync_time,TIME_PKT_LENGTH);
 		}
 	}
 }
