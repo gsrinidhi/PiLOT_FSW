@@ -121,6 +121,7 @@ typedef struct {
     uint16_t aris_sample_miss;
     uint8_t sensor_board_status;
     uint8_t sensor_board_fail_count;
+    uint32_t sd_prev_wait_time;
     uint16_t Fletcher_Code;
 }__attribute__((packed)) hk_pkt_t;
 
@@ -162,11 +163,12 @@ typedef struct {
 
 //    uint16_t SD_Test_count[5];
 //    uint16_t SD_Test_time[5];
+    uint32_t addr;
     uint8_t sd_result;
     uint16_t time;
 
     uint16_t Fletcher_Code;
-}__attribute__((packed)) sd_test;
+}__attribute__((packed)) sd_test_t;
 
 typedef struct {
 //	uint32_t sync;
@@ -222,20 +224,5 @@ typedef struct {
     uint32_t ARIS_Write_Pointer;
 
 }__attribute__((packed)) reset_pkt_t ;
-
-typedef struct {
-    uint16_t ccsds_p1;
-    uint16_t ccsds_p2;
-    uint16_t ccsds_p3;
-
-    uint32_t ccsds_s1;
-    uint32_t ccsds_s2;
-    uint8_t adc_A;
-    uint8_t adc_B;
-    uint8_t adc_C;
-    uint8_t adc_D;
-    uint8_t vc_init;
-    uint16_t fletcher_code;
-} __attribute__ ((packed)) init_pkt_t;
 
 #endif

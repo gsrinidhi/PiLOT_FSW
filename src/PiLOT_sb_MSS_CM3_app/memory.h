@@ -38,7 +38,7 @@
 #define LOGS_PARTITION				0x04
 #define ARIS_PARTITION				0x05
 
-#define POINTER_ERROR_MASK			0x8
+#define POINTER_ERROR_MASK			0x80
 
 /**
  * @brief To store data in the SD card, partitions are created, with each partition having the below four parameters.

@@ -10,12 +10,14 @@
  */
 
 #include "memory.h"
-
+uint8_t mem_sd_state;
+uint8_t fail_count;
 void initialise_partition(partition_t *partition, uint32_t start_b,uint32_t end_b) {
 	partition->start_block = start_b;
 	partition->end_block = end_b;
 	partition->read_pointer = start_b;
 	partition->write_pointer = start_b;
+	mem_sd_state = 0;
 }
 
 uint8_t store_data(partition_t *partition,uint8_t *data) {
@@ -28,7 +30,7 @@ uint8_t store_data(partition_t *partition,uint8_t *data) {
 		if((partition->write_pointer > partition->end_block)) {
 			partition->write_pointer = partition->start_block;
 		}
-		return SD_WORKING_MASK;
+		return SD_WORKING;
 	}
 
 
@@ -45,9 +47,13 @@ uint8_t read_data(partition_t *partition,uint8_t *data) {
 		if((partition->read_pointer > partition->end_block)) {
 			partition->read_pointer = partition->start_block;
 		}
-		return SD_WORKING_MASK;
+		return SD_WORKING;
 	}
 
 
 	return SD_INIT_MASK | SD_WRITE_MASK;
+}
+
+uint8_t test_sd(uint32_t *addr) {
+
 }

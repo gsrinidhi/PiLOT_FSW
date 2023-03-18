@@ -109,7 +109,7 @@ uint8_t log_count,result_global,api_id,sd_state,aris_sample_no,aris_result;
 uint8_t uart_irq_rx_buffer[3],uart_irq_tx_buffer[2];
 uint8_t uart_irq_size;
 uint8_t sd_count;
-sd_test sd;
+sd_test_t sd;
 uint16_t aris_count,timer_seq_no;
 volatile uint8_t uart_irq_addr_flag;
 uint8_t sd_fail_count;
@@ -142,12 +142,6 @@ uint8_t sensor_board_status,sensor_board_fail_count;
  * @param size The number of bytes to be sent
  * @return uint8_t returns 0
  */
-uint8_t downlink(uint8_t *data,uint8_t size) {
-		MSS_GPIO_set_output(EN_UART,1);
-		MSS_UART_polled_tx(&g_mss_uart0,data,size);
-		MSS_GPIO_set_output(EN_UART,0);
-		return 0;
-}
 
 /**
  * @brief This is the interrupt handler which gets triggered whenever a byte is received from the UART Rx line. This function first checks if the receved byte is an address byte by reading the PE bit of the Line Status Register (LSR) of MSS UART 1. Then it checks if the received address is that of PiLOT. If the address matches, two bytes of data are transmitted from the pslv_queue
@@ -219,10 +213,9 @@ uint8_t Flags_Init(uint32_t reset_count, uint8_t wd_reset) {
 	 */
 	time_to_count(DEFAULT_HK_PERIOD,&hk_period_H,&hk_period_L);
 	time_to_count(DEFAULT_PAYLOAD_PERIOD,&payload_period_H,&payload_period_L);
-	time_to_count(3000,&sd_hk_period_H,&sd_hk_period_L);
 	time_to_count(15,&aris_period_H,&aris_period_L);
 	time_to_count(60000,&sd_dump_period_H,&sd_dump_period_L);
-	time_to_count(3000,&timer_period_H,&timer_period_L);
+	time_to_count(300000,&timer_period_H,&timer_period_L);
 	/**
 	 * @brief Initialise all sequence numbers to one
 	 * 
@@ -277,7 +270,6 @@ uint8_t Flags_Init(uint32_t reset_count, uint8_t wd_reset) {
     NVIC_EnableIRQ( FabricIrq10_IRQn );
     NVIC_SetPriority(FabricIrq9_IRQn,0xFE);
     NVIC_SetPriority(FabricIrq10_IRQn,0xFD);
-    //NVIC_SetPriority(UART1_IRQn,0xFD);
     TMR_enable_int(&aris_timer);
     TMR_start(&aris_timer);
 	timer_seq_no = 1;
@@ -298,7 +290,6 @@ uint8_t Flags_Init(uint32_t reset_count, uint8_t wd_reset) {
 	timer_last_count = 0xFFFFFFFFFFFFFFFF;
 	hk_period = hk_period_L | (hk_period_H << 32);
 	payload_period = (payload_period_L) | (payload_period_H << 32);
-	sd_hk_period = (sd_hk_period_L) | (sd_hk_period_H << 32);
 	sd_dump_period = (sd_dump_period_L) | (sd_dump_period_H << 32);
 	timer_period = (timer_period_L) | (timer_period_H << 32);
 
@@ -347,9 +338,9 @@ void add_to_queue(uint8_t size,partition_t *p,uint8_t *data,uint16_t *miss,uint8
 		miss_margin = (q_head > q_tail) ? ((size * (2 - QUEUE_BYTES)) - (2048 -(q_head - q_tail))) : ((size * (2 - QUEUE_BYTES)) - (q_tail - q_head));
 		MSS_UART_enable_irq(&g_mss_uart1,MSS_UART_RBF_IRQ);
 		(*miss)+=1;
-		if(sd_state & SD_WORKING_MASK) {
-			sd_state |= store_data(p,data);
-			if(!(sd_state & SD_WORKING_MASK)) {
+		if(sd_state == SD_WORKING) {
+			sd_state = store_data(p,data);
+			if((sd_state & !(POINTER_ERROR_MASK)) != SD_WORKING) {
 				sd_fail_count++;
 				if(sd_fail_count > SD_THRESHOLD) {
 					sd_fail_count = 0;
@@ -375,7 +366,7 @@ void add_to_queue(uint8_t size,partition_t *p,uint8_t *data,uint16_t *miss,uint8
  */
 void add_to_queue_from_sd(uint8_t size,partition_t *p,uint8_t *data) {
 	q_in_i = 0;
-	if(sd_state == 0x7) {//read from the SD card only if it is operational
+	if(sd_state == SD_WORKING) {//read from the SD card only if it is operational
 		result_global = read_data(p,data);
 		queue_lost = 0;
 		while(!((q_head > q_tail && (2048 - q_head + q_tail) >= (size * (2 - QUEUE_BYTES))) || (q_head < q_tail && (q_tail - q_head) >= (size * (2 - QUEUE_BYTES))))&& ((queue_lost++) < 500));
@@ -423,9 +414,11 @@ void FabricIrq9_IRQHandler(void) {
 }
 void FabricIrq10_IRQHandler(void) {
 	TMR_clear_int(&sd_timer);
-	sd_state = 7;
-	MSS_GPIO_set_output(SD_CARD_GPIO,1);
-	result_global = SD_Init();
+	sd_state = SD_Init();
+	if(sd_state == 0){
+		sd_state |= SD_INIT_MASK;
+	}
+	sd_state |= SD_TESTED;
 }
 void form_log_packet() {
 	log_packet->ccsds_p1 = PILOT_REVERSE_BYTE_ORDER(ccsds_p1(tlm_pkt_type,LOGS_API_ID));
@@ -435,7 +428,6 @@ void form_log_packet() {
 	log_packet->ccsds_s1 = current_time_upper;
 	log_packet->Fletcher_Code = make_FLetcher(log_data,LOGS_PKT_LENGTH-2);
 	add_to_queue(LOGS_PKT_LENGTH,&log_p,log_data,&logs_miss,LOGS_TASK_ID);
-	downlink(log_data,LOGS_PKT_LENGTH);
 	log_count = 0;
 	logs_seq_no++;
 }
@@ -471,16 +463,14 @@ int main()
 	//Initialise all the peripherals and devices connected to the OBC in PiLOT
 	result_global = Pilot_Init(&sync_time);
 	sd_state = result_global & 0x1;
-	sd_state = !sd_state;
-	if(sd_state == 1){
-		sd_state = 0x7;
+	if(sd_state == 0){
+		sd_state = SD_WORKING;
 	}
 	envm_init(check_reset,&put_reset);
 	//Initialise all the global variables in main.c
 	Flags_Init(put_reset.reset_count,(result_global & WD_RESET));
 	sync_time.fletcher_code = make_FLetcher((uint8_t*)(&sync_time),TIME_PKT_LENGTH-2);
 	add_to_queue(TIME_PKT_LENGTH,&timer_p,(uint8_t*)&sync_time,&payload_miss,TIMER_TASK_ID);
-	downlink(packet_data,THERMISTOR_PKT_LENGTH);
 	log_packet = (log_packet_t*)log_data;
 	while(1) {
 		//Reload the watchdog counter
@@ -492,6 +482,9 @@ int main()
 			log_packet->logs[log_count].time_L = current_time_lower;
 			thermistor_packet = (thermistor_pkt_t*)packet_data;
 			result_global = get_thermistor_vals(thermistor_packet,thermistor_seq_no);
+			if(result_global != 0) {
+				sensor_board_fail_count++;
+			}
 			thermistor_packet->ccsds_s2 = current_time_lower;
 			thermistor_packet->ccsds_s1 = current_time_upper;
 			thermistor_packet->Fletcher_Code = make_FLetcher(packet_data,THERMISTOR_PKT_LENGTH-2);
@@ -499,7 +492,6 @@ int main()
 			log_packet->logs[log_count].task_status = result_global;
 			thermistor_seq_no++;
 			log_count++;
-			downlink(packet_data,THERMISTOR_PKT_LENGTH);
 		}
 
 		//If 10 log entries have been recorded, write the logs to the queue and reset the log counter
@@ -515,8 +507,8 @@ int main()
             log_packet->logs[log_count].time_H = current_time_upper;
             log_packet->logs[log_count].time_L = current_time_lower;
             hk_packet = (hk_pkt_t*)packet_data;
+            result_global = get_sd_hk(hk_packet);
             result_global = get_hk(hk_packet,hk_seq_no,&sd_state);
-			result_global = get_sd_hk(hk_packet);
 			hk_packet->sd_dump = 0;
 			hk_packet->ccsds_s1 = current_time_upper;
 			hk_packet->ccsds_s2 = current_time_lower;
@@ -539,7 +531,12 @@ int main()
 			}
             hk_seq_no++;
             log_count++;
-            downlink(packet_data,HK_PKT_LENGTH);
+            if((sd_state & SD_TESTED) != 0) {
+            	sd_state &= (~SD_TESTED);
+            }
+            if(hk_seq_no%1000) {
+            	store_sd_pointers();
+            }
 		 }
 
 		//If 10 log entries have been recorded, write the logs to the SD card and reset the log counter
@@ -570,7 +567,6 @@ int main()
 				aris_reset_count++;
 			}
 			log_count++;
-			downlink((uint8_t*)aris_packet_add_to_queue,ARIS_PKT_LENGTH);
 		}
 
 		if(log_count >= 10) {
@@ -591,7 +587,6 @@ int main()
 			log_packet->logs[log_count].task_status = 0;
 			add_to_queue(SD_HK_PKT_LENGTH,&sd_hk_p,(uint8_t*)&sd_hk,&sd_hk_miss,SD_HK_TASK_ID);
 			log_count++;
-			downlink((uint8_t*)&sd_hk,SD_HK_PKT_LENGTH);
 		}
 
 		if(log_count >= 10) {
@@ -614,7 +609,6 @@ int main()
 			sync_time.fletcher_code = make_FLetcher((uint8_t*)&sync_time,TIME_PKT_LENGTH-2);
 			add_to_queue(TIME_PKT_LENGTH,&timer_p,(uint8_t*)&sync_time,&payload_miss,TIMER_TASK_ID);
 			timer_seq_no++;
-			downlink((uint8_t*)&sync_time,TIME_PKT_LENGTH);
 		}
 	}
 }

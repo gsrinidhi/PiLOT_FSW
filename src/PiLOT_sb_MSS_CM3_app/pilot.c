@@ -12,7 +12,7 @@
 #include"pilot.h"
 #include "memory.h"
 
-
+uint32_t prev_wait_time;
 uint8_t ADC_Init(i2c_instance_t *i2c_chx,uint8_t address){
 	i2c_status_t status;
 	uint8_t channel = 0;
@@ -61,7 +61,7 @@ uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no){
 
    uint8_t i = 0,flag;
    uint8_t loss_count = 0;
-   pkt->data_valid = 0xFF;
+   pkt->data_valid = 0xFFFFFFFF;
    for(;i<8;i++){
        pkt->thermistor_set_A[i] = get_ADC_value(&i2c_3, ADC_I2CU1_ADDR, i,&flag);
        loss_count+=flag;
@@ -101,8 +101,6 @@ uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no,uint8_t *sd_s) {
     hk_pkt->ccsds_p1 = PILOT_REVERSE_BYTE_ORDER(((ccsds_p1(tlm_pkt_type, HK_API_ID))));
     hk_pkt->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(((ccsds_p2(seq_no))));
     hk_pkt->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(((ccsds_p3(HK_PKT_LENGTH))));
-    hk_pkt->ccsds_s1 = 1;
-    hk_pkt->ccsds_s2 = 1;
 
     // CDH_Perip_Status
 
@@ -132,25 +130,26 @@ uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no,uint8_t *sd_s) {
     hk_pkt->imu_temp = temperature;
 
     //CDH_VC
-    uint8_t i = 0;
-	for(;i<2;i++){
-		if(i == 0){
-			hk_pkt->Sensor_Board_VC[i] = read_bus_voltage(VC1, 1, &flag);
-			loss_count+= flag;
-			hk_pkt->CDH_VC[i] = read_bus_voltage( VC1,  2, &flag);
-			loss_count+= flag;
-			hk_pkt->Comms_VC[i] = read_bus_voltage( VC1,  3, &flag);
-			loss_count+= flag;
+	hk_pkt->Sensor_Board_VC[0] = read_bus_voltage(VC1, 1, &flag);
+	loss_count+= flag;
+	hk_pkt->CDH_VC[0] = read_bus_voltage( VC1,  2, &flag);
+	loss_count+= flag;
+	hk_pkt->Comms_VC[0] = read_bus_voltage( VC1,  3, &flag);
+	loss_count+= flag;
+	hk_pkt->Sensor_Board_VC[1] = read_shunt_voltage(VC1, 1, &flag);
+	loss_count+= flag;
+	hk_pkt->CDH_VC[1] = read_shunt_voltage( VC1,  2, &flag);
+	loss_count+= flag;
+	hk_pkt->Comms_VC[1] = read_shunt_voltage( VC1,  3, &flag);
+	loss_count+= flag;
+
+	if ((((*sd_s) & SD_TESTED) != 0) && (((*sd_s) & SD_INIT_MASK) == 0)) {
+		prev_wait_time <<= 1;
+		if(prev_wait_time > 604800000){
+			prev_wait_time = 600000;
 		}
-		else{
-			hk_pkt->Sensor_Board_VC[i] = read_shunt_voltage( VC1,  1, &flag);
-			loss_count+= flag;
-			hk_pkt->CDH_VC[i] = read_shunt_voltage( VC1,  2, &flag);
-			loss_count+= flag;
-			hk_pkt->Comms_VC[i] = read_shunt_voltage( VC1,  3, &flag);
-			loss_count+= flag;
-    	}
 	}
+	hk_pkt->sd_prev_wait_time = prev_wait_time;
 
     hk_pkt->Fletcher_Code  = HK_FLETCHER_CODE;
 
@@ -158,12 +157,11 @@ uint8_t get_hk(hk_pkt_t *hk_pkt, uint16_t seq_no,uint8_t *sd_s) {
 }
 
 void I2C_Init() {
-	MSS_I2C_init( &g_mss_i2c0, DUMMY_I2C_ADDR, MSS_I2C_PCLK_DIV_960 );
-	I2C_init(&g_core_i2c1, COREI2C_1_0, DUMMY_I2C_ADDR, I2C_PCLK_DIV_960);
-	I2C_init(&g_core_i2c2, COREI2C_2_0, DUMMY_I2C_ADDR, I2C_PCLK_DIV_960);
-	I2C_init(&g_core_i2c3, COREI2C_3_0, DUMMY_I2C_ADDR, I2C_PCLK_DIV_960);
-	I2C_init(&g_core_i2c4, COREI2C_4_0, DUMMY_I2C_ADDR, I2C_PCLK_DIV_960);
-	I2C_init(&g_core_i2c5, COREI2C_5_0, DUMMY_I2C_ADDR, I2C_PCLK_DIV_960);
+	I2C_init(&g_core_i2c1, COREI2C_1_0, DUMMY_I2C_ADDR, I2C_PCLK_DIV_256);
+	I2C_init(&g_core_i2c2, COREI2C_2_0, DUMMY_I2C_ADDR, I2C_PCLK_DIV_256);
+	I2C_init(&g_core_i2c3, COREI2C_3_0, DUMMY_I2C_ADDR, I2C_PCLK_DIV_256);
+	I2C_init(&g_core_i2c4, COREI2C_4_0, DUMMY_I2C_ADDR, I2C_PCLK_DIV_256);
+	I2C_init(&g_core_i2c5, COREI2C_5_0, DUMMY_I2C_ADDR, I2C_PCLK_DIV_256);
 
 }
 
@@ -183,7 +181,6 @@ void SPI_Init() {
 
 void Uart_Init() {
 	MSS_UART_init(&g_mss_uart1,MSS_UART_BAUD_2000000,MSS_UART_DATA_8_BITS | MSS_UART_STICK_PARITY_0 | MSS_UART_ONE_STOP_BIT);
-	MSS_UART_init(&g_mss_uart0,115200,MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT);
 }
 
 uint8_t Pilot_Peripherals_Init() {
@@ -204,6 +201,7 @@ uint8_t Pilot_Peripherals_Init() {
 	Uart_Init();
 	SPI_Init();
 	res |= SD_Init();
+	prev_wait_time = 600000;
 	return res;
 }
 uint8_t Pilot_Init(timer_pkt_t *init_pkt) {
@@ -411,52 +409,14 @@ uint8_t get_IMU_gyro(uint16_t *roll_rate, uint16_t *pitch_rate,uint16_t *yaw_rat
 		return status;
 }
 
-uint8_t sd_status(uint8_t *sd,uint8_t *data) {
-	uint8_t res = 0;
-	if(*sd == 0x9) {
-		return 0;
-	}
-	res = SD_Init();
-	if(res == 0) {//If initialisation successful
-		*sd |= 0x1;
-		res = SD_Write(512,data);
-		if(res == 0) {
-			*sd |= 0x2;
-		}
-		res = SD_Read(512,data);
-		if(res == 0) {
-			*sd |= 0x4;
-		}
-	}
-	if(res == 1) {//If initialisation failed, switch off SD card
-		MSS_GPIO_set_output(SD_CARD_GPIO,0);
-		*sd = 0x8;
-	}
-	return 0;
-}
-
 void start_sd_timer(uint8_t *sd_state) {
 	MSS_GPIO_set_output(SD_CARD_GPIO,0);
 	*sd_state = 0;
 	uint64_t ph,pl;
-	time_to_count(60000,&ph,&pl);
+	time_to_count(prev_wait_time,&ph,&pl);
 	TMR_init(&sd_timer,SD_TIMER_BASE_ADDR,TMR_ONE_SHOT_MODE,PRESCALER_DIV_2,pl/2);
 	TMR_enable_int(&sd_timer);
 	TMR_start(&sd_timer);
-}
-
-uint8_t sd_hk_test(sd_test *sd,uint8_t *data,uint32_t addr,uint8_t *sd_state) {
-	if((*sd_state) == 7) {
-		sd->sd_result = !(SD_Init());
-		sd->sd_result |= (!(SD_Write(addr,data))) << 1;
-		sd->sd_result |= (!(SD_Read(addr,data))) << 2;
-		if(sd->sd_result == 0) {
-			start_sd_timer(sd_state);
-		}
-	}
-
-	//MSS_GPIO_set_output(SD_CARD_GPIO,0);
-	return 0;
 }
 
 void time_to_count(uint32_t ms,uint64_t *upper_count,uint64_t *lower_count) {
@@ -466,6 +426,9 @@ void time_to_count(uint32_t ms,uint64_t *upper_count,uint64_t *lower_count) {
 
 void envm_init(reset_pkt_t *check_reset,reset_pkt_t *put_reset) {
 	check_reset = (reset_pkt_t *)ENVM_RESET_PKT_ADDR;
+	if(1000 <= check_reset->reset_count){
+		put_reset->reset_count = 0;
+	}
 	if(0 == check_reset->reset_count) {
 		put_reset->ARIS_Read_Pointer = ARIS_BLOCK_INIT;
 		put_reset->ARIS_Write_Pointer = ARIS_BLOCK_INIT;
