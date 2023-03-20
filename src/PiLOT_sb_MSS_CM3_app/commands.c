@@ -47,8 +47,9 @@ void set_baud_rate(char* arg, uint8_t s){
         val = val+k;
 
     }
-    MSS_UART_init(&g_mss_uart0, val, MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT );
-    MSS_UART_set_rx_handler(&g_mss_uart0,uart0_rx_handler,MSS_UART_FIFO_SINGLE_BYTE);
+//    MSS_UART_init(&g_mss_uart0, val, MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT );
+//    MSS_UART_set_rx_handler(&g_mss_uart0,uart0_rx_handler,MSS_UART_FIFO_SINGLE_BYTE);
+    MSS_UART_init(&g_mss_uart1,val,MSS_UART_DATA_8_BITS | MSS_UART_STICK_PARITY_0 | MSS_UART_ONE_STOP_BIT);
 }
 
 void change_interface_mode(char *arg,uint8_t size) {

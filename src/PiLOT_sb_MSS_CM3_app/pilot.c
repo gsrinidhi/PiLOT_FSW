@@ -196,11 +196,11 @@ void SPI_Init() {
 }
 
 void Uart_Init() {
-#if DEBUG == 0
-	MSS_UART_init(&g_mss_uart1,MSS_UART_BAUD_2000000,MSS_UART_DATA_8_BITS | MSS_UART_STICK_PARITY_0 | MSS_UART_ONE_STOP_BIT);
-#else
-	MSS_UART_init(&g_mss_uart1,9600,MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT);
-#endif
+//#if DEBUG == 0
+//	MSS_UART_init(&g_mss_uart1,MSS_UART_BAUD_2000000,MSS_UART_DATA_8_BITS | MSS_UART_STICK_PARITY_0 | MSS_UART_ONE_STOP_BIT);
+//#else
+//	MSS_UART_init(&g_mss_uart1,9600,MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT);
+//#endif
 }
 
 uint8_t Pilot_Peripherals_Init() {

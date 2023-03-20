@@ -22,7 +22,7 @@
  char c[25];
  char argu[25];
 
- uint16_t val;
+ uint32_t val;
  uint8_t command_index ;
  uint8_t command_flag , argument_flag ;
  uint8_t uart0_irq_rx_buffer[3];
