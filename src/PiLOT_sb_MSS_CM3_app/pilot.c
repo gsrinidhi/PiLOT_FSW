@@ -61,17 +61,17 @@ uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no){
 
    uint8_t i = 0,flag;
    uint8_t loss_count = 0;
-   pkt->data_valid = 0xFFFFFFFF;
+   pkt->data_valid = 0;
    for(;i<8;i++){
        pkt->thermistor_set_A[i] = get_ADC_value(&i2c_3, ADC_I2CU1_ADDR, i,&flag);
        loss_count+=flag;
-       pkt->data_valid &= ((flag) << (24+i));
+       pkt->data_valid |= ((!flag) << (24+i));
        pkt->thermistor_set_B[i] = get_ADC_value(&i2c_3, ADC_I2CU2_ADDR, i,&flag);
        loss_count+=flag;
-       pkt->data_valid &= ((flag) << (16+i));
+       pkt->data_valid |= ((!flag) << (16+i));
        pkt->thermistor_set_C[i] = get_ADC_value(&i2c_5, ADC_I2CU1_ADDR, i,&flag);
        loss_count+=flag;
-       pkt->data_valid &= ((flag) << (8+i));
+       pkt->data_valid |= ((!flag) << (8+i));
      }
 
     return loss_count;
@@ -83,13 +83,13 @@ uint8_t get_aris_sample(aris_pkt_t *pkt,uint32_t time,uint8_t sample_no) {
 	pkt->aris_samples[sample_no].aris_data[0] = get_ADC_value(&i2c_5, ADC_I2CU2_ADDR, 0,&flag);
 	loss_count+=flag;
 	pkt->aris_samples[sample_no].data_valid = 0;
-	pkt->aris_samples[sample_no].data_valid |= flag;
+	pkt->aris_samples[sample_no].data_valid |= (!flag);
 	pkt->aris_samples[sample_no].aris_data[1] = get_ADC_value(&i2c_5, ADC_I2CU2_ADDR, 1,&flag);
 	loss_count+=flag;
-	pkt->aris_samples[sample_no].data_valid |= (flag << 1);
+	pkt->aris_samples[sample_no].data_valid |= ((!flag) << 1);
 	pkt->aris_samples[sample_no].aris_data[2] = get_ADC_value(&i2c_5, ADC_I2CU2_ADDR, 2,&flag);
 	loss_count+=flag;
-	pkt->aris_samples[sample_no].data_valid |= (flag << 2);
+	pkt->aris_samples[sample_no].data_valid |= ((!flag) << 2);
 	return loss_count;
 }
 

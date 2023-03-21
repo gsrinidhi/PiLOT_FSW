@@ -39,16 +39,16 @@
 //I2C instances
 
 #define DUMMY_I2C_ADDR 0x88
-i2c_instance_t g_core_i2c0;
-i2c_instance_t g_core_i2c1;
-i2c_instance_t g_core_i2c2;
-i2c_instance_t g_core_i2c3;
-i2c_instance_t g_core_i2c4;
-i2c_instance_t g_core_i2c5;
+extern i2c_instance_t g_core_i2c0;
+extern i2c_instance_t g_core_i2c1;
+extern i2c_instance_t g_core_i2c2;
+extern i2c_instance_t g_core_i2c3;
+extern i2c_instance_t g_core_i2c4;
+extern i2c_instance_t g_core_i2c5;
 
-i2c_status_t core_i2c_status;
+extern i2c_status_t core_i2c_status;
 
-timer_instance_t sd_timer;
+extern timer_instance_t sd_timer;
 #define SD_TIMER_BASE_ADDR	0x5000B000
 
 #define i2c_3 g_core_i2c1//
