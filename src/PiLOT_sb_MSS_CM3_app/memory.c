@@ -54,6 +54,4 @@ uint8_t read_data(partition_t *partition,uint8_t *data) {
 	return SD_INIT_MASK | SD_WRITE_MASK;
 }
 
-uint8_t test_sd(uint32_t *addr) {
 
-}

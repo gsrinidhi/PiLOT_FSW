@@ -135,6 +135,10 @@ reset_pkt_t *check_reset,put_reset;
 uint16_t aris_sample_miss,aris_reset_count;
 
 uint8_t sensor_board_status,sensor_board_fail_count;
+
+partition_t *p_array[5];
+
+uint8_t p_no;
 /**
  * @brief This is to be used only if the packets are to be sent over uart as they are formed and not from the queue. This is only for testing purposes.
  * 
@@ -213,8 +217,8 @@ uint8_t Flags_Init(uint32_t reset_count, uint8_t wd_reset) {
 	 */
 	time_to_count(DEFAULT_HK_PERIOD,&hk_period_H,&hk_period_L);
 	time_to_count(DEFAULT_PAYLOAD_PERIOD,&payload_period_H,&payload_period_L);
-	time_to_count(15,&aris_period_H,&aris_period_L);
-	time_to_count(60000,&sd_dump_period_H,&sd_dump_period_L);
+	time_to_count(20,&aris_period_H,&aris_period_L);
+	time_to_count(600000,&sd_dump_period_H,&sd_dump_period_L);
 	time_to_count(300000,&timer_period_H,&timer_period_L);
 	/**
 	 * @brief Initialise all sequence numbers to one
@@ -307,6 +311,13 @@ uint8_t Flags_Init(uint32_t reset_count, uint8_t wd_reset) {
 
 	aris_sample_miss = 0;
 	aris_reset_count = 0;
+
+	p_array[0] = &hk_p;
+	p_array[1] = &payload_p;
+	p_array[2] = &aris_p;
+	p_array[3] = &sd_hk_p;
+	p_array[4] = &log_p;
+
 
 	return 0;
 }
@@ -527,6 +538,7 @@ int main()
 			add_to_queue(HK_PKT_LENGTH,&hk_p,packet_data,&hk_miss,HK_TASK_ID);
 			if(hk_seq_no%20 == 1) {
 				hk_packet->sd_dump = 1;
+				hk_packet->Fletcher_Code = make_FLetcher(packet_data,HK_PKT_LENGTH-2);
 				store_data(&hk_p,packet_data);
 			}
             hk_seq_no++;
@@ -560,7 +572,7 @@ int main()
 			aris_packet_add_to_queue->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(ccsds_p2(aris_seq_no++));
 			aris_packet_add_to_queue->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(ccsds_p3(ARIS_PKT_LENGTH));
 			aris_packet_add_to_queue->aris_reset_count = aris_reset_count;
-			aris_packet_add_to_queue->Fletcher_Code = make_FLetcher((uint8_t*)aris_packet_add_to_queue,ARIS_PKT_LENGTH);
+			aris_packet_add_to_queue->Fletcher_Code = make_FLetcher((uint8_t*)aris_packet_add_to_queue,ARIS_PKT_LENGTH-2);
 			log_packet->logs[log_count].task_status = 0;
 			add_to_queue(ARIS_PKT_LENGTH,&aris_p,(uint8_t*)aris_packet_add_to_queue,&aris_miss,ARIS_TASK_ID);
 			if(aris_seq_no == 16383) {
@@ -594,8 +606,18 @@ int main()
 		}
 
 		if(can_run(&sd_dump_period,&sd_dump_last_count)) {
-			add_to_queue_from_sd(HK_PKT_LENGTH,&hk_p,packet_data);
-			add_to_queue_from_sd(ARIS_PKT_LENGTH,&aris_p,packet_data);
+			if(p_no == 0) {
+				add_to_queue_from_sd(HK_PKT_LENGTH,&hk_p,packet_data);
+			} else if(p_no == 1) {
+				add_to_queue_from_sd(THERMISTOR_PKT_LENGTH,&payload_p,packet_data);
+			} else if(p_no == 2) {
+				add_to_queue_from_sd(LOGS_PKT_LENGTH,&log_p,log_data);
+			} else if(p_no == 3) {
+				add_to_queue_from_sd(SD_HK_PKT_LENGTH,&sd_hk_p,packet_data);
+			} else if(p_no == 4) {
+				add_to_queue_from_sd(ARIS_PKT_LENGTH,&aris_p,(uint8_t*)aris_packet_add_to_queue);
+			}
+			p_no = (p_no + 1)%5;
 		}
 
 		if(can_run(&timer_period,&timer_last_count)) {

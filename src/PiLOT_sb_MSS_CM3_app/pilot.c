@@ -212,7 +212,7 @@ uint8_t Pilot_Init(timer_pkt_t *init_pkt) {
 	init_pkt->adc_B = ADC_Init(&i2c_3,ADC_I2CU2_ADDR);
 	init_pkt->adc_C = ADC_Init(&i2c_5,ADC_I2CU1_ADDR);
 	init_pkt->adc_D = ADC_Init(&i2c_5,ADC_I2CU2_ADDR);
-	MSS_GPIO_set_output(TX_INV_EN,0);
+	MSS_GPIO_set_output(TX_INV_EN,1);
 	MSS_GPIO_set_output(RX_INV_EN,1);
 	MSS_GPIO_set_output(EN_UART,0);
 	init_pkt->vc_init = vc_init(VC1);
