@@ -1586,27 +1586,21 @@ MSS_UART_isr
 {
     uint8_t iirf;
 
-    ASSERT((this_uart == &g_mss_uart0) || (this_uart == &g_mss_uart1));
-
-    if((this_uart == &g_mss_uart0) || (this_uart == &g_mss_uart1))
-    {
         iirf = this_uart->hw_reg->IIR & IIRF_MASK;
 
         switch (iirf)
         {
-            case IIRF_MODEM_STATUS:  /* Modem status interrupt */
-            {
-                ASSERT(NULL_HANDLER != this_uart->modemsts_handler);
-                if(NULL_HANDLER != this_uart->modemsts_handler)
-                {
-                   (*(this_uart->modemsts_handler))(this_uart);
-                }
-            }
-            break;
-
+//            case IIRF_MODEM_STATUS:  /* Modem status interrupt */
+//            {
+//                if(NULL_HANDLER != this_uart->modemsts_handler)
+//                {
+//                   (*(this_uart->modemsts_handler))(this_uart);
+//                }
+//            }
+//            break;
+//
             case IIRF_THRE: /* Transmitter Holding Register Empty */
             {
-                ASSERT(NULL_HANDLER != this_uart->tx_handler);
                 if(NULL_HANDLER != this_uart->tx_handler)
                 {
                     (*(this_uart->tx_handler))(this_uart);
@@ -1617,86 +1611,82 @@ MSS_UART_isr
             case IIRF_RX_DATA:      /* Received Data Available */
             case IIRF_DATA_TIMEOUT: /* Received Data Timed-out */
             {
-                ASSERT(NULL_HANDLER != this_uart->rx_handler);
-                if(NULL_HANDLER != this_uart->rx_handler)
-                {
-                    (*(this_uart->rx_handler))(this_uart);
-                }
+            	(*(this_uart->rx_handler))(this_uart);
             }
             break;
-
-            case IIRF_RX_LINE_STATUS:  /* Line Status Interrupt */
-            {
-                ASSERT(NULL_HANDLER != this_uart->linests_handler);
-                if(NULL_HANDLER != this_uart->linests_handler)
-                {
-                   (*(this_uart->linests_handler))(this_uart);
-                }
-            }
-            break;
-
-            case IIRF_MMI:
-            {
-                /* Identify multimode interrupts and handle */
-
-                /* Receiver time-out interrupt */
-                if(read_bit_reg8(&this_uart->hw_reg->IIM,ERTOI))
-                {
-                    ASSERT(NULL_HANDLER != this_uart->rto_handler);
-                    if(NULL_HANDLER != this_uart->rto_handler)
-                    {
-                        (*(this_uart->rto_handler))(this_uart);
-                    }
-                }
-                /* NACK interrupt */
-                if(read_bit_reg8(&this_uart->hw_reg->IIM,ENACKI))
-                {
-                    ASSERT(NULL_HANDLER != this_uart->nack_handler);
-                    if(NULL_HANDLER != this_uart->nack_handler)
-                    {
-                        (*(this_uart->nack_handler))(this_uart);
-                    }
-                }
-
-                /* PID parity error interrupt */
-                if(read_bit_reg8(&this_uart->hw_reg->IIM,EPID_PEI))
-                {
-                    ASSERT(NULL_HANDLER != this_uart->pid_pei_handler);
-                    if(NULL_HANDLER != this_uart->pid_pei_handler)
-                    {
-                        (*(this_uart->pid_pei_handler))(this_uart);
-                    }
-                }
-
-                /* LIN break detection interrupt */
-                if(read_bit_reg8(&this_uart->hw_reg->IIM,ELINBI))
-                {
-                    ASSERT(NULL_HANDLER != this_uart->break_handler);
-                    if(NULL_HANDLER != this_uart->break_handler)
-                    {
-                        (*(this_uart->break_handler))(this_uart);
-                    }
-                }
-
-                /* LIN Sync detection interrupt */
-                if(read_bit_reg8(&this_uart->hw_reg->IIM,ELINSI))
-                {
-                    ASSERT(NULL_HANDLER != this_uart->sync_handler);
-                    if(NULL_HANDLER != this_uart->sync_handler)
-                    {
-                        (*(this_uart->sync_handler))(this_uart);
-                    }
-                }
-                break;
-            }
-
-            default:
-            {
-                ASSERT(INVALID_INTERRUPT);
-            }
-            break;
+//
+//            case IIRF_RX_LINE_STATUS:  /* Line Status Interrupt */
+//            {
+//                ASSERT(NULL_HANDLER != this_uart->linests_handler);
+//                if(NULL_HANDLER != this_uart->linests_handler)
+//                {
+//                   (*(this_uart->linests_handler))(this_uart);
+//                }
+//            }
+//            break;
+//
+//            case IIRF_MMI:
+//            {
+//                /* Identify multimode interrupts and handle */
+//
+//                /* Receiver time-out interrupt */
+//                if(read_bit_reg8(&this_uart->hw_reg->IIM,ERTOI))
+//                {
+//                    ASSERT(NULL_HANDLER != this_uart->rto_handler);
+//                    if(NULL_HANDLER != this_uart->rto_handler)
+//                    {
+//                        (*(this_uart->rto_handler))(this_uart);
+//                    }
+//                }
+//                /* NACK interrupt */
+//                if(read_bit_reg8(&this_uart->hw_reg->IIM,ENACKI))
+//                {
+//                    ASSERT(NULL_HANDLER != this_uart->nack_handler);
+//                    if(NULL_HANDLER != this_uart->nack_handler)
+//                    {
+//                        (*(this_uart->nack_handler))(this_uart);
+//                    }
+//                }
+//
+//                /* PID parity error interrupt */
+//                if(read_bit_reg8(&this_uart->hw_reg->IIM,EPID_PEI))
+//                {
+//                    ASSERT(NULL_HANDLER != this_uart->pid_pei_handler);
+//                    if(NULL_HANDLER != this_uart->pid_pei_handler)
+//                    {
+//                        (*(this_uart->pid_pei_handler))(this_uart);
+//                    }
+//                }
+//
+//                /* LIN break detection interrupt */
+//                if(read_bit_reg8(&this_uart->hw_reg->IIM,ELINBI))
+//                {
+//                    ASSERT(NULL_HANDLER != this_uart->break_handler);
+//                    if(NULL_HANDLER != this_uart->break_handler)
+//                    {
+//                        (*(this_uart->break_handler))(this_uart);
+//                    }
+//                }
+//
+//                /* LIN Sync detection interrupt */
+//                if(read_bit_reg8(&this_uart->hw_reg->IIM,ELINSI))
+//                {
+//                    ASSERT(NULL_HANDLER != this_uart->sync_handler);
+//                    if(NULL_HANDLER != this_uart->sync_handler)
+//                    {
+//                        (*(this_uart->sync_handler))(this_uart);
+//                    }
+//                }
+//                break;
+//            }
+//
+//            default:
+//            {
+//                ASSERT(INVALID_INTERRUPT);
+//            }
+//            break;
         }
-    }
+
 }
 
 /***************************************************************************//**

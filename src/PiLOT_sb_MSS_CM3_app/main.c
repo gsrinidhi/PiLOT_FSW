@@ -154,7 +154,7 @@ uint8_t p_no;
  */
 void uart1_rx_handler(mss_uart_instance_t * this_uart) {
 	uart_irq_addr_flag = (&g_mss_uart1)->hw_reg->LSR;
-	uart_irq_size = MSS_UART_get_rx(this_uart,uart_irq_rx_buffer,1);
+	uart_irq_size = MSS_UART_get_rx_one(this_uart,uart_irq_rx_buffer);
 
 	if(read_bit_reg8(&uart_irq_addr_flag,PE) && uart_irq_rx_buffer[0] == PSLV_TO_PILOT_ADDR) {
 

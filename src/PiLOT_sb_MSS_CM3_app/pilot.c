@@ -212,7 +212,7 @@ uint8_t Pilot_Init(timer_pkt_t *init_pkt) {
 	init_pkt->adc_B = ADC_Init(&i2c_3,ADC_I2CU2_ADDR);
 	init_pkt->adc_C = ADC_Init(&i2c_5,ADC_I2CU1_ADDR);
 	init_pkt->adc_D = ADC_Init(&i2c_5,ADC_I2CU2_ADDR);
-	MSS_GPIO_set_output(TX_INV_EN,1);
+	MSS_GPIO_set_output(TX_INV_EN,0);
 	MSS_GPIO_set_output(RX_INV_EN,1);
 	MSS_GPIO_set_output(EN_UART,0);
 	init_pkt->vc_init = vc_init(VC1);
@@ -495,6 +495,30 @@ uint16_t make_FLetcher(uint8_t *data,uint16_t len) {
 
 	return ((sumB << 8) | temp);
 
+}
+
+size_t rx_size;
+uint8_t status;
+size_t
+MSS_UART_get_rx_one
+(
+    mss_uart_instance_t * this_uart,
+    uint8_t * rx_buff
+)
+{
+
+	rx_size = 0u;
+	status = 0u;
+	status = this_uart->hw_reg->LSR;
+	this_uart->status |= status;
+
+	while(((status & MSS_UART_DATA_READY) != 0u))
+	{
+		rx_buff[0] = this_uart->hw_reg->RBR;
+		status = this_uart->hw_reg->LSR;
+		this_uart->status |= status;
+	}
+    return rx_size;
 }
 void FabricIrq0_IRQHandler(void)
 {

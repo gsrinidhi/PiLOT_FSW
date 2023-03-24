@@ -63,6 +63,6 @@ extern timer_instance_t sd_timer;
 #define TX_INV_EN					MSS_GPIO_8
 #define RX_INV_EN					MSS_GPIO_7
 
-#define TIMER_COUNT_PER_MS 100000 //Number of counts in one millisecond 1t 100MHz
-#define FULL_SCALE_TIME_MS 42949 //Number of milliseconds for the 32 bit counter to completely countdown at 100MHz
+#define TIMER_COUNT_PER_MS 140000 //Number of counts in one millisecond 1t 100MHz
+#define FULL_SCALE_TIME_MS 30674 //Number of milliseconds for the 32 bit counter to completely countdown at 100MHz
 #endif
