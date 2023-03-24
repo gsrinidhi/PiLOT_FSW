@@ -14,6 +14,7 @@
 #include "memory.h"
 #define MAX_COUNT		0xFFFFFFFF
 #define QUEUE_BYTES		0
+#define MSS_UART_DATA_READY    ((uint8_t) 0x01)
 /**
  * @brief All the required partitions are declared below
  * payload_p	:		partition for thermistor data
@@ -111,7 +112,7 @@ uint8_t uart_irq_size;
 uint8_t sd_count;
 sd_test_t sd;
 uint16_t aris_count,timer_seq_no;
-volatile uint8_t uart_irq_addr_flag;
+uint8_t uart_irq_addr_flag;
 uint8_t sd_fail_count;
 uint16_t queue_lost;
 
@@ -152,10 +153,20 @@ uint8_t p_no;
  * 
  * @param this_uart : The uart from which the interrupt was triggered.
  */
+
+size_t rx_size = 0u;
+uint8_t status = 0u;
 void uart1_rx_handler(mss_uart_instance_t * this_uart) {
 	uart_irq_addr_flag = (&g_mss_uart1)->hw_reg->LSR;
-	uart_irq_size = MSS_UART_get_rx(this_uart,uart_irq_rx_buffer,1);
-
+	//uart_irq_size = MSS_UART_get_rx_one(this_uart,uart_irq_rx_buffer);
+//    status = this_uart->hw_reg->LSR;
+//    this_uart->status |= status;
+    uart_irq_rx_buffer[0] = this_uart->hw_reg->RBR;
+    status = this_uart->hw_reg->LSR;
+    if(((status & MSS_UART_DATA_READY) != 0u))
+    {
+    	uart_irq_rx_buffer[0] = this_uart->hw_reg->RBR;
+    }
 	if(read_bit_reg8(&uart_irq_addr_flag,PE) && uart_irq_rx_buffer[0] == PSLV_TO_PILOT_ADDR) {
 
 		MSS_GPIO_set_output(EN_UART,1);
@@ -217,7 +228,7 @@ uint8_t Flags_Init(uint32_t reset_count, uint8_t wd_reset) {
 	 */
 	time_to_count(DEFAULT_HK_PERIOD,&hk_period_H,&hk_period_L);
 	time_to_count(DEFAULT_PAYLOAD_PERIOD,&payload_period_H,&payload_period_L);
-	time_to_count(20,&aris_period_H,&aris_period_L);
+	time_to_count(15,&aris_period_H,&aris_period_L);
 	time_to_count(600000,&sd_dump_period_H,&sd_dump_period_L);
 	time_to_count(300000,&timer_period_H,&timer_period_L);
 	/**
@@ -317,6 +328,8 @@ uint8_t Flags_Init(uint32_t reset_count, uint8_t wd_reset) {
 	p_array[2] = &aris_p;
 	p_array[3] = &sd_hk_p;
 	p_array[4] = &log_p;
+
+	aris_sample_no = 0;
 
 
 	return 0;
@@ -569,7 +582,7 @@ int main()
 			log_packet->logs[log_count].time_L = current_time_lower;
 			log_packet->logs[log_count].time_H = current_time_upper;
 			aris_packet_add_to_queue->ccsds_p1 = PILOT_REVERSE_BYTE_ORDER(ccsds_p1(tlm_pkt_type,ARIS_API_ID));
-			aris_packet_add_to_queue->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(ccsds_p2(aris_seq_no++));
+			aris_packet_add_to_queue->ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(ccsds_p2(aris_seq_no));
 			aris_packet_add_to_queue->ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(ccsds_p3(ARIS_PKT_LENGTH));
 			aris_packet_add_to_queue->aris_reset_count = aris_reset_count;
 			aris_packet_add_to_queue->Fletcher_Code = make_FLetcher((uint8_t*)aris_packet_add_to_queue,ARIS_PKT_LENGTH-2);
@@ -579,6 +592,7 @@ int main()
 				aris_reset_count++;
 			}
 			log_count++;
+			aris_seq_no++;
 		}
 
 		if(log_count >= 10) {

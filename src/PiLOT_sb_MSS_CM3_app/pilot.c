@@ -11,7 +11,7 @@
 
 #include"pilot.h"
 #include "memory.h"
-
+//#define MSS_UART_DATA_READY    ((uint8_t) 0x01)
 uint32_t prev_wait_time;
 uint8_t ADC_Init(i2c_instance_t *i2c_chx,uint8_t address){
 	i2c_status_t status;
@@ -496,6 +496,30 @@ uint16_t make_FLetcher(uint8_t *data,uint16_t len) {
 	return ((sumB << 8) | temp);
 
 }
+
+//size_t
+//MSS_UART_get_rx_one
+//(
+//    mss_uart_instance_t * this_uart,
+//    uint8_t * rx_buff
+//)
+//{
+//    size_t rx_size = 0u;
+//    uint8_t status = 0u;
+//
+//
+//
+//        status = this_uart->hw_reg->LSR;
+//        this_uart->status |= status;
+//
+//        while(((status & MSS_UART_DATA_READY) != 0u))
+//        {
+//            rx_buff[0] = this_uart->hw_reg->RBR;
+//            status = this_uart->hw_reg->LSR;
+//            this_uart->status |= status;
+//        }
+//    return rx_size;
+//}
 void FabricIrq0_IRQHandler(void)
 {
     I2C_isr(&g_core_i2c0);

@@ -231,4 +231,11 @@ void envm_init(reset_pkt_t *check_reset,reset_pkt_t *put_reset);
 uint8_t get_IMU_temp(uint16_t *temp);
 
 uint16_t make_FLetcher(uint8_t *data,uint16_t len);
+
+size_t
+MSS_UART_get_rx_one
+(
+    mss_uart_instance_t * this_uart,
+    uint8_t * rx_buff
+);
 #endif
