@@ -270,6 +270,12 @@ uint8_t Flags_Init(uint32_t reset_count, uint8_t wd_reset) {
 	 * @brief Set the MSS UART 1 interrupt handler to the one defined above
 	 * 
 	 */
+
+    NVIC_EnableIRQ( FabricIrq9_IRQn );
+    NVIC_EnableIRQ( FabricIrq10_IRQn );
+    NVIC_SetPriority(FabricIrq9_IRQn,0xFE);
+    NVIC_SetPriority(FabricIrq10_IRQn,0xFD);
+//    NVIC_SetPriority(UART1_IRQn,2);
     MSS_UART_set_rx_handler(&g_mss_uart1,
                             uart1_rx_handler,
                             MSS_UART_FIFO_SINGLE_BYTE);
@@ -281,10 +287,7 @@ uint8_t Flags_Init(uint32_t reset_count, uint8_t wd_reset) {
     q_head = 2;
     q_tail = 0;
     TMR_init(&aris_timer,CORETIMER_0_0,TMR_CONTINUOUS_MODE,PRESCALER_DIV_2,aris_period_L/2);
-    NVIC_EnableIRQ( FabricIrq9_IRQn );
-    NVIC_EnableIRQ( FabricIrq10_IRQn );
-    NVIC_SetPriority(FabricIrq9_IRQn,0xFE);
-    NVIC_SetPriority(FabricIrq10_IRQn,0xFD);
+
     TMR_enable_int(&aris_timer);
     TMR_start(&aris_timer);
 	timer_seq_no = 1;
@@ -440,7 +443,7 @@ void FabricIrq10_IRQHandler(void) {
 	TMR_clear_int(&sd_timer);
 	sd_state = SD_Init();
 	if(sd_state == 0){
-		sd_state |= SD_INIT_MASK;
+		sd_state = SD_WORKING;
 	}
 	sd_state |= SD_TESTED;
 }
