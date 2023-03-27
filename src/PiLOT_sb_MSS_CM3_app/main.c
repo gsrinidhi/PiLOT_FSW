@@ -137,8 +137,6 @@ uint16_t aris_sample_miss,aris_reset_count;
 
 uint8_t sensor_board_status,sensor_board_fail_count;
 
-partition_t *p_array[5];
-
 uint8_t p_no;
 /**
  * @brief This is to be used only if the packets are to be sent over uart as they are formed and not from the queue. This is only for testing purposes.
@@ -228,7 +226,7 @@ uint8_t Flags_Init(uint32_t reset_count, uint8_t wd_reset) {
 	 */
 	time_to_count(DEFAULT_HK_PERIOD,&hk_period_H,&hk_period_L);
 	time_to_count(DEFAULT_PAYLOAD_PERIOD,&payload_period_H,&payload_period_L);
-	time_to_count(15,&aris_period_H,&aris_period_L);
+	time_to_count(20,&aris_period_H,&aris_period_L);
 	time_to_count(600000,&sd_dump_period_H,&sd_dump_period_L);
 	time_to_count(300000,&timer_period_H,&timer_period_L);
 	/**
@@ -325,12 +323,6 @@ uint8_t Flags_Init(uint32_t reset_count, uint8_t wd_reset) {
 
 	aris_sample_miss = 0;
 	aris_reset_count = 0;
-
-	p_array[0] = &hk_p;
-	p_array[1] = &payload_p;
-	p_array[2] = &aris_p;
-	p_array[3] = &sd_hk_p;
-	p_array[4] = &log_p;
 
 	aris_sample_no = 0;
 
@@ -610,12 +602,13 @@ int main()
 			log_packet->logs[log_count].time_L = current_time_lower;
 			log_packet->logs[log_count].time_H = current_time_upper;
 			sd_hk.ccsds_p1 = PILOT_REVERSE_BYTE_ORDER(ccsds_p1(tlm_pkt_type,SD_HK_API_ID));
-			sd_hk.ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(ccsds_p2(sd_hk_seq_no++));
+			sd_hk.ccsds_p2 = PILOT_REVERSE_BYTE_ORDER(ccsds_p2(sd_hk_seq_no));
 			sd_hk.ccsds_p3 = PILOT_REVERSE_BYTE_ORDER(ccsds_p3(SD_HK_PKT_LENGTH));
 			sd_hk.Fletcher_code = make_FLetcher((uint8_t*)&sd_hk,SD_HK_PKT_LENGTH-2);
 			log_packet->logs[log_count].task_status = 0;
 			add_to_queue(SD_HK_PKT_LENGTH,&sd_hk_p,(uint8_t*)&sd_hk,&sd_hk_miss,SD_HK_TASK_ID);
 			log_count++;
+			sd_hk_seq_no++;
 		}
 
 		if(log_count >= 10) {

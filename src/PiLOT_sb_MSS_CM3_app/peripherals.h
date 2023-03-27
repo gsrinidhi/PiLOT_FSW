@@ -28,7 +28,7 @@
 #include <drivers/mss_nvm/mss_nvm.h>
 #define WDOG_SYSREG_CR_ENABLE_MASK      0x00000001u
 
-#define ENVM_RESET_PKT_ADDR				0x6000DD10
+#define ENVM_RESET_PKT_ADDR				0x6000DC00
 #define WD_RESET						0x80
 //UART
 //defining PE bit of LSR register for MSS_UART
@@ -51,7 +51,7 @@ extern i2c_status_t core_i2c_status;
 extern timer_instance_t sd_timer;
 #define SD_TIMER_BASE_ADDR	0x5000B000
 
-#define i2c_3 g_core_i2c1//
+#define i2c_3 g_core_i2c1
 #define i2c_5 g_core_i2c3
 
 #define I2C_SLAVE_ADDRESS 0x12

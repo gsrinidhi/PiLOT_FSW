@@ -18,18 +18,18 @@
 #define CURRENT_BLOCK 1024
 
 //Define the initial block numbers of all partitions
-#define PAYLOAD_BLOCK_INIT        	0x4F1A6E
+#define PAYLOAD_BLOCK_INIT        	0x13C6EE
 #define HK_BLOCK_INIT        		0xA
-#define LOGS_BLOCK_INIT          	0x5703D2
-#define SD_BLOCK_INIT				700
-#define ARIS_BLOCK_INIT				0x59647E
+#define LOGS_BLOCK_INIT          	0x15C192
+#define SD_BLOCK_INIT				0x298876
+#define ARIS_BLOCK_INIT				0x2B831A
 
 //Define the ending block numbers of all the partitions
-#define PAYLOAD_BLOCK_END			0x57036E
-#define HK_BLOCK_END				0x4F1A0A
-#define LOGS_BLOCK_END				0x57CE52
-#define SD_BLOCK_END				800
-#define ARIS_BLOCK_END				0x7A59FE
+#define PAYLOAD_BLOCK_END			0x15C12E
+#define HK_BLOCK_END				0x13C68A
+#define LOGS_BLOCK_END				0x298812
+#define SD_BLOCK_END				0x2B82B6
+#define ARIS_BLOCK_END				0x700000
 
 //All the Partitions used
 #define HK_PARTITION 				0x01
