@@ -77,17 +77,34 @@ uint8_t get_thermistor_vals(thermistor_pkt_t *pkt,uint16_t seq_no){
     return loss_count;
 }
 
+void delay() {
+	timer_instance_t k;
+	TMR_init(&k,CORETIMER_2_0,TMR_ONE_SHOT_MODE,PRESCALER_DIV_1024,150);
+	TMR_start(&k);
+	uint32_t v;
+	while(1) {
+		v = TMR_current_value(&k);
+		if (v<25) {
+			break;
+		}
+	}
+
+}
 uint8_t get_aris_sample(aris_pkt_t *pkt,uint32_t time,uint8_t sample_no) {
 	uint8_t flag,loss_count = 0;
+	uint32_t k = 0;
 	pkt->aris_samples[sample_no].collect_time = time;
-	pkt->aris_samples[sample_no].aris_data[0] = get_ADC_value(&i2c_5, ADC_I2CU2_ADDR, 0,&flag);
+	pkt->aris_samples[sample_no].aris_data[0] = get_ADC_value(&i2c_5, ADC_I2C_ADDR, 0,&flag);
 	loss_count+=flag;
+	delay();
 	pkt->aris_samples[sample_no].data_valid = 0;
 	pkt->aris_samples[sample_no].data_valid |= (!flag);
-	pkt->aris_samples[sample_no].aris_data[1] = get_ADC_value(&i2c_5, ADC_I2CU2_ADDR, 1,&flag);
+	pkt->aris_samples[sample_no].aris_data[1] = get_ADC_value(&i2c_5, ADC_I2C_ADDR, 1,&flag);
+	k = 0;
+	delay();
 	loss_count+=flag;
 	pkt->aris_samples[sample_no].data_valid |= ((!flag) << 1);
-	pkt->aris_samples[sample_no].aris_data[2] = get_ADC_value(&i2c_5, ADC_I2CU2_ADDR, 2,&flag);
+	pkt->aris_samples[sample_no].aris_data[2] = get_ADC_value(&i2c_5, ADC_I2C_ADDR, 2,&flag);
 	loss_count+=flag;
 	pkt->aris_samples[sample_no].data_valid |= ((!flag) << 2);
 	return loss_count;
@@ -181,6 +198,7 @@ void SPI_Init() {
 
 void Uart_Init() {
 	MSS_UART_init(&g_mss_uart1,MSS_UART_BAUD_2000000,MSS_UART_DATA_8_BITS | MSS_UART_STICK_PARITY_0 | MSS_UART_ONE_STOP_BIT);
+	MSS_UART_init(&g_mss_uart0,MSS_UART_115200_BAUD,MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT);
 }
 
 uint8_t Pilot_Peripherals_Init() {

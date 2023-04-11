@@ -469,6 +469,13 @@ void store_sd_pointers() {
 	nvm_status_t nvm_status = NVM_write(ENVM_RESET_PKT_ADDR,(const uint8_t *)&put_reset,sizeof(reset_pkt_t),NVM_DO_NOT_LOCK_PAGE);
 
 }
+
+uint8_t downlink(uint8_t *data,uint8_t size) {
+		//MSS_GPIO_set_output(EN_UART,LOGIC_HIGH);
+		MSS_UART_polled_tx(&g_mss_uart0,data,size);
+		//MSS_GPIO_set_output(EN_UART,LOGIC_LOW);
+		return 0;
+}
 int main()
 {
 	//Initialise all the peripherals and devices connected to the OBC in PiLOT
@@ -579,6 +586,7 @@ int main()
 				aris_reset_count++;
 			}
 			log_count++;
+			downlink((uint8_t*)aris_packet_add_to_queue,ARIS_PKT_LENGTH);
 		}
 
 		if(log_count >= 10) {

@@ -18,7 +18,7 @@
 #include "ccsds.h"
 
 //ADC Macros
-#define ADC_I2C_ADDR 0x20
+#define ADC_I2C_ADDR 0x21
 #define ADC_I2CU1_ADDR 0x21
 #define ADC_I2CU2_ADDR 0x22
 
