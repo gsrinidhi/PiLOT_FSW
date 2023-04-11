@@ -100,13 +100,13 @@ uint8_t get_aris_sample(aris_pkt_t *pkt,uint32_t time,uint8_t sample_no) {
 	pkt->aris_samples[sample_no].data_valid = 0;
 	pkt->aris_samples[sample_no].data_valid |= (!flag);
 	pkt->aris_samples[sample_no].aris_data[1] = get_ADC_value(&i2c_5, ADC_I2C_ADDR, 1,&flag);
-	k = 0;
 	delay();
 	loss_count+=flag;
 	pkt->aris_samples[sample_no].data_valid |= ((!flag) << 1);
 	pkt->aris_samples[sample_no].aris_data[2] = get_ADC_value(&i2c_5, ADC_I2C_ADDR, 2,&flag);
 	loss_count+=flag;
 	pkt->aris_samples[sample_no].data_valid |= ((!flag) << 2);
+	delay();
 	return loss_count;
 }
 
